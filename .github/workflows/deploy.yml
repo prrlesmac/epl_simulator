@@ -1,0 +1,31 @@
+name: Deploy Dash App to EC2 with Docker
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to EC2
+      run: |
+        ssh ${{ secrets.EC2_HOST }} << EOF
+          cd ${{ secrets.EC2_REPO_DIR }}
+          git pull origin main
+          docker stop epl_simulator || true
+          docker rm epl_simulator || true
+          docker build -t epl_simulator .
+          docker run -d -p 8050:8050 epl_simulator
+        EOF
