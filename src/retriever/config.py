@@ -1,0 +1,22 @@
+club_name_mapping= {
+    "Southampton": "Southampton",
+    "Arsenal": "Arsenal",
+    "Liverpool": "Liverpool",
+    "Crystal Palace": "Crystal Palace",
+    "Ipswich": "Ipswich Town",
+    "West Ham": "West Ham",
+    "Bournemouth": "Bournemouth",
+    "Leicester": "Leicester City",
+    "Newcastle": "Newcastle Utd",
+    "Everton": "Everton",
+    "Fulham": "Fulham",
+    "Man City": "Manchester City",
+    "Forest": "Nott'ham Forest",
+    "Chelsea": "Chelsea",
+    "Man United": "Manchester Utd",
+    "Aston Villa": "Aston Villa",
+    "Wolves": "Wolves",
+    "Brentford": "Brentford",
+    "Tottenham": "Tottenham",
+    "Brighton": "Brighton"
+}
