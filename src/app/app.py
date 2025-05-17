@@ -5,7 +5,7 @@ import pandas as pd
 
 # Sample DataFrame with Premier League team odds
 df = pd.read_csv(
-        "season_standings_sim.csv"
+        "../../data/02_intermediate/season_standings_sim.csv", index=False
     )
 
 
