@@ -161,5 +161,5 @@ if __name__ == "__main__":
     standings_all = standings_all.sort_values(by='title_odds',ascending=False)
 
     standings_all.to_csv(
-        "../../data/02_intermediate/season_standings_sim.csv", index=False
+        "data/02_intermediate/season_standings_sim.csv", index=False
     )

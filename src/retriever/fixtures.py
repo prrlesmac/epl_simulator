@@ -68,4 +68,4 @@ if __name__ == "__main__":
     )
     fixtures = process_fixtures(fixtures)
     print(fixtures)
-    fixtures.to_csv("../../data/01_raw/epl_matches.csv")
+    fixtures.to_csv("data/01_raw/epl_matches.csv")

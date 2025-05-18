@@ -10,6 +10,12 @@ COPY . .
 # Install any needed dependencies specified in requirements.txt
 RUN echo "Installing dependencies..."
 RUN pip install --no-cache-dir -r requirements.txt
+RUN python setup.py install
+
+# Run the simulator
+RUN python src/retriever/elos.py
+RUN python src/retriever/elos.py
+RUN python src/simulator/simulator.py
 
 # Expose port 8000 (or any other port your FastAPI application listens on)
 EXPOSE 8050
