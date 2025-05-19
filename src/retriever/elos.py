@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 from io import StringIO
-import config
+from config import config
 
 
 def get_elos(url):
@@ -68,7 +68,7 @@ def filter_elos(elos, country, level):
 
 
 if __name__ == "__main__":
-    elos = get_elos("http://api.clubelo.com/2025-04-01")
+    elos = get_elos(config.elo_rating_url)
     epl_elos = filter_elos(elos, "ENG", 1)
     epl_elos["club"] = epl_elos["club"].replace(config.club_name_mapping)
-    epl_elos.to_csv("data/02_intermediate/current_elo_ratings.csv")
+    epl_elos.to_csv(config.elo_output_file)

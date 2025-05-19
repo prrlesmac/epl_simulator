@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 import numpy as np
+from config import config
 
 
 def get_fixtures(url):
@@ -99,8 +100,6 @@ def process_fixtures(fixtures):
 
 
 if __name__ == "__main__":
-    fixtures = get_fixtures(
-        "https://fbref.com/en/comps/9/schedule/Premier-League-Scores-and-Fixtures"
-    )
+    fixtures = get_fixtures(config.fixtures_url)
     fixtures = process_fixtures(fixtures)
-    fixtures.to_csv("data/01_raw/epl_matches.csv")
+    fixtures.to_csv(config.fixtures_output_file)

@@ -1,5 +1,6 @@
 from sim_utils import simulate_matches, calculate_standings
 import pandas as pd
+from config import config
 
 
 def split_and_merge_schedule(schedule, elos):
@@ -35,7 +36,12 @@ def split_and_merge_schedule(schedule, elos):
     return schedule_played, schedule_pending
 
 
-def run_simulation(schedule_played, schedule_pending, num_iter=1000, verbose=False):
+def run_simulation(
+    schedule_played,
+    schedule_pending,
+    num_iter=config.number_of_simulations,
+    verbose=False,
+):
     """
     Runs a Monte Carlo simulation of a football season by repeatedly simulating
     pending matches and calculating final league standings.
@@ -110,9 +116,9 @@ def aggregate_odds(standings):
 
 
 if __name__ == "__main__":
-    # Example DataFrame with matches
-    schedule = pd.read_csv("data/01_raw/epl_matches.csv")
-    elos = pd.read_csv("data/02_intermediate/current_elo_ratings.csv")
+
+    schedule = pd.read_csv(config.fixtures_output_file)
+    elos = pd.read_csv(config.elo_output_file)
 
     schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
     sim_standings = run_simulation(
@@ -121,4 +127,4 @@ if __name__ == "__main__":
 
     sim_standings = aggregate_odds(sim_standings)
 
-    sim_standings.to_csv("data/03_output/season_standings_sim.csv", index=False)
+    sim_standings.to_csv(config.sim_output_file, index=False)

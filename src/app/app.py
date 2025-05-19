@@ -2,9 +2,10 @@ import dash
 from dash import dcc, html
 import dash_table
 import pandas as pd
+from config import config
 
 # Sample DataFrame with Premier League team odds
-df = pd.read_csv("../../data/03_output/season_standings_sim.csv")
+df = pd.read_csv(config.sim_output_file)
 
 
 # Create the Dash app
