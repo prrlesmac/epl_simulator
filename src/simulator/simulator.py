@@ -41,12 +41,12 @@ def simulate_match(proba):
     Base = np.random.poisson(0.18 * min(ExpGA, ExpGH))
     GH = np.random.poisson(ExpGH - 0.18 * min(ExpGA, ExpGH)) + Base
     GA = np.random.poisson(ExpGA - 0.18 * min(ExpGA, ExpGH)) + Base
-    #Diff = abs(GH - GA)
-    #K = 30 * np.where(Diff <= 1, 1, np.where(Diff == 2, 1.25, 1.25 + (Diff - 2) / 8))
-    #Res = np.where(GH > GA, 1, np.where(GH == GA, 0.5, 0))
-    #EloDiff = (proba - Res) * K
-    #EloH = EloH - EloDiff
-    #EloA = EloA + EloDiff
+    # Diff = abs(GH - GA)
+    # K = 30 * np.where(Diff <= 1, 1, np.where(Diff == 2, 1.25, 1.25 + (Diff - 2) / 8))
+    # Res = np.where(GH > GA, 1, np.where(GH == GA, 0.5, 0))
+    # EloDiff = (proba - Res) * K
+    # EloH = EloH - EloDiff
+    # EloA = EloA + EloDiff
 
     return (GH, GA)
 
@@ -95,32 +95,52 @@ def calculate_standings(matches_df):
     matches_df["home_pts"] = np.where(
         matches_df["home_goals"] > matches_df["away_goals"],
         3,
-        np.where(matches_df["home_goals"] == matches_df["away_goals"], 1, 0)
+        np.where(matches_df["home_goals"] == matches_df["away_goals"], 1, 0),
     )
     matches_df["away_pts"] = np.where(
         matches_df["away_goals"] > matches_df["home_goals"],
         3,
-        np.where(matches_df["home_goals"] == matches_df["away_goals"], 1, 0)
+        np.where(matches_df["home_goals"] == matches_df["away_goals"], 1, 0),
     )
-    home_pts = matches_df.groupby(["home"])[['home_pts','home_goals','away_goals']].sum().reset_index()
-    away_pts = matches_df.groupby(["away"])[['away_pts','away_goals','home_goals']].sum().reset_index()
+    home_pts = (
+        matches_df.groupby(["home"])[["home_pts", "home_goals", "away_goals"]]
+        .sum()
+        .reset_index()
+    )
+    away_pts = (
+        matches_df.groupby(["away"])[["away_pts", "away_goals", "home_goals"]]
+        .sum()
+        .reset_index()
+    )
 
-    home_pts = home_pts.rename(columns={'home': 'team','home_goals': 'home_goals_for','away_goals':'away_goals_against'})
-    away_pts = away_pts.rename(columns={'away': 'team','away_goals': 'away_goals_for','home_goals':'home_goals_against'})
+    home_pts = home_pts.rename(
+        columns={
+            "home": "team",
+            "home_goals": "home_goals_for",
+            "away_goals": "away_goals_against",
+        }
+    )
+    away_pts = away_pts.rename(
+        columns={
+            "away": "team",
+            "away_goals": "away_goals_for",
+            "home_goals": "home_goals_against",
+        }
+    )
     # Combine wins and losses into a single DataFrame
-    standings = pd.merge(
-        home_pts, away_pts, how="outer", on='team'
-    ).fillna(0)
-    standings['pts'] = standings['home_pts'] + standings['away_pts']
-    standings['gf'] = standings['home_goals_for'] + standings['away_goals_for']
-    standings['ga'] = standings['home_goals_against'] + standings['away_goals_against']
+    standings = pd.merge(home_pts, away_pts, how="outer", on="team").fillna(0)
+    standings["pts"] = standings["home_pts"] + standings["away_pts"]
+    standings["gf"] = standings["home_goals_for"] + standings["away_goals_for"]
+    standings["ga"] = standings["home_goals_against"] + standings["away_goals_against"]
     standings["gd"] = standings["gf"] - standings["ga"]
-    standings = standings[["team", "pts", "gd", "gf","ga"]].fillna(0)
+    standings = standings[["team", "pts", "gd", "gf", "ga"]].fillna(0)
 
     # Sort by wins
-    standings = standings.sort_values(by=["pts","gd","gf"], ascending=[False,False,False]).reset_index(drop=True)
+    standings = standings.sort_values(
+        by=["pts", "gd", "gf"], ascending=[False, False, False]
+    ).reset_index(drop=True)
     standings = standings.reset_index(drop=True)  # Removes old index
-    standings['pos'] = standings.index + 1 
+    standings["pos"] = standings.index + 1
 
     return standings
 
@@ -142,7 +162,7 @@ if __name__ == "__main__":
     schedule_pending = schedule_pending.drop(columns=["club_x", "club_y"])
 
     standings_list = []
-    num_of_iter=1000
+    num_of_iter = 1000
     for i in range(num_of_iter):
         # Simulate matches
         print(i)
@@ -151,15 +171,22 @@ if __name__ == "__main__":
         standings_df = calculate_standings(schedule_final)
         # Append standings to list
         standings_list.append(standings_df)
-    standings_all = pd.concat(standings_list).groupby(['team', 'pos']).size().reset_index(name='count')
-    standings_all['count'] = standings_all['count'] / num_of_iter
-    standings_all = standings_all.pivot(index='team', columns='pos', values='count').reset_index().fillna(0)
-    standings_all.columns = standings_all.columns.astype(str)
-    standings_all['title_odds'] = standings_all['1']
-    standings_all['top_4_odds'] = standings_all[['1', '2', '3', '4']].sum(axis=1)
-    standings_all['relegation_odds'] = standings_all[['18', '19', '20']].sum(axis=1)
-    standings_all = standings_all.sort_values(by='title_odds',ascending=False)
-
-    standings_all.to_csv(
-        "data/02_intermediate/season_standings_sim.csv", index=False
+    standings_all = (
+        pd.concat(standings_list)
+        .groupby(["team", "pos"])
+        .size()
+        .reset_index(name="count")
     )
+    standings_all["count"] = standings_all["count"] / num_of_iter
+    standings_all = (
+        standings_all.pivot(index="team", columns="pos", values="count")
+        .reset_index()
+        .fillna(0)
+    )
+    standings_all.columns = standings_all.columns.astype(str)
+    standings_all["title_odds"] = standings_all["1"]
+    standings_all["top_4_odds"] = standings_all[["1", "2", "3", "4"]].sum(axis=1)
+    standings_all["relegation_odds"] = standings_all[["18", "19", "20"]].sum(axis=1)
+    standings_all = standings_all.sort_values(by="title_odds", ascending=False)
+
+    standings_all.to_csv("data/03_output/season_standings_sim.csv", index=False)

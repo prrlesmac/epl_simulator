@@ -40,5 +40,5 @@ if __name__ == "__main__":
     # Example scores DataFrame
     elos = get_elos("http://api.clubelo.com/2025-04-01")
     epl_elos = filter_elos(elos, "ENG", 1)
-    epl_elos['club'] = epl_elos['club'].replace(config.club_name_mapping)
+    epl_elos["club"] = epl_elos["club"].replace(config.club_name_mapping)
     epl_elos.to_csv("data/02_intermediate/current_elo_ratings.csv")

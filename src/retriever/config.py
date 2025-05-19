@@ -1,4 +1,4 @@
-club_name_mapping= {
+club_name_mapping = {
     "Southampton": "Southampton",
     "Arsenal": "Arsenal",
     "Liverpool": "Liverpool",
@@ -18,5 +18,5 @@ club_name_mapping= {
     "Wolves": "Wolves",
     "Brentford": "Brentford",
     "Tottenham": "Tottenham",
-    "Brighton": "Brighton"
+    "Brighton": "Brighton",
 }
