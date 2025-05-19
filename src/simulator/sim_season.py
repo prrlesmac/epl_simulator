@@ -1,13 +1,14 @@
 from sim_utils import simulate_matches, calculate_standings
 import pandas as pd
 
+
 def split_and_merge_schedule(schedule, elos):
     """
     Splits the schedule into played and pending matches, and merges Elo ratings
     into the pending matches.
 
-    This function separates matches that have already been played from those that 
-    are still pending (based on the 'played' column). For pending matches, it merges 
+    This function separates matches that have already been played from those that
+    are still pending (based on the 'played' column). For pending matches, it merges
     Elo ratings for both home and away teams based on club names.
 
     Args:
@@ -18,15 +19,14 @@ def split_and_merge_schedule(schedule, elos):
     Returns:
         tuple:
             - schedule_played (pandas.DataFrame): Matches marked as played.
-            - schedule_pending (pandas.DataFrame): Matches not yet played, with added 
+            - schedule_pending (pandas.DataFrame): Matches not yet played, with added
               'elo_home' and 'elo_away' columns representing Elo ratings for each team.
     """
     schedule_played = schedule[schedule["played"] == "Y"]
     schedule_pending = schedule[schedule["played"] == "N"]
 
     schedule_pending = (
-        schedule_pending
-        .merge(elos, how="left", left_on="home", right_on="club")
+        schedule_pending.merge(elos, how="left", left_on="home", right_on="club")
         .merge(elos, how="left", left_on="away", right_on="club")
         .rename(columns={"elo_x": "elo_home", "elo_y": "elo_away"})
         .drop(columns=["club_x", "club_y"])
@@ -34,21 +34,22 @@ def split_and_merge_schedule(schedule, elos):
 
     return schedule_played, schedule_pending
 
+
 def run_simulation(schedule_played, schedule_pending, num_iter=1000, verbose=False):
     """
-    Runs a Monte Carlo simulation of a football season by repeatedly simulating 
+    Runs a Monte Carlo simulation of a football season by repeatedly simulating
     pending matches and calculating final league standings.
 
     Args:
         schedule_played (pandas.DataFrame): DataFrame of already played matches.
-        schedule_pending (pandas.DataFrame): DataFrame of pending matches, ready 
+        schedule_pending (pandas.DataFrame): DataFrame of pending matches, ready
             for simulation (e.g., includes Elo ratings).
         num_iter (int, optional): Number of simulation iterations. Default is 1000.
         verbose (bool, optional): If True, prints iteration numbers. Default is False.
 
     Returns:
         pandas.DataFrame: A DataFrame where each row is a team and each column is
-        a finishing position (e.g., 1, 2, 3, ...) with values representing the 
+        a finishing position (e.g., 1, 2, 3, ...) with values representing the
         proportion of times the team finished in that position across simulations.
     """
     standings_list = []
@@ -59,7 +60,9 @@ def run_simulation(schedule_played, schedule_pending, num_iter=1000, verbose=Fal
 
         # Simulate matches and compute standings
         simulated_pending = simulate_matches(schedule_pending.copy())
-        schedule_final = pd.concat([schedule_played, simulated_pending], ignore_index=True)
+        schedule_final = pd.concat(
+            [schedule_played, simulated_pending], ignore_index=True
+        )
         standings_df = calculate_standings(schedule_final)
         standings_list.append(standings_df)
 
@@ -85,7 +88,7 @@ def run_simulation(schedule_played, schedule_pending, num_iter=1000, verbose=Fal
 
 def aggregate_odds(standings):
     """
-    Adds title, top 4, and relegation odds columns to the standings DataFrame 
+    Adds title, top 4, and relegation odds columns to the standings DataFrame
     and sorts teams by their title odds in descending order.
 
     Args:
@@ -113,10 +116,7 @@ if __name__ == "__main__":
 
     schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
     sim_standings = run_simulation(
-        schedule_played, 
-        schedule_pending, 
-        num_iter=1000,
-        verbose=True
+        schedule_played, schedule_pending, num_iter=1000, verbose=True
     )
 
     sim_standings = aggregate_odds(sim_standings)
