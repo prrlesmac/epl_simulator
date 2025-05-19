@@ -5,7 +5,22 @@ import config
 
 
 def get_elos(url):
-    # Define the API endpoint
+    """
+    Fetches Elo rating data from a CSV URL and returns it as a DataFrame.
+
+    Sends an HTTP GET request to the specified URL, reads the CSV content from the response,
+    and loads it into a Pandas DataFrame.
+
+    Args:
+        url (str): URL pointing to the CSV file containing Elo ratings.
+
+    Returns:
+        pandas.DataFrame: A DataFrame containing Elo rating data if the request is successful.
+        If the request fails, an error message is printed and the return value may be undefined.
+
+    Raises:
+        requests.exceptions.RequestException: If an error occurs during the HTTP request.
+    """
 
     try:
         # Make the GET request
@@ -29,15 +44,30 @@ def get_elos(url):
 
 
 def filter_elos(elos, country, level):
+    """
+    Filters Elo ratings DataFrame by country and competition level.
+
+    Standardizes column names to lowercase, filters the DataFrame based on the given
+    country and level, and returns only the relevant columns.
+
+    Args:
+        elos (pandas.DataFrame): A DataFrame containing Elo ratings with at least
+            'country', 'level', 'club', and 'elo' columns.
+        country (str): The name of the country to filter by.
+        level (int or str): The competition level to filter by.
+
+    Returns:
+        pandas.DataFrame: A filtered DataFrame containing only the 'club' and 'elo' columns
+        for clubs that match the specified country and level.
+    """
     elos.columns = elos.columns.str.lower()
     filtered_elos = elos[(elos["country"] == country) & (elos["level"]) == level]
     filtered_elos = filtered_elos[["club", "elo"]]
+
     return filtered_elos
 
 
-# Example Usage
 if __name__ == "__main__":
-    # Example scores DataFrame
     elos = get_elos("http://api.clubelo.com/2025-04-01")
     epl_elos = filter_elos(elos, "ENG", 1)
     epl_elos["club"] = epl_elos["club"].replace(config.club_name_mapping)

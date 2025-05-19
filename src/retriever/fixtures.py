@@ -5,6 +5,26 @@ import numpy as np
 
 
 def get_fixtures(url):
+    """
+    Fetches and parses a fixture table from a given webpage URL.
+
+    Sends an HTTP GET request to the specified URL, parses the HTML to extract
+    a table of fixtures using BeautifulSoup, and converts the table into a
+    Pandas DataFrame. The function assumes the table has a specific ID
+    (`sched_2024-2025_9_1`) and that the table structure includes a thead and tbody.
+
+    Args:
+        url (str): The URL of the webpage containing the fixture table.
+
+    Returns:
+        pandas.DataFrame: A DataFrame containing the fixture information,
+        with column headers extracted from the table. If the request fails,
+        the function prints an error message and may return an undefined variable.
+
+    Raises:
+        requests.exceptions.RequestException: If the HTTP request fails.
+        AttributeError: If the expected table or structure is not found in the HTML.
+    """
 
     # Send a GET request to fetch the HTML content
     response = requests.get(url)
@@ -42,6 +62,24 @@ def get_fixtures(url):
 
 
 def process_fixtures(fixtures):
+    """
+    Cleans and processes a raw fixtures DataFrame to extract match outcomes.
+
+    Standardizes column names, filters out incomplete rows, splits the score into
+    home and away goals, and marks whether each fixture has been played.
+
+    Args:
+        fixtures (pandas.DataFrame): Raw fixtures DataFrame, typically parsed from HTML,
+        with columns including 'home', 'away', and 'score'.
+
+    Returns:
+        pandas.DataFrame: A cleaned and processed DataFrame with the following columns:
+            - 'home': Home team name
+            - 'away': Away team name
+            - 'home_goals': Goals scored by the home team (as string or NaN)
+            - 'away_goals': Goals scored by the away team (as string or NaN)
+            - 'played': 'Y' if the match has been played, otherwise 'N'
+    """
 
     fixtures.columns = fixtures.columns.str.lower()
     fixtures = fixtures[(fixtures["home"] != "") & (fixtures["away"] != "")]
@@ -60,12 +98,9 @@ def process_fixtures(fixtures):
     return fixtures
 
 
-# Example Usage
 if __name__ == "__main__":
-    # Example scores DataFrame
     fixtures = get_fixtures(
         "https://fbref.com/en/comps/9/schedule/Premier-League-Scores-and-Fixtures"
     )
     fixtures = process_fixtures(fixtures)
-    print(fixtures)
     fixtures.to_csv("data/01_raw/epl_matches.csv")
