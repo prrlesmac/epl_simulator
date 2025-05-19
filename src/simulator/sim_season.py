@@ -39,7 +39,7 @@ def split_and_merge_schedule(schedule, elos):
 def run_simulation(
     schedule_played,
     schedule_pending,
-    num_iter=config.number_of_simulations,
+    num_simulations=1000,
     verbose=False,
 ):
     """
@@ -50,7 +50,7 @@ def run_simulation(
         schedule_played (pandas.DataFrame): DataFrame of already played matches.
         schedule_pending (pandas.DataFrame): DataFrame of pending matches, ready
             for simulation (e.g., includes Elo ratings).
-        num_iter (int, optional): Number of simulation iterations. Default is 1000.
+        num_simulations (int, optional): Number of simulation iterations. Default is 1000.
         verbose (bool, optional): If True, prints iteration numbers. Default is False.
 
     Returns:
@@ -60,9 +60,9 @@ def run_simulation(
     """
     standings_list = []
 
-    for i in range(num_iter):
+    for i in range(num_simulations):
         if verbose:
-            print(f"Simulation {i+1}/{num_iter}")
+            print(f"Simulation {i+1}/{num_simulations}")
 
         # Simulate matches and compute standings
         simulated_pending = simulate_matches(schedule_pending.copy())
@@ -79,7 +79,7 @@ def run_simulation(
         .size()
         .reset_index(name="count")
     )
-    standings_all["count"] = standings_all["count"] / num_iter
+    standings_all["count"] = standings_all["count"] / num_simulations
 
     # Pivot to final probability table
     standings_all = (
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
     schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
     sim_standings = run_simulation(
-        schedule_played, schedule_pending, num_iter=1000, verbose=True
+        schedule_played, schedule_pending, num_simulations=config.number_of_simulations, verbose=True
     )
 
     sim_standings = aggregate_odds(sim_standings)
