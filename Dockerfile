@@ -15,7 +15,7 @@ RUN python setup.py install
 # Run the simulator
 RUN python src/retriever/elos.py
 RUN python src/retriever/fixtures.py
-RUN python src/simulator/simulator.py
+RUN python src/simulator/sim_season.py
 
 # Expose port 8000 (or any other port your FastAPI application listens on)
 EXPOSE 8050
