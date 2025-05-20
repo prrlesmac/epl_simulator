@@ -1,3 +1,6 @@
+to install package locally:
+pip install -e .
+
 to build docker image
 docker build -t epl_simulator .
 
@@ -7,7 +10,7 @@ docker run -d -p 8050:8050 epl_simulator
 to deploy into AWS
 
 ToDos:
-parametrize stuff like output folders, N simulations, etc...
+think of adding non-GD/GF tie-breakers
 use cli to run commands
 output data into a DB or S3 bucket
 create cicd
