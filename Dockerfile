@@ -10,7 +10,7 @@ COPY . .
 # Install any needed dependencies specified in requirements.txt
 RUN echo "Installing dependencies..."
 RUN pip install --no-cache-dir -r requirements.txt
-RUN python setup.py install
+RUN pip install .
 
 # Run the simulator
 RUN python src/retriever/elos.py
