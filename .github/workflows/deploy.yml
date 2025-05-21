@@ -30,14 +30,15 @@ jobs:
           cd /home/${{ secrets.EC2_USER }}/epl_simulator
           git pull origin main
 
-          echo "Building Docker image..."
-          docker build -t ${{ secrets.APP_NAME || 'myapp' }} .
-
           echo "Stopping and removing old container..."
           docker stop ${{ secrets.APP_NAME || 'myapp' }} || true
           docker rm ${{ secrets.APP_NAME || 'myapp' }} || true
 
+          echo "Removing old image"
           docker rmi ${{ secrets.APP_NAME || 'myapp' }} || true
+
+          echo "Building Docker image..."
+          docker build -t ${{ secrets.APP_NAME || 'myapp' }} .
 
           echo "Running new container..."
           docker run -d --name ${{ secrets.APP_NAME || 'myapp' }} -p 8050:8050 ${{ secrets.APP_NAME || 'myapp' }}
