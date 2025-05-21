@@ -1,15 +1,17 @@
-name: Deploy Dash App to EC2 with Docker
+name: Deploy Docker App to AWS EC2
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   deploy:
+    name: Deploy to EC2
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout repo
       uses: actions/checkout@v3
 
     - name: Set up SSH
@@ -19,13 +21,22 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-    - name: Deploy to EC2
+    - name: Deploy via SSH
       run: |
-        ssh ${{ secrets.EC2_HOST }} << EOF
-          cd ${{ secrets.EC2_REPO_DIR }}
+        ssh -i ~/.ssh/id_rsa -p ${{ secrets.EC2_SSH_PORT || 22 }} ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          set -e
+
+          echo "Pulling latest code..."
+          cd /home/${{ secrets.EC2_USER }}/epl_simulator
           git pull origin main
-          docker stop epl_simulator || true
-          docker rm epl_simulator || true
-          docker build -t epl_simulator .
-          docker run -d -p 8050:8050 epl_simulator
+
+          echo "Building Docker image..."
+          docker build -t ${{ secrets.APP_NAME || 'myapp' }} .
+
+          echo "Stopping and removing old container..."
+          docker stop ${{ secrets.APP_NAME || 'myapp' }} || true
+          docker rm ${{ secrets.APP_NAME || 'myapp' }} || true
+
+          echo "Running new container..."
+          docker run -d --name ${{ secrets.APP_NAME || 'myapp' }} -p 8050:8050 ${{ secrets.APP_NAME || 'myapp' }}
         EOF
