@@ -55,7 +55,7 @@ def get_fixtures(url):
         )  # Exclude the first header if it's a placeholder
 
         # Display the DataFrame
-        print(df)
+        print("Fetching fixtures data...")
     else:
         print(f"Failed to fetch the page. Status code: {response.status_code}")
 

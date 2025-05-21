@@ -37,6 +37,8 @@ jobs:
           docker stop ${{ secrets.APP_NAME || 'myapp' }} || true
           docker rm ${{ secrets.APP_NAME || 'myapp' }} || true
 
+          docker rmi ${{ secrets.APP_NAME || 'myapp' }} || true
+
           echo "Running new container..."
           docker run -d --name ${{ secrets.APP_NAME || 'myapp' }} -p 8050:8050 ${{ secrets.APP_NAME || 'myapp' }}
         EOF

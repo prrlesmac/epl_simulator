@@ -11,6 +11,8 @@ to deploy into AWS
 
 ToDos:
 think of adding non-GD/GF tie-breakers
+dont run sims on docker, only app deploy
+run sims using airflow
 use cli to run commands
 output data into a DB or S3 bucket
 create cicd

@@ -33,7 +33,7 @@ def get_elos(url):
             df = pd.read_csv(StringIO(csv_data))
 
             # Display the first few rows of the DataFrame
-            print(df.head())
+            print("Fetching elos...")
         else:
             print(f"Failed to fetch data. Status code: {response.status_code}")
             print("Response:", response.text)

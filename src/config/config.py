@@ -20,7 +20,7 @@ club_name_mapping = {
     "Tottenham": "Tottenham",
     "Brighton": "Brighton",
 }
-number_of_simulations = 10000
+number_of_simulations = 1000
 
 elo_output_file = "data/02_intermediate/current_elo_ratings.csv"
 fixtures_output_file = "data/01_raw/epl_matches.csv"
