@@ -27,7 +27,7 @@ jobs:
           set -e
 
           echo "Pulling latest code..."
-          cd /home/${{ secrets.EC2_USER }}/epl_simulator
+          cd /home/${{ secrets.EC2_USER }}/${{ secrets.APP_NAME || 'myapp' }}
           git pull origin main
 
           echo "Building Docker image..."
