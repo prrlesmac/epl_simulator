@@ -30,6 +30,13 @@ jobs:
           cd /home/${{ secrets.EC2_USER }}/${{ secrets.APP_NAME || 'myapp' }}
           git pull origin main
 
+          echo "Get secrets from env file"
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+
           echo "Building Docker image..."
           docker build -t ${{ secrets.APP_NAME || 'myapp' }} .
 

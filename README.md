@@ -10,6 +10,7 @@ docker run -d -p 8050:8050 epl_simulator
 to deploy into AWS
 
 ToDos:
+Get a static IP address in the Ec2 instance
 think of adding non-GD/GF tie-breakers
 dont run sims on docker, only app deploy
 run sims using airflow

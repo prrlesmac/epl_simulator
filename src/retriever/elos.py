@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 from io import StringIO
 from config import config
+from db import get_postgres_engine
 
 
 def get_elos(url):
@@ -68,7 +69,8 @@ def filter_elos(elos, country, level):
 
 
 if __name__ == "__main__":
+    engine = get_postgres_engine()
     elos = get_elos(config.elo_rating_url)
     epl_elos = filter_elos(elos, "ENG", 1)
     epl_elos["club"] = epl_elos["club"].replace(config.club_name_mapping)
-    epl_elos.to_csv(config.elo_output_file)
+    epl_elos.to_sql('current_elos', engine, if_exists='replace', index=False)
