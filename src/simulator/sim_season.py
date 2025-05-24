@@ -1,6 +1,7 @@
 from sim_utils import simulate_matches, calculate_standings
 import pandas as pd
 from config import config
+from db import db_connect
 
 
 def split_and_merge_schedule(schedule, elos):
@@ -116,15 +117,13 @@ def aggregate_odds(standings):
 
 
 if __name__ == "__main__":
-
-    schedule = pd.read_csv(config.fixtures_output_file)
-    elos = pd.read_csv(config.elo_output_file)
-
+    engine = db_connect.get_postgres_engine()
+    schedule = pd.read_sql("SELECT * FROM fixtures", engine)
+    elos = pd.read_sql("SELECT * FROM current_elos", engine)
     schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
     sim_standings = run_simulation(
         schedule_played, schedule_pending, num_simulations=config.number_of_simulations, verbose=True
     )
 
     sim_standings = aggregate_odds(sim_standings)
-
-    sim_standings.to_csv(config.sim_output_file, index=False)
+    sim_standings.to_sql('sim_standings', engine, if_exists='replace', index=False)

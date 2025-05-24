@@ -3,6 +3,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import numpy as np
 from config import config
+from db import db_connect
 
 
 def get_fixtures(url):
@@ -100,6 +101,8 @@ def process_fixtures(fixtures):
 
 
 if __name__ == "__main__":
+    engine = db_connect.get_postgres_engine()
     fixtures = get_fixtures(config.fixtures_url)
     fixtures = process_fixtures(fixtures)
     fixtures.to_csv(config.fixtures_output_file)
+    fixtures.to_sql('fixtures', engine, if_exists='replace', index=False)

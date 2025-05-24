@@ -3,9 +3,12 @@ from dash import dcc, html
 import dash_table
 import pandas as pd
 from config import config
+from db import db_connect
+
+engine = db_connect.get_postgres_engine()
 
 # Sample DataFrame with Premier League team odds
-df = pd.read_csv(config.sim_output_file)
+df = pd.read_sql("SELECT * FROM sim_standings", engine)
 
 
 # Create the Dash app
