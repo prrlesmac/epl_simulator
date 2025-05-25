@@ -1,4 +1,4 @@
-from sim_utils import simulate_matches, calculate_standings
+from simulator.sim_utils import simulate_matches, calculate_standings
 import pandas as pd
 from config import config
 from db import db_connect
@@ -64,7 +64,6 @@ def run_simulation(
     for i in range(num_simulations):
         if verbose:
             print(f"Simulation {i+1}/{num_simulations}")
-
         # Simulate matches and compute standings
         simulated_pending = simulate_matches(schedule_pending.copy())
         schedule_final = pd.concat(
