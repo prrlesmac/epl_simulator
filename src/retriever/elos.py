@@ -73,4 +73,4 @@ if __name__ == "__main__":
     elos = get_elos(config.elo_rating_url)
     epl_elos = filter_elos(elos, "ENG", 1)
     epl_elos["club"] = epl_elos["club"].replace(config.club_name_mapping)
-    epl_elos.to_sql('current_elos', engine, if_exists='replace', index=False)
+    epl_elos.to_sql("current_elos", engine, if_exists="replace", index=False)

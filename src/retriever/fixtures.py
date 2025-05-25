@@ -87,9 +87,9 @@ def process_fixtures(fixtures):
     fixtures = fixtures[(fixtures["home"] != "") & (fixtures["away"] != "")]
     fixtures["score"] = fixtures["score"].replace("", None)
     # Split the 'score' column into 'home_goals' and 'away_goals'
-    fixtures[["home_goals", "away_goals"]] = fixtures["score"].str.split(
-        "–", expand=True
-    ).astype("Int64")
+    fixtures[["home_goals", "away_goals"]] = (
+        fixtures["score"].str.split("–", expand=True).astype("Int64")
+    )
     fixtures["played"] = np.where(
         (fixtures["home_goals"].isnull()) | (fixtures["away_goals"].isnull()),
         "N",
@@ -104,4 +104,4 @@ if __name__ == "__main__":
     engine = db_connect.get_postgres_engine()
     fixtures = get_fixtures(config.fixtures_url)
     fixtures = process_fixtures(fixtures)
-    fixtures.to_sql('fixtures', engine, if_exists='replace', index=False)
+    fixtures.to_sql("fixtures", engine, if_exists="replace", index=False)

@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
+
 def get_postgres_engine():
     """Load DB credentials from .env and return a SQLAlchemy engine."""
     load_dotenv()

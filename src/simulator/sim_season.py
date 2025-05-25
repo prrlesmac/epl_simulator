@@ -121,8 +121,11 @@ if __name__ == "__main__":
     elos = pd.read_sql("SELECT * FROM current_elos", engine)
     schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
     sim_standings = run_simulation(
-        schedule_played, schedule_pending, num_simulations=config.number_of_simulations, verbose=True
+        schedule_played,
+        schedule_pending,
+        num_simulations=config.number_of_simulations,
+        verbose=True,
     )
 
     sim_standings = aggregate_odds(sim_standings)
-    sim_standings.to_sql('sim_standings', engine, if_exists='replace', index=False)
+    sim_standings.to_sql("sim_standings", engine, if_exists="replace", index=False)
