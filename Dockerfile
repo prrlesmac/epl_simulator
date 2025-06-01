@@ -1,29 +1,33 @@
-# Use an official Python runtime as a parent image
 FROM python:3.10.9
 
-# Install cron
+# Install cron and any other dependencies
 RUN apt-get update && apt-get install -y cron
 
-# Set the working directory in the container
+# Set working directory
 WORKDIR /
 
-# Copy the current directory contents into the container at /usr/src/app
+# Copy app code
 COPY . .
 
-# Add crontab file
-COPY crontab /etc/cron.d/simulator-cron
-RUN chmod 0644 /etc/cron.d/simulator-cron
-RUN crontab /etc/cron.d/simulator-cron
-
-# Install any needed dependencies specified in requirements.txt
-RUN echo "Installing dependencies..."
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install .
 
-RUN touch /var/log/cron.log
+# Create log files and set permissions
+RUN mkdir -p /var/log
+RUN touch /var/log/simulator.log
+RUN chmod 666 /var/log/simulator.log
 
-# Expose port 8000 (or any other port your FastAPI application listens on)
+# Copy the cron job file into the right place
+COPY crontab /etc/cron.d/simulator-cron
+RUN chmod 0644 /etc/cron.d/simulator-cron
+# No need to run `crontab` command here for files in /etc/cron.d/
+
+# Expose the port your app uses
 EXPOSE 8050
 
-# Command to run the FastAPI application using uvicorn with auto-reload
-CMD cron && python src/app/app.py
+# Use a shell script to start cron in foreground and your app concurrently
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]
