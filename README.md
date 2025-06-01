@@ -10,14 +10,14 @@ docker run -d -p 8050:8050 epl_simulator
 to deploy into AWS
 
 ToDos:
-Get a static IP address in the Ec2 instance
-think of adding non-GD/GF tie-breakers
 dont run sims on docker, only app deploy
 run sims using airflow
-use cli to run commands
-output data into a DB or S3 bucket
-create cicd
-create job for refreshing data (hourly?)
-make a decent front-end
 write tests
 write exceptions and raise errors
+do a good readme with instructions for deploying, setting up a db, secrets to setup, etc...
+Get a static IP address in the Ec2 instance
+parametrize table name outputs in SQL
+think of adding non-GD/GF tie-breakers
+use cli to run commands
+create job for refreshing data (hourly?)
+make a decent front-end
