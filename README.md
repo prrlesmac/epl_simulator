@@ -11,6 +11,7 @@ to deploy into AWS
 
 ToDos:
 move webapp to another repo and container
+add update dates to tables in sql db
 dont run sims on docker, only app deploy
 run sims using cron
 improve logging of jobs
