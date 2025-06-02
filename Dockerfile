@@ -19,6 +19,6 @@ COPY crontab /etc/cron.d/simulator-cron
 # Give execution rights on the cron job
 RUN chmod 0644 /etc/cron.d/simulator-cron
 # Create the log file to be able to run tail
-RUN /usr/bin/crontab /etc/cron.d/crontab
+RUN /usr/bin/crontab /etc/cron.d/simulator-cron
 
 CMD ["cron", "-f"]
