@@ -11,7 +11,8 @@ to deploy into AWS
 
 ToDos:
 dont run sims on docker, only app deploy
-run sims using airflow
+run sims using cron
+improve logging of jobs
 write tests
 write exceptions and raise errors
 do a good readme with instructions for deploying, setting up a db, secrets to setup, etc...

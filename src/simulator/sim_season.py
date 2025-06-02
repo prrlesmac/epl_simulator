@@ -60,6 +60,7 @@ def run_simulation(
         proportion of times the team finished in that position across simulations.
     """
     standings_list = []
+    print(f"Run simulations...")
 
     for i in range(num_simulations):
         if verbose:
@@ -124,8 +125,9 @@ if __name__ == "__main__":
         schedule_played,
         schedule_pending,
         num_simulations=config.number_of_simulations,
-        verbose=True,
+        verbose=False,
     )
 
     sim_standings = aggregate_odds(sim_standings)
     sim_standings.to_sql("sim_standings", engine, if_exists="replace", index=False)
+    print(f"Simulations saved to db")
