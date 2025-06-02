@@ -14,11 +14,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install .
 
 # Add crontab file in the cron directory
-ADD crontab /etc/cron.d/simulator-cron
+COPY crontab /etc/cron.d/simulator-cron
 
 # Give execution rights on the cron job
 RUN chmod 0644 /etc/cron.d/simulator-cron
 # Create the log file to be able to run tail
-RUN touch /var/log/cron.log
+RUN /usr/bin/crontab /etc/cron.d/crontab
 
-CMD cron && tail -f /var/log/cron.log
+CMD ["cron", "-f"]
