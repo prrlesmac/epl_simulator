@@ -13,21 +13,12 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install .
 
-# Create log files and set permissions
-RUN mkdir -p /var/log
-RUN touch /var/log/simulator.log
-RUN chmod 666 /var/log/simulator.log
+# Add crontab file in the cron directory
+ADD crontab /etc/cron.d/simulator-cron
 
-# Copy the cron job file into the right place
-COPY crontab /etc/cron.d/simulator-cron
+# Give execution rights on the cron job
 RUN chmod 0644 /etc/cron.d/simulator-cron
-# No need to run `crontab` command here for files in /etc/cron.d/
+# Create the log file to be able to run tail
+RUN touch /var/log/cron.log
 
-# Expose the port your app uses
-EXPOSE 8050
-
-# Use a shell script to start cron in foreground and your app concurrently
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-CMD ["/entrypoint.sh"]
+CMD cron && tail -f /var/log/cron.log
