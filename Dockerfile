@@ -21,8 +21,4 @@ RUN chmod 0644 /etc/cron.d/simulator-cron
 # Create the log file to be able to run tail
 RUN /usr/bin/crontab /etc/cron.d/simulator-cron
 
-# Copy wrapper script
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-CMD ["/entrypoint.sh"]
+CMD ["cron", "-f"]

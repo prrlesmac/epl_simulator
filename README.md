@@ -10,6 +10,7 @@ docker run -d -p 8050:8050 epl_simulator
 to deploy into AWS
 
 ToDos:
+move webapp to another repo and container
 dont run sims on docker, only app deploy
 run sims using cron
 improve logging of jobs
