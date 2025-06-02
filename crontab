@@ -5,4 +5,4 @@
 # │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday=0)
 # │ │ │ │ │
 # │ │ │ │ │
-* * * * * root /usr/local/bin/python /src/retriever/elos.py && python /src/retriever/fixtures.py && python /src/simulator/sim_season.py >> /var/log/simulator.log 2>&1
+* * * * * root /usr/local/bin/python /src/retriever/elos.py && python /src/retriever/fixtures.py && python /src/simulator/sim_season.py >> /var/log/cron.log 2>&1
