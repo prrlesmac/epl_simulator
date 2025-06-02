@@ -1,2 +1,3 @@
-* * * * * root /usr/local/bin/python /src/retriever/elos.py && python /src/retriever/fixtures.py && python /src/simulator/sim_season.py >> /var/log/cron.log 2>&1
+#* * * * * root /usr/local/bin/python /src/retriever/elos.py && /usr/local/bin/python /src/retriever/fixtures.py && /usr/local/bin/python /src/simulator/sim_season.py >> /var/log/cron.log 2>&1
+* * * * * root /usr/local/bin/python /src/retriever/elos.py >> /var/log/cron.log 2>&1
 #* * * * * root echo "Hello world" >> /var/log/cron.log 2>&1
