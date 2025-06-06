@@ -1,3 +1,5 @@
+import datetime
+
 club_name_mapping = {
     "Southampton": "Southampton",
     "Arsenal": "Arsenal",
@@ -20,13 +22,14 @@ club_name_mapping = {
     "Tottenham": "Tottenham",
     "Brighton": "Brighton",
 }
-number_of_simulations = 1000
+number_of_simulations = 10000
 
-elo_output_file = "data/02_intermediate/current_elo_ratings.csv"
-fixtures_output_file = "data/01_raw/epl_matches.csv"
-sim_output_file = "data/03_output/season_standings_sim.csv"
+elo_table = "current_elos"
+fixtures_table = "fixtures"
+sim_output_table = "sim_standings"
 
-elo_rating_url = "http://api.clubelo.com/2025-04-01"
+elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d") 
+elo_rating_url = f"http://api.clubelo.com/{elo_date}"
 fixtures_url = (
     "https://fbref.com/en/comps/9/schedule/Premier-League-Scores-and-Fixtures"
 )

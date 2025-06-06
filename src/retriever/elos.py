@@ -3,6 +3,7 @@ import pandas as pd
 from io import StringIO
 from config import config
 from db import db_connect
+from datetime import datetime
 
 
 def get_elos(url):
@@ -73,4 +74,5 @@ if __name__ == "__main__":
     elos = get_elos(config.elo_rating_url)
     epl_elos = filter_elos(elos, "ENG", 1)
     epl_elos["club"] = epl_elos["club"].replace(config.club_name_mapping)
+    epl_elos["updated_at"] = datetime.now()
     epl_elos.to_sql("current_elos", engine, if_exists="replace", index=False)

@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import numpy as np
 from config import config
 from db import db_connect
-
+from datetime import datetime
 
 def get_fixtures(url):
     """
@@ -104,4 +104,5 @@ if __name__ == "__main__":
     engine = db_connect.get_postgres_engine()
     fixtures = get_fixtures(config.fixtures_url)
     fixtures = process_fixtures(fixtures)
+    fixtures["updated_at"] = datetime.now()
     fixtures.to_sql("fixtures", engine, if_exists="replace", index=False)
