@@ -2,8 +2,6 @@ requests
 pandas
 bs4
 numpy
-dash
-dash-table
 sqlalchemy
 psycopg
 python-dotenv
