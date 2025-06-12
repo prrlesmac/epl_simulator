@@ -7,9 +7,12 @@ docker build -t epl_simulator .
 to run the container
 docker run -d -p 8050:8050 epl_simulator
 
-to deploy into AWS
+to run psycopg in windows make sure to install psycopg-binary package:
+pip install psycopg-binary
 
 ToDos:
+fix warning messages
+change FE to make sure it can display all 5 leagues
 open the code to all top 5 leagues
 think of adding non-GD/GF tie-breakers
 give an option to run the season from start (ignore all played games)

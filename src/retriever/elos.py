@@ -63,16 +63,20 @@ def filter_elos(elos, country, level):
         for clubs that match the specified country and level.
     """
     elos.columns = elos.columns.str.lower()
-    filtered_elos = elos[(elos["country"] == country) & (elos["level"]) == level]
-    filtered_elos = filtered_elos[["club", "elo"]]
+    filtered_elos = elos.copy()
+    if country is not None:
+        filtered_elos = filtered_elos[(filtered_elos["country"] == country)]
+    if level is not None:
+        filtered_elos = filtered_elos[(filtered_elos["level"]) == level]
+    filtered_elos = filtered_elos[["club", "country", "level", "elo"]]
 
     return filtered_elos
-
 
 if __name__ == "__main__":
     engine = db_connect.get_postgres_engine()
     elos = get_elos(config.elo_rating_url)
-    epl_elos = filter_elos(elos, "ENG", 1)
-    epl_elos["club"] = epl_elos["club"].replace(config.club_name_mapping)
-    epl_elos["updated_at"] = datetime.now()
-    epl_elos.to_sql("current_elos", engine, if_exists="replace", index=False)
+    elos = filter_elos(elos, None, None)
+    elos["club"] = elos["club"].replace(config.club_name_mapping)
+    elos["updated_at"] = datetime.now()
+    elos.to_sql("current_elos", engine, if_exists="replace", index=False)
+    print("Elos updated...")

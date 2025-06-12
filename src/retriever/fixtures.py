@@ -5,8 +5,9 @@ import numpy as np
 from config import config
 from db import db_connect
 from datetime import datetime
+import time
 
-def get_fixtures(url):
+def get_fixtures(url, table_id):
     """
     Fetches and parses a fixture table from a given webpage URL.
 
@@ -17,6 +18,7 @@ def get_fixtures(url):
 
     Args:
         url (str): The URL of the webpage containing the fixture table.
+        table_id (str): table ID for geting the fixtures using beautiful soup
 
     Returns:
         pandas.DataFrame: A DataFrame containing the fixture information,
@@ -28,6 +30,7 @@ def get_fixtures(url):
         AttributeError: If the expected table or structure is not found in the HTML.
     """
 
+    time.sleep(5)
     # Send a GET request to fetch the HTML content
     response = requests.get(url)
 
@@ -38,7 +41,7 @@ def get_fixtures(url):
 
         # Find the table containing the fixtures
         table = soup.find(
-            "table", {"id": "sched_2024-2025_9_1"}
+            "table", {"id": table_id}
         )  # Table ID may change, inspect the page source to confirm
 
         # Extract table headers
@@ -102,7 +105,14 @@ def process_fixtures(fixtures):
 
 if __name__ == "__main__":
     engine = db_connect.get_postgres_engine()
-    fixtures = get_fixtures(config.fixtures_url)
-    fixtures = process_fixtures(fixtures)
-    fixtures["updated_at"] = datetime.now()
-    fixtures.to_sql("fixtures", engine, if_exists="replace", index=False)
+    fixtures_all = []
+    for k,v in config.fixtures_config.items():
+        print("Getting fixtures for: " ,k)
+        fixtures = get_fixtures(v["fixtures_url"], v["table_id"])
+        fixtures = process_fixtures(fixtures)
+        fixtures["country"] = k
+        fixtures["updated_at"] = datetime.now()
+        fixtures_all.append(fixtures)
+    fixtures_all = pd.concat(fixtures_all)
+    fixtures_all.to_sql("fixtures", engine, if_exists="replace", index=False)
+    print("Fixtures updated")

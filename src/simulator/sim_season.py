@@ -111,24 +111,29 @@ def aggregate_odds(standings):
     """
     standings["title_odds"] = standings["1"]
     standings["top_4_odds"] = standings[["1", "2", "3", "4"]].sum(axis=1)
-    standings["relegation_odds"] = standings[["18", "19", "20"]].sum(axis=1)
+    num_of_teams = len(standings)
+    relegated_teams = [str(i) for i in range(num_of_teams - 2, num_of_teams + 1)]
+    standings["relegation_odds"] = standings[relegated_teams].sum(axis=1)
     standings = standings.sort_values(by="title_odds", ascending=False)
     return standings
 
 
 if __name__ == "__main__":
     engine = db_connect.get_postgres_engine()
-    schedule = pd.read_sql(f"SELECT * FROM {config.fixtures_table}", engine)
-    elos = pd.read_sql(f"SELECT * FROM {config.elo_table}", engine)
-    schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
-    sim_standings = run_simulation(
-        schedule_played,
-        schedule_pending,
-        num_simulations=config.number_of_simulations,
-        verbose=False,
-    )
+    for league in config.leagues_to_sim:
+        print("Simulating: ", league)
+        schedule = pd.read_sql(f"SELECT * FROM {config.fixtures_table} WHERE country = '{league}'", engine)
+        elos = pd.read_sql(f"SELECT * FROM {config.elo_table} WHERE country = '{league}'", engine)
+        schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
+        sim_standings = run_simulation(
+            schedule_played,
+            schedule_pending,
+            num_simulations=config.number_of_simulations,
+            verbose=False,
+        )
 
-    sim_standings = aggregate_odds(sim_standings)
-    sim_standings["updated_at"] = datetime.now()
+        sim_standings = aggregate_odds(sim_standings)
+        sim_standings["country"] = league
+        sim_standings["updated_at"] = datetime.now()
     sim_standings.to_sql(f"{config.sim_output_table}", engine, if_exists="replace", index=False)
     print(f"Simulations saved to db")
