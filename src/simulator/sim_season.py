@@ -120,6 +120,7 @@ def aggregate_odds(standings):
 
 if __name__ == "__main__":
     engine = db_connect.get_postgres_engine()
+    sim_standings_all = []
     for league in config.leagues_to_sim:
         print("Simulating: ", league)
         schedule = pd.read_sql(f"SELECT * FROM {config.fixtures_table} WHERE country = '{league}'", engine)
@@ -135,5 +136,8 @@ if __name__ == "__main__":
         sim_standings = aggregate_odds(sim_standings)
         sim_standings["country"] = league
         sim_standings["updated_at"] = datetime.now()
-    sim_standings.to_sql(f"{config.sim_output_table}", engine, if_exists="replace", index=False)
+        sim_standings_all.append(sim_standings)
+
+    sim_standings_all = pd.concat(sim_standings_all)
+    sim_standings_all.to_sql(f"{config.sim_output_table}", engine, if_exists="replace", index=False)
     print(f"Simulations saved to db")
