@@ -1,4 +1,4 @@
-from simulator.sim_utils import simulate_matches, calculate_standings
+from simulator.sim_utils import simulate_matches, get_standings
 import pandas as pd
 from config import config
 from db import db_connect
@@ -40,6 +40,7 @@ def split_and_merge_schedule(schedule, elos):
 def run_simulation(
     schedule_played,
     schedule_pending,
+    classif_rules,
     num_simulations=1000,
     verbose=False,
 ):
@@ -51,6 +52,7 @@ def run_simulation(
         schedule_played (pandas.DataFrame): DataFrame of already played matches.
         schedule_pending (pandas.DataFrame): DataFrame of pending matches, ready
             for simulation (e.g., includes Elo ratings).
+        classification_rules (list): successive order of the criteria to apply to classify positions
         num_simulations (int, optional): Number of simulation iterations. Default is 1000.
         verbose (bool, optional): If True, prints iteration numbers. Default is False.
 
@@ -70,7 +72,7 @@ def run_simulation(
         schedule_final = pd.concat(
             [schedule_played, simulated_pending], ignore_index=True
         )
-        standings_df = calculate_standings(schedule_final)
+        standings_df = get_standings(schedule_final, classif_rules)
         standings_list.append(standings_df)
 
     # Aggregate position frequencies
@@ -125,12 +127,14 @@ if __name__ == "__main__":
         print("Simulating: ", league)
         schedule = pd.read_sql(f"SELECT * FROM {config.fixtures_table} WHERE country = '{league}'", engine)
         elos = pd.read_sql(f"SELECT * FROM {config.elo_table} WHERE country = '{league}'", engine)
+        classif_rules = config.classification[league]
         schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
         sim_standings = run_simulation(
             schedule_played,
             schedule_pending,
+            classif_rules,
             num_simulations=config.number_of_simulations,
-            verbose=False,
+            verbose=True,
         )
 
         sim_standings = aggregate_odds(sim_standings)

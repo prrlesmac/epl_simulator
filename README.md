@@ -11,10 +11,13 @@ to run psycopg in windows make sure to install psycopg-binary package:
 pip install psycopg-binary
 
 ToDos:
+do tiebreaker for h2h of multiple ones (tiebreaker of 3 then of 2)
+add playoff game for tiebreaker options
+do good test of ranking and tiebreaker with diff scenarios
+do relegation rules differently per league
+change db pass and user
 fix warning messages
-change FE to make sure it can display all 5 leagues
-open the code to all top 5 leagues
-think of adding non-GD/GF tie-breakers
+parallelize the 10000 sims across nodes
 give an option to run the season from start (ignore all played games)
 improve logging of jobs
 write tests
@@ -22,4 +25,43 @@ write exceptions and raise errors
 do a good readme with instructions for deploying, setting up a db, secrets to setup, etc...
 Get a static IP address in the Ec2 instance
 use cli to run commands
-make a decent front-end
+
+tiebreakers:
+ENG:
+Goal diff
+Goals scored
+Points in head-to-head
+Away goals in head-to-head
+Playoff
+
+ESP:
+h2h pts
+h2h goal diff
+goal diff
+goal scored
+fair play
+
+ITA:
+tiebreaker for champiom and 3rd relegated
+h2h points
+h2h goal diff
+goal diff
+goal scored
+
+GER:
+Goal diff
+Goal scored
+h2h results
+h2h away goals
+away goals
+playoff
+
+FRA:
+Goal diff
+h2h points
+h2h goal diff
+h2h goal scored
+h2h away goals
+goals scored
+away goals
+fair ply

@@ -24,6 +24,7 @@ club_name_mapping = {
     "Brentford": "Brentford",
     "Tottenham": "Tottenham",
     "Brighton": "Brighton",
+
     # ESP
     "Barcelona": "Barcelona",
     "Real Madrid": "Real Madrid",
@@ -45,6 +46,7 @@ club_name_mapping = {
     "Leganes": "Leganés",
     "Las Palmas": "Las Palmas",
     "Valladolid": "Valladolid",
+
     ## ITA
     "Inter": "Inter",
     "Atalanta": "Atalanta",
@@ -66,6 +68,7 @@ club_name_mapping = {
     "Empoli": "Empoli",
     "Venezia": "Venezia",
     "Monza": "Monza",
+
     ## GER
     "Bayern": "Bayern Munich",
     "Leverkusen": "Leverkusen",
@@ -85,6 +88,7 @@ club_name_mapping = {
     "Heidenheim": "Heidenheim",
     "Bochum": "Bochum",
     "Holstein": "Holstein Kiel",
+
     ## FRA
     "Paris SG": "Paris S-G",
     "Lille": "Lille",
@@ -105,7 +109,7 @@ club_name_mapping = {
     "Saint-Etienne": "Saint-Étienne",
     "Montpellier": "Montpellier",
 }
-number_of_simulations = 10000
+number_of_simulations = 1000
 
 elo_table = "current_elos"
 fixtures_table = "fixtures"
@@ -137,3 +141,46 @@ fixtures_config = {
 }
 
 leagues_to_sim = list(fixtures_config.keys())
+
+classification = {
+    "ENG": [
+        "points",
+        "goal_difference",
+        "goals_for",
+        "h2h_points",
+        "h2h_away_goals_for"
+    ],
+    "ESP": [
+        "points",
+        "h2h_points",
+        "h2h_goal_difference",
+        "goal_difference",
+        "goals_for"
+    ],
+    "ITA": [
+        "points",
+        "h2h_points",
+        "h2h_goal_difference",
+        "goal_difference",
+        "goals_for",
+    ],
+    "GER": [
+        "points",
+        "goal_difference",
+        "goals_for",
+        "h2h_points",
+        "h2h_goal_difference",
+        "h2h_away_goals_for",
+        "away_goals_for"
+    ],
+    "FRA": [
+        "points",
+        "goal_difference",
+        "h2h_points",
+        "h2h_goal_difference",
+        "h2h_goals_for",
+        "h2h_away_goals_for",
+        "goals_for",
+        "away_goals_for"
+    ],
+}
