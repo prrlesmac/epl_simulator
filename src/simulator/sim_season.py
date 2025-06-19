@@ -134,7 +134,7 @@ if __name__ == "__main__":
             schedule_pending,
             classif_rules,
             num_simulations=config.number_of_simulations,
-            verbose=True,
+            verbose=False,
         )
 
         sim_standings = aggregate_odds(sim_standings)

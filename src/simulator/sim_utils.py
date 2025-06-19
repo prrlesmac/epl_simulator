@@ -58,6 +58,26 @@ def simulate_match(proba):
     return (GH, GA)
 
 
+def simulate_playoff(proba):
+    """
+    Simulates the outcome of a playoff football match based on a win probability.
+
+    Given the probability of team 1 winning, this function simulates a playoff match
+    where one of the two teams must win
+
+    Args:
+        proba (float): The probability of team 1 (home team) winning,
+                       should be between 0 and 1.
+
+    Returns:
+        str: 1 if team 1 wins, 2 if team 2 wins
+    """
+    random_sim = np.random.rand()
+    result = 1 if random_sim <= proba else 2
+
+    return result
+
+
 def simulate_matches(matches_df):
     """
     Simulate matches and determine winners.
@@ -118,6 +138,43 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
     # add h2h prefix to metrics
     standings_tied.columns = [f'h2h_{col}' if col != 'team' else col for col in standings_tied.columns]
     standings_tied = standings_tied[['team', rule]]
+    return standings_tied
+
+
+def apply_playoff_tiebreaker(matches_df, tied_teams):
+
+    if len(tied_teams) > 2:
+        print('more than 2 tied')
+        standings_untied = get_standings(
+            matches_df,
+            classif_rules=["h2h_points","h2h_goal_difference"]
+        )
+        playoff_teams = standings_untied['team'].head(2).tolist()
+        matches_df = matches_df[
+            (matches_df['home'].isin(playoff_teams))
+            & (matches_df['away'].isin(playoff_teams))
+        ]
+
+        standings_no_playoff = standings_untied.iloc[2:].reset_index()
+        # assign starting frm -1 to rank them at the bottom
+        #the top two teams will be 1 and 0 based on the playoff sim
+        standings_no_playoff['playoff'] = -1 - standings_no_playoff.index
+
+    # matches_df has the tied teams and their elos
+    elo_home = matches_df.iloc[0]["elo_home"]
+    elo_away = matches_df.iloc[0]["elo_away"]
+    we = calculate_win_probability(elo_home, elo_away)
+    result = simulate_playoff(we)
+    
+    standings_playoff = pd.DataFrame(
+        {
+            'team': [matches_df.iloc[0]["home"], matches_df.iloc[0]["away"]],
+            'playoff': [1 ,0] if result == 1 else [0, 1]
+        }
+    )
+
+    standings_tied = pd.concat([standings_playoff, standings_no_playoff])
+
     return standings_tied
 
 
@@ -231,7 +288,9 @@ def get_standings(matches_df, classif_rules):
     # Sort by classification rules
     for i, rule in enumerate(classif_rules):
         is_h2h_rule = rule.startswith("h2h")
-        if is_h2h_rule:
+        is_playoff = rule.startswith("playoff")
+
+        if is_h2h_rule or is_playoff:
             # tiebreakers previous to current h2h one
             tb_applied = classif_rules[:i]
             # apply rank function to see who is tied
@@ -241,18 +300,26 @@ def get_standings(matches_df, classif_rules):
             # find tied teams
             pos_counts = standings['pos'].value_counts()
             ties = pos_counts[pos_counts >= 2]
+            if is_playoff:
+                ties = ties[ties.index.isin([1,18])]
+
             if len(ties) > 0:
                 all_tied = []
                 for tied_pos in ties.index.tolist():
                     subset_of_tied = standings[standings['pos'] == tied_pos]
                     tied_teams = subset_of_tied["team"].tolist()
-                    ## apply h2h tiebreaker
-                    substed_tied_standings = apply_h2h_tiebreaker(matches_df, tied_teams, rule)
+
+                    if is_h2h_rule:
+                        substed_tied_standings = apply_h2h_tiebreaker(matches_df, tied_teams, rule)
+                    elif is_playoff:
+                        substed_tied_standings = apply_playoff_tiebreaker(matches_df, tied_teams, rule)
+
                     subset_of_tied = (
                         subset_of_tied
                         .merge(substed_tied_standings, on='team', how='left')
                     )
                     all_tied.append(subset_of_tied)
+
                 all_tied = pd.concat(all_tied)
                 standings = standings.merge(
                     all_tied[["team",rule]],

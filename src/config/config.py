@@ -159,6 +159,7 @@ classification = {
     ],
     "ITA": [
         "points",
+        "playoff",
         "h2h_points",
         "h2h_goal_difference",
         "goal_difference",

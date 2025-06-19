@@ -11,8 +11,8 @@ to run psycopg in windows make sure to install psycopg-binary package:
 pip install psycopg-binary
 
 ToDos:
+implement homefield advantage in win prba
 do tiebreaker for h2h of multiple ones (tiebreaker of 3 then of 2)
-add playoff game for tiebreaker options
 do good test of ranking and tiebreaker with diff scenarios
 do relegation rules differently per league
 change db pass and user
