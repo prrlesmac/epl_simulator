@@ -11,11 +11,10 @@ to run psycopg in windows make sure to install psycopg-binary package:
 pip install psycopg-binary
 
 ToDos:
+handle data types in sql db (create tables or specofy schema in df command)
 implement homefield advantage in win prba
 do tiebreaker for h2h of multiple ones (tiebreaker of 3 then of 2)
 do good test of ranking and tiebreaker with diff scenarios
-do relegation rules differently per league
-change db pass and user
 fix warning messages
 parallelize the 10000 sims across nodes
 give an option to run the season from start (ignore all played games)
@@ -65,3 +64,11 @@ h2h away goals
 goals scored
 away goals
 fair ply
+
+
+relegation
+ENG: bottom 3
+ESP: bottom 3
+ITA: bottom 3
+GER: bottom 2, 16th to po
+FRA: bottom 2, 16th to po

@@ -95,7 +95,7 @@ def run_simulation(
     return standings_all
 
 
-def aggregate_odds(standings):
+def aggregate_odds(standings, relegation_rules):
     """
     Adds title, top 4, and relegation odds columns to the standings DataFrame
     and sorts teams by their title odds in descending order.
@@ -103,6 +103,9 @@ def aggregate_odds(standings):
     Args:
         standings (pandas.DataFrame): DataFrame with team standings probabilities,
             with columns representing finishing positions as strings (e.g., "1", "2", ..., "20").
+        relegation_rules (dict): dict containing the relegation rules for the league, with the following keys:
+            - "direct": positions with direct relegation, for example [18,19,20]
+            - "playoff": positions going into relegation palyoff, for example [16]
 
     Returns:
         pandas.DataFrame: The same DataFrame with three new columns added:
@@ -113,10 +116,15 @@ def aggregate_odds(standings):
     """
     standings["title_odds"] = standings["1"]
     standings["top_4_odds"] = standings[["1", "2", "3", "4"]].sum(axis=1)
-    num_of_teams = len(standings)
-    relegated_teams = [str(i) for i in range(num_of_teams - 2, num_of_teams + 1)]
-    standings["relegation_odds"] = standings[relegated_teams].sum(axis=1)
+    direct_relegation = [str(i) for i in relegation_rules['direct']]
+    standings["direct_relegation_odds"] = standings[direct_relegation].sum(axis=1)
+    if relegation_rules['playoff'] is not None:
+        playoff_relegation = [str(i) for i in relegation_rules['playoff']]
+        standings["relegation_playoff_odds"] = standings[playoff_relegation].sum(axis=1)
+    else:
+        standings["relegation_playoff_odds"] = 0
     standings = standings.sort_values(by="title_odds", ascending=False)
+
     return standings
 
 
@@ -128,6 +136,7 @@ if __name__ == "__main__":
         schedule = pd.read_sql(f"SELECT * FROM {config.fixtures_table} WHERE country = '{league}'", engine)
         elos = pd.read_sql(f"SELECT * FROM {config.elo_table} WHERE country = '{league}'", engine)
         classif_rules = config.classification[league]
+        relegation_rules = config.relegation[league]
         schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
         sim_standings = run_simulation(
             schedule_played,
@@ -137,7 +146,7 @@ if __name__ == "__main__":
             verbose=False,
         )
 
-        sim_standings = aggregate_odds(sim_standings)
+        sim_standings = aggregate_odds(sim_standings, relegation_rules)
         sim_standings["country"] = league
         sim_standings["updated_at"] = datetime.now()
         sim_standings_all.append(sim_standings)

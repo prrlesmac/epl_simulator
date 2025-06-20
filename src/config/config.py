@@ -185,3 +185,26 @@ classification = {
         "away_goals_for"
     ],
 }
+
+relegation = {
+    "ENG": {
+        "direct": [18, 19, 20],
+        "playoff": None
+    },
+    "ESP": {
+        "direct": [18, 19, 20],
+        "playoff": None
+    },
+    "ITA": {
+        "direct": [18, 19, 20],
+        "playoff": None
+    },
+    "GER": {
+        "direct": [17, 18],
+        "playoff": [16]
+    },
+    "FRA": {
+        "direct": [17, 18],
+        "playoff": [16]
+    },
+}
