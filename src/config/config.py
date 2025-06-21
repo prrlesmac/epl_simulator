@@ -109,7 +109,7 @@ club_name_mapping = {
     "Saint-Etienne": "Saint-Étienne",
     "Montpellier": "Montpellier",
 }
-number_of_simulations = 1000
+number_of_simulations = 10000
 
 elo_table = "current_elos"
 fixtures_table = "fixtures"

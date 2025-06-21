@@ -3,6 +3,8 @@ import pandas as pd
 from config import config
 from db import db_connect
 from datetime import datetime
+import time
+from multiprocessing import Pool, cpu_count
 
 def split_and_merge_schedule(schedule, elos):
     """
@@ -35,6 +37,43 @@ def split_and_merge_schedule(schedule, elos):
     )
 
     return schedule_played, schedule_pending
+
+
+def single_simulation(schedule_played, schedule_pending, classif_rules):
+    simulated_pending = simulate_matches(schedule_pending.copy())
+    schedule_final = pd.concat(
+        [schedule_played, simulated_pending], ignore_index=True
+    )
+    standings_df = get_standings(schedule_final, classif_rules)
+
+    return standings_df
+
+
+def run_simulation_parallel(schedule_played, schedule_pending, classif_rules, num_simulations=1000):
+    print(f"Running {num_simulations} simulations using multiprocessing...")
+
+    with Pool(processes=cpu_count()) as pool:
+        args = [(schedule_played, schedule_pending, classif_rules)] * num_simulations
+        standings_list = pool.starmap(single_simulation, args)
+
+    # Aggregate position frequencies
+    standings_all = (
+        pd.concat(standings_list)
+        .groupby(["team", "pos"])
+        .size()
+        .reset_index(name="count")
+    )
+    standings_all["count"] = standings_all["count"] / num_simulations
+
+    # Pivot to final probability table
+    standings_all = (
+        standings_all.pivot(index="team", columns="pos", values="count")
+        .reset_index()
+        .fillna(0)
+    )
+    standings_all.columns = standings_all.columns.astype(str)
+
+    return standings_all
 
 
 def run_simulation(
@@ -129,6 +168,7 @@ def aggregate_odds(standings, relegation_rules):
 
 
 if __name__ == "__main__":
+    start_time = time.time()
     engine = db_connect.get_postgres_engine()
     sim_standings_all = []
     for league in config.leagues_to_sim:
@@ -138,6 +178,14 @@ if __name__ == "__main__":
         classif_rules = config.classification[league]
         relegation_rules = config.relegation[league]
         schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
+        
+        sim_standings = run_simulation_parallel(
+            schedule_played,
+            schedule_pending,
+            classif_rules,
+            num_simulations=config.number_of_simulations
+        )
+        """
         sim_standings = run_simulation(
             schedule_played,
             schedule_pending,
@@ -145,12 +193,17 @@ if __name__ == "__main__":
             num_simulations=config.number_of_simulations,
             verbose=False,
         )
+        """
 
         sim_standings = aggregate_odds(sim_standings, relegation_rules)
         sim_standings["country"] = league
         sim_standings["updated_at"] = datetime.now()
         sim_standings_all.append(sim_standings)
 
+    end_time = time.time()
+    print(f"Simulation took {end_time - start_time:.2f} seconds")
     sim_standings_all = pd.concat(sim_standings_all)
+    #reconnect
+    engine = db_connect.get_postgres_engine()
     sim_standings_all.to_sql(f"{config.sim_output_table}", engine, if_exists="replace", index=False)
     print(f"Simulations saved to db")

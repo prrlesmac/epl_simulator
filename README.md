@@ -12,7 +12,8 @@ pip install psycopg-binary
 
 ToDos:
 1. parallelize the 10000 sims across nodes
-2. handle data types in sql db (create tables or specofy schema in df command)
+2. get a static ec2 host
+3. handle data types in sql db (create tables or specofy schema in df command)
 implement homefield advantage in win prba
 do tiebreaker for h2h of multiple ones (tiebreaker of 3 then of 2)
 do good test of ranking and tiebreaker with diff scenarios
@@ -24,6 +25,10 @@ write exceptions and raise errors
 do a good readme with instructions for deploying, setting up a db, secrets to setup, etc...
 Get a static IP address in the Ec2 instance
 use cli to run commands
+long term:
+do a landing page with:
+- summary title odds per league
+- summary upcoming matches
 
 tiebreakers:
 ENG:
