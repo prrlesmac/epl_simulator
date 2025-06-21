@@ -45,7 +45,7 @@ jobs:
           docker rm ${{ secrets.APP_NAME || 'myapp' }} || true
           
           echo "Running new container..."
-          docker run --name ${{ secrets.APP_NAME || 'myapp' }} ${{ secrets.APP_NAME || 'myapp' }}
+          docker run -d --name ${{ secrets.APP_NAME || 'myapp' }} ${{ secrets.APP_NAME || 'myapp' }}
 
           echo "Deleting unused images"
           docker image prune -af
