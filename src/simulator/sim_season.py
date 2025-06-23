@@ -41,6 +41,17 @@ def split_and_merge_schedule(schedule, elos):
 
 
 def single_simulation(schedule_played, schedule_pending, classif_rules):
+    """
+    Simulates the remaining matches and computes the final standings.
+
+    Args:
+        schedule_played (pd.DataFrame): DataFrame containing matches already played.
+        schedule_pending (pd.DataFrame): DataFrame containing matches yet to be played.
+        classif_rules (callable or object): Rules or function used to compute standings/classification.
+
+    Returns:
+        pd.DataFrame: The standings DataFrame after simulating the pending matches and combining with played matches.
+    """
     simulated_pending = simulate_matches(schedule_pending.copy())
     schedule_final = pd.concat([schedule_played, simulated_pending], ignore_index=True)
     standings_df = get_standings(schedule_final, classif_rules)
@@ -51,6 +62,21 @@ def single_simulation(schedule_played, schedule_pending, classif_rules):
 def run_simulation_parallel(
     schedule_played, schedule_pending, classif_rules, num_simulations=1000
 ):
+    """
+    Run multiple simulations of pending matches in parallel using multiprocessing,
+    then aggregate the results into probabilities of team positions.
+
+    Args:
+        schedule_played (pd.DataFrame): DataFrame of matches already played.
+        schedule_pending (pd.DataFrame): DataFrame of matches yet to be played.
+        classif_rules (callable or object): Rules or function to compute standings/classification.
+        num_simulations (int, optional): Number of simulations to run in parallel. Defaults to 1000.
+
+    Returns:
+        pd.DataFrame: DataFrame where each row is a team and columns represent
+                      the probability of finishing in each position. Column names
+                      are strings of the positions.
+    """
     print(f"Running {num_simulations} simulations using multiprocessing...")
 
     with Pool(processes=cpu_count()) as pool:
