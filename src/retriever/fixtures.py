@@ -7,6 +7,7 @@ from db import db_connect
 from datetime import datetime
 import time
 
+
 def get_fixtures(url, table_id):
     """
     Fetches and parses a fixture table from a given webpage URL.
@@ -106,8 +107,8 @@ def process_fixtures(fixtures):
 if __name__ == "__main__":
     engine = db_connect.get_postgres_engine()
     fixtures_all = []
-    for k,v in config.fixtures_config.items():
-        print("Getting fixtures for: " ,k)
+    for k, v in config.fixtures_config.items():
+        print("Getting fixtures for: ", k)
         fixtures = get_fixtures(v["fixtures_url"], v["table_id"])
         fixtures = process_fixtures(fixtures)
         fixtures["country"] = k
@@ -115,5 +116,11 @@ if __name__ == "__main__":
         fixtures_all.append(fixtures)
     fixtures_all = pd.concat(fixtures_all)
     breakpoint()
-    fixtures_all.to_sql(config.fixtures_table["name"], engine, if_exists="replace", index=False, dtype=config.fixtures_table["dtype"])
+    fixtures_all.to_sql(
+        config.fixtures_table["name"],
+        engine,
+        if_exists="replace",
+        index=False,
+        dtype=config.fixtures_table["dtype"],
+    )
     print("Fixtures updated")

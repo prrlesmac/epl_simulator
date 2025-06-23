@@ -3,8 +3,7 @@ from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, TIMESTAMP
 
 # mapping from club elo to fb ref
 club_name_mapping = {
-
-    # ENG        
+    # ENG
     "Southampton": "Southampton",
     "Arsenal": "Arsenal",
     "Liverpool": "Liverpool",
@@ -25,7 +24,6 @@ club_name_mapping = {
     "Brentford": "Brentford",
     "Tottenham": "Tottenham",
     "Brighton": "Brighton",
-
     # ESP
     "Barcelona": "Barcelona",
     "Real Madrid": "Real Madrid",
@@ -47,7 +45,6 @@ club_name_mapping = {
     "Leganes": "Leganés",
     "Las Palmas": "Las Palmas",
     "Valladolid": "Valladolid",
-
     ## ITA
     "Inter": "Inter",
     "Atalanta": "Atalanta",
@@ -69,7 +66,6 @@ club_name_mapping = {
     "Empoli": "Empoli",
     "Venezia": "Venezia",
     "Monza": "Monza",
-
     ## GER
     "Bayern": "Bayern Munich",
     "Leverkusen": "Leverkusen",
@@ -89,7 +85,6 @@ club_name_mapping = {
     "Heidenheim": "Heidenheim",
     "Bochum": "Bochum",
     "Holstein": "Holstein Kiel",
-
     ## FRA
     "Paris SG": "Paris S-G",
     "Lille": "Lille",
@@ -119,8 +114,8 @@ elo_table = {
         "country": VARCHAR(100),
         "level": INTEGER(),
         "elo": FLOAT(),
-        "updated_at": TIMESTAMP()
-    }
+        "updated_at": TIMESTAMP(),
+    },
 }
 fixtures_table = {
     "name": "fixtures",
@@ -131,8 +126,8 @@ fixtures_table = {
         "away_goals": INTEGER(),
         "played": VARCHAR(10),
         "country": VARCHAR(100),
-        "updated_at": TIMESTAMP()
-    }
+        "updated_at": TIMESTAMP(),
+    },
 }
 sim_output_table = {
     "name": "sim_standings",
@@ -163,11 +158,11 @@ sim_output_table = {
         "direct_relegation_odds": FLOAT(),
         "relegation_playoff_odds": FLOAT(),
         "country": VARCHAR(100),
-        "updated_at": TIMESTAMP()
-    }
+        "updated_at": TIMESTAMP(),
+    },
 }
 
-elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d") 
+elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
 fixtures_config = {
     "ENG": {
@@ -200,14 +195,14 @@ classification = {
         "goal_difference",
         "goals_for",
         "h2h_points",
-        "h2h_away_goals_for"
+        "h2h_away_goals_for",
     ],
     "ESP": [
         "points",
         "h2h_points",
         "h2h_goal_difference",
         "goal_difference",
-        "goals_for"
+        "goals_for",
     ],
     "ITA": [
         "points",
@@ -224,7 +219,7 @@ classification = {
         "h2h_points",
         "h2h_goal_difference",
         "h2h_away_goals_for",
-        "away_goals_for"
+        "away_goals_for",
     ],
     "FRA": [
         "points",
@@ -234,29 +229,14 @@ classification = {
         "h2h_goals_for",
         "h2h_away_goals_for",
         "goals_for",
-        "away_goals_for"
+        "away_goals_for",
     ],
 }
 
 relegation = {
-    "ENG": {
-        "direct": [18, 19, 20],
-        "playoff": None
-    },
-    "ESP": {
-        "direct": [18, 19, 20],
-        "playoff": None
-    },
-    "ITA": {
-        "direct": [18, 19, 20],
-        "playoff": None
-    },
-    "GER": {
-        "direct": [17, 18],
-        "playoff": [16]
-    },
-    "FRA": {
-        "direct": [17, 18],
-        "playoff": [16]
-    },
+    "ENG": {"direct": [18, 19, 20], "playoff": None},
+    "ESP": {"direct": [18, 19, 20], "playoff": None},
+    "ITA": {"direct": [18, 19, 20], "playoff": None},
+    "GER": {"direct": [17, 18], "playoff": [16]},
+    "FRA": {"direct": [17, 18], "playoff": [16]},
 }

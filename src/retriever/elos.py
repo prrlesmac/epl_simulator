@@ -72,11 +72,18 @@ def filter_elos(elos, country, level):
 
     return filtered_elos
 
+
 if __name__ == "__main__":
     engine = db_connect.get_postgres_engine()
     elos = get_elos(config.elo_rating_url)
     elos = filter_elos(elos, None, None)
     elos["club"] = elos["club"].replace(config.club_name_mapping)
     elos["updated_at"] = datetime.now()
-    elos.to_sql(config.elo_table["name"], engine, if_exists="replace", index=False, dtype=config.elo_table["dtype"])
+    elos.to_sql(
+        config.elo_table["name"],
+        engine,
+        if_exists="replace",
+        index=False,
+        dtype=config.elo_table["dtype"],
+    )
     print("Elos updated...")

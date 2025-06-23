@@ -112,12 +112,12 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
 
     Parameters:
     matches_df (pd.DataFrame):
-        A DataFrame containing match results with at least the following columns: 'home', 'away', and any metrics 
+        A DataFrame containing match results with at least the following columns: 'home', 'away', and any metrics
         used in calculating standings (e.g., goals, points).
-    
+
     tied_teams (list of str):
         A list of team names that are currently tied in the standings.
-    
+
     rule (str):
         The name of the H2H metric column (e.g., 'h2h_points', 'h2h_goal_diff') to use for ranking the tied teams.
         This must match one of the metrics returned by `get_standings_metrics`.
@@ -127,49 +127,49 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
         A DataFrame with two columns: 'team' and the selected `rule` metric, prefixed with 'h2h_'.
         It reflects the standings of tied teams based only on the matches they played against each other.
     """
-    
+
     tied_matches_df = matches_df.copy()
     tied_matches_df = tied_matches_df[
-        (matches_df['home'].isin(tied_teams))
-        & (matches_df['away'].isin(tied_teams))
+        (matches_df["home"].isin(tied_teams)) & (matches_df["away"].isin(tied_teams))
     ]
 
     standings_tied = get_standings_metrics(tied_matches_df)
     # add h2h prefix to metrics
-    standings_tied.columns = [f'h2h_{col}' if col != 'team' else col for col in standings_tied.columns]
-    standings_tied = standings_tied[['team', rule]]
+    standings_tied.columns = [
+        f"h2h_{col}" if col != "team" else col for col in standings_tied.columns
+    ]
+    standings_tied = standings_tied[["team", rule]]
     return standings_tied
 
 
 def apply_playoff_tiebreaker(matches_df, tied_teams):
 
     if len(tied_teams) > 2:
-        print('more than 2 tied')
+        print("more than 2 tied")
         standings_untied = get_standings(
-            matches_df,
-            classif_rules=["h2h_points","h2h_goal_difference"]
+            matches_df, classif_rules=["h2h_points", "h2h_goal_difference"]
         )
-        playoff_teams = standings_untied['team'].head(2).tolist()
+        playoff_teams = standings_untied["team"].head(2).tolist()
         matches_df = matches_df[
-            (matches_df['home'].isin(playoff_teams))
-            & (matches_df['away'].isin(playoff_teams))
+            (matches_df["home"].isin(playoff_teams))
+            & (matches_df["away"].isin(playoff_teams))
         ]
 
         standings_no_playoff = standings_untied.iloc[2:].reset_index()
         # assign starting frm -1 to rank them at the bottom
-        #the top two teams will be 1 and 0 based on the playoff sim
-        standings_no_playoff['playoff'] = -1 - standings_no_playoff.index
+        # the top two teams will be 1 and 0 based on the playoff sim
+        standings_no_playoff["playoff"] = -1 - standings_no_playoff.index
 
     # matches_df has the tied teams and their elos
     elo_home = matches_df.iloc[0]["elo_home"]
     elo_away = matches_df.iloc[0]["elo_away"]
     we = calculate_win_probability(elo_home, elo_away)
     result = simulate_playoff(we)
-    
+
     standings_playoff = pd.DataFrame(
         {
-            'team': [matches_df.iloc[0]["home"], matches_df.iloc[0]["away"]],
-            'playoff': [1 ,0] if result == 1 else [0, 1]
+            "team": [matches_df.iloc[0]["home"], matches_df.iloc[0]["away"]],
+            "playoff": [1, 0] if result == 1 else [0, 1],
         }
     )
 
@@ -182,8 +182,8 @@ def get_standings_metrics(matches_df):
     """
     Calculates basic league standings metrics for each team based on match results.
 
-    This function processes match results to compute standard performance metrics for each team, 
-    including total points, goals scored, goals conceded, and goal difference. It aggregates home and 
+    This function processes match results to compute standard performance metrics for each team,
+    including total points, goals scored, goals conceded, and goal difference. It aggregates home and
     away performance separately before combining them into overall team statistics.
 
     Parameters:
@@ -204,7 +204,7 @@ def get_standings_metrics(matches_df):
         - 'goals_against': total goals conceded (home + away)
         - 'away_goals_for': goals scored in away matches (useful for tiebreakers)
     """
-    
+
     matches_df["home_pts"] = np.where(
         matches_df["home_goals"] > matches_df["away_goals"],
         3,
@@ -244,9 +244,20 @@ def get_standings_metrics(matches_df):
     standings = pd.merge(home_pts, away_pts, how="outer", on="team").fillna(0)
     standings["points"] = standings["home_pts"] + standings["away_pts"]
     standings["goals_for"] = standings["home_goals_for"] + standings["away_goals_for"]
-    standings["goals_against"] = standings["home_goals_against"] + standings["away_goals_against"]
+    standings["goals_against"] = (
+        standings["home_goals_against"] + standings["away_goals_against"]
+    )
     standings["goal_difference"] = standings["goals_for"] - standings["goals_against"]
-    standings = standings[["team", "points", "goal_difference", "goals_for", "goals_against","away_goals_for"]].fillna(0)
+    standings = standings[
+        [
+            "team",
+            "points",
+            "goal_difference",
+            "goals_for",
+            "goals_against",
+            "away_goals_for",
+        ]
+    ].fillna(0)
 
     return standings
 
@@ -294,43 +305,50 @@ def get_standings(matches_df, classif_rules):
             # tiebreakers previous to current h2h one
             tb_applied = classif_rules[:i]
             # apply rank function to see who is tied
-            standings['pos'] = standings[tb_applied].apply(tuple, axis=1).rank(
-                method='min', ascending = False
-            ).astype(int)
+            standings["pos"] = (
+                standings[tb_applied]
+                .apply(tuple, axis=1)
+                .rank(method="min", ascending=False)
+                .astype(int)
+            )
             # find tied teams
-            pos_counts = standings['pos'].value_counts()
+            pos_counts = standings["pos"].value_counts()
             ties = pos_counts[pos_counts >= 2]
             if is_playoff:
-                ties = ties[ties.index.isin([1,18])]
+                ties = ties[ties.index.isin([1, 18])]
 
             if len(ties) > 0:
                 all_tied = []
                 for tied_pos in ties.index.tolist():
-                    subset_of_tied = standings[standings['pos'] == tied_pos]
+                    subset_of_tied = standings[standings["pos"] == tied_pos]
                     tied_teams = subset_of_tied["team"].tolist()
 
                     if is_h2h_rule:
-                        substed_tied_standings = apply_h2h_tiebreaker(matches_df, tied_teams, rule)
+                        substed_tied_standings = apply_h2h_tiebreaker(
+                            matches_df, tied_teams, rule
+                        )
                     elif is_playoff:
-                        substed_tied_standings = apply_playoff_tiebreaker(matches_df, tied_teams, rule)
+                        substed_tied_standings = apply_playoff_tiebreaker(
+                            matches_df, tied_teams, rule
+                        )
 
-                    subset_of_tied = (
-                        subset_of_tied
-                        .merge(substed_tied_standings, on='team', how='left')
+                    subset_of_tied = subset_of_tied.merge(
+                        substed_tied_standings, on="team", how="left"
                     )
                     all_tied.append(subset_of_tied)
 
                 all_tied = pd.concat(all_tied)
                 standings = standings.merge(
-                    all_tied[["team",rule]],
-                    how="left",
-                    on="team"
+                    all_tied[["team", rule]], how="left", on="team"
                 )
             else:
                 standings[rule] = np.nan
 
-    standings['pos'] = standings[classif_rules].apply(tuple, axis=1).rank(
-                method='min', ascending = False
-    ).astype(int)
+    standings["pos"] = (
+        standings[classif_rules]
+        .apply(tuple, axis=1)
+        .rank(method="min", ascending=False)
+        .astype(int)
+    )
 
     return standings
