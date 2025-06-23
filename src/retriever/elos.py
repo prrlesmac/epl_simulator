@@ -78,5 +78,5 @@ if __name__ == "__main__":
     elos = filter_elos(elos, None, None)
     elos["club"] = elos["club"].replace(config.club_name_mapping)
     elos["updated_at"] = datetime.now()
-    elos.to_sql("current_elos", engine, if_exists="replace", index=False)
+    elos.to_sql(config.elo_table["name"], engine, if_exists="replace", index=False, dtype=config.elo_table["dtype"])
     print("Elos updated...")

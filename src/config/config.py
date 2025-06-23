@@ -1,4 +1,5 @@
 import datetime
+from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, TIMESTAMP
 
 # mapping from club elo to fb ref
 club_name_mapping = {
@@ -111,9 +112,60 @@ club_name_mapping = {
 }
 number_of_simulations = 10000
 
-elo_table = "current_elos"
-fixtures_table = "fixtures"
-sim_output_table = "sim_standings"
+elo_table = {
+    "name": "current_elos",
+    "dtype": {
+        "club": VARCHAR(100),
+        "country": VARCHAR(100),
+        "level": INTEGER(),
+        "elo": FLOAT(),
+        "updated_at": TIMESTAMP()
+    }
+}
+fixtures_table = {
+    "name": "fixtures",
+    "dtype": {
+        "home": VARCHAR(100),
+        "away": VARCHAR(100),
+        "home_goals": INTEGER(),
+        "away_goals": INTEGER(),
+        "played": VARCHAR(10),
+        "country": VARCHAR(100),
+        "updated_at": TIMESTAMP()
+    }
+}
+sim_output_table = {
+    "name": "sim_standings",
+    "dtype": {
+        "team": VARCHAR(100),
+        "1": FLOAT(),
+        "2": FLOAT(),
+        "3": FLOAT(),
+        "4": FLOAT(),
+        "5": FLOAT(),
+        "6": FLOAT(),
+        "7": FLOAT(),
+        "8": FLOAT(),
+        "9": FLOAT(),
+        "10": FLOAT(),
+        "11": FLOAT(),
+        "12": FLOAT(),
+        "13": FLOAT(),
+        "14": FLOAT(),
+        "15": FLOAT(),
+        "16": FLOAT(),
+        "17": FLOAT(),
+        "18": FLOAT(),
+        "19": FLOAT(),
+        "20": FLOAT(),
+        "title_odds": FLOAT(),
+        "top_4_odds": FLOAT(),
+        "direct_relegation_odds": FLOAT(),
+        "relegation_playoff_odds": FLOAT(),
+        "country": VARCHAR(100),
+        "updated_at": TIMESTAMP()
+    }
+}
 
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d") 
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"

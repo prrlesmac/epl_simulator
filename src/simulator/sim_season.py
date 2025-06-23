@@ -173,8 +173,8 @@ if __name__ == "__main__":
     sim_standings_all = []
     for league in config.leagues_to_sim:
         print("Simulating: ", league)
-        schedule = pd.read_sql(f"SELECT * FROM {config.fixtures_table} WHERE country = '{league}'", engine)
-        elos = pd.read_sql(f"SELECT * FROM {config.elo_table} WHERE country = '{league}'", engine)
+        schedule = pd.read_sql(f"SELECT * FROM {config.fixtures_table['name']} WHERE country = '{league}'", engine)
+        elos = pd.read_sql(f"SELECT * FROM {config.elo_table['name']} WHERE country = '{league}'", engine)
         classif_rules = config.classification[league]
         relegation_rules = config.relegation[league]
         schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
@@ -205,5 +205,9 @@ if __name__ == "__main__":
     sim_standings_all = pd.concat(sim_standings_all)
     #reconnect
     engine = db_connect.get_postgres_engine()
-    sim_standings_all.to_sql(f"{config.sim_output_table}", engine, if_exists="replace", index=False)
+    sim_standings_all.to_sql(config.sim_output_table["name"],
+                             engine,
+                             if_exists="replace",
+                             index=False,
+                             dtype=config.sim_output_table["dtype"])
     print(f"Simulations saved to db")
