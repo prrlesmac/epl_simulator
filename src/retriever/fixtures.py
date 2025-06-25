@@ -116,7 +116,6 @@ if __name__ == "__main__":
         fixtures["updated_at"] = datetime.now()
         fixtures_all.append(fixtures)
     fixtures_all = pd.concat(fixtures_all)
-    breakpoint()
     fixtures_all.to_sql(
         config.fixtures_table["name"],
         engine,
