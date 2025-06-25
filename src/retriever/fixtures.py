@@ -85,6 +85,7 @@ def process_fixtures(fixtures):
             - 'home_goals': Goals scored by the home team (as string or NaN)
             - 'away_goals': Goals scored by the away team (as string or NaN)
             - 'played': 'Y' if the match has been played, otherwise 'N'
+            - 'neutral': 'Y' if the match is neutral venue, otherwise 'N'
     """
 
     fixtures.columns = fixtures.columns.str.lower()
@@ -99,8 +100,8 @@ def process_fixtures(fixtures):
         "N",
         "Y",
     )
-
-    fixtures = fixtures[["home", "away", "home_goals", "away_goals", "played"]]
+    fixtures["neutral"] = "N"
+    fixtures = fixtures[["home", "away", "home_goals", "away_goals", "played", "neutral"]]
     return fixtures
 
 

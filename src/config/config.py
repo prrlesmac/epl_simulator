@@ -105,8 +105,8 @@ club_name_mapping = {
     "Saint-Etienne": "Saint-Étienne",
     "Montpellier": "Montpellier",
 }
-number_of_simulations = 10000
 
+# Database
 elo_table = {
     "name": "current_elos",
     "dtype": {
@@ -162,6 +162,7 @@ sim_output_table = {
     },
 }
 
+# Data scraping
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
 fixtures_config = {
@@ -187,8 +188,12 @@ fixtures_config = {
     },
 }
 
+## Simulation
+number_of_simulations = 100
+home_advantage = 80
 leagues_to_sim = list(fixtures_config.keys())
 
+# classification rules
 classification = {
     "ENG": [
         "points",

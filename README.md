@@ -11,8 +11,7 @@ to run psycopg in windows make sure to install psycopg-binary package:
 pip install psycopg-binary
 
 ToDos:
-missing docstring in sim_seaon scrip
-3. handle data types in sql db (create tables or specofy schema in df command)
+setup a prod and dev schema/env to test
 calculation of how a game affects title odds
 implement homefield advantage in win prba
 do tiebreaker for h2h of multiple ones (tiebreaker of 3 then of 2)

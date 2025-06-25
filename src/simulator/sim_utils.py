@@ -78,7 +78,7 @@ def simulate_playoff(proba):
     return result
 
 
-def simulate_matches(matches_df):
+def simulate_matches(matches_df, home_advantage):
     """
     Simulate matches and determine winners.
 
@@ -91,7 +91,8 @@ def simulate_matches(matches_df):
 
     for index, match in matches_df.iterrows():
 
-        elo_home = match["elo_home"]
+        home_advantage = 80 if match["neutral"] == "N" else 0
+        elo_home = match["elo_home"] + home_advantage
         elo_away = match["elo_away"]
 
         # Calculate win probability for Team 1

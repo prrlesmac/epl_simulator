@@ -52,7 +52,7 @@ def single_simulation(schedule_played, schedule_pending, classif_rules):
     Returns:
         pd.DataFrame: The standings DataFrame after simulating the pending matches and combining with played matches.
     """
-    simulated_pending = simulate_matches(schedule_pending.copy())
+    simulated_pending = simulate_matches(schedule_pending.copy(), config.home_advantage)
     schedule_final = pd.concat([schedule_played, simulated_pending], ignore_index=True)
     standings_df = get_standings(schedule_final, classif_rules)
 
