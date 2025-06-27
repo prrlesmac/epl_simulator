@@ -146,9 +146,8 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
 def apply_playoff_tiebreaker(matches_df, tied_teams):
 
     if len(tied_teams) > 2:
-        print("more than 2 tied")
         standings_untied = get_standings(
-            matches_df, classif_rules=["h2h_points", "h2h_goal_difference"]
+            matches_df, classif_rules=["points", "h2h_points", "h2h_goal_difference"]
         )
         playoff_teams = standings_untied["team"].head(2).tolist()
         matches_df = matches_df[
@@ -159,7 +158,7 @@ def apply_playoff_tiebreaker(matches_df, tied_teams):
         standings_no_playoff = standings_untied.iloc[2:].reset_index()
         # assign starting frm -1 to rank them at the bottom
         # the top two teams will be 1 and 0 based on the playoff sim
-        standings_no_playoff["playoff"] = -1 - standings_no_playoff.index
+        standings_no_playoff["playoff"] = (-1 * standings_no_playoff.index) - 1
 
     # matches_df has the tied teams and their elos
     elo_home = matches_df.iloc[0]["elo_home"]
@@ -173,8 +172,10 @@ def apply_playoff_tiebreaker(matches_df, tied_teams):
             "playoff": [1, 0] if result == 1 else [0, 1],
         }
     )
-
-    standings_tied = pd.concat([standings_playoff, standings_no_playoff])
+    if len(tied_teams) > 2:
+        standings_tied = pd.concat([standings_playoff, standings_no_playoff])
+    else:
+        standings_tied = standings_playoff
 
     return standings_tied
 
@@ -330,7 +331,7 @@ def get_standings(matches_df, classif_rules):
                         )
                     elif is_playoff:
                         substed_tied_standings = apply_playoff_tiebreaker(
-                            matches_df, tied_teams, rule
+                            matches_df, tied_teams
                         )
 
                     subset_of_tied = subset_of_tied.merge(
