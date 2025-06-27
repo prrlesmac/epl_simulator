@@ -100,6 +100,10 @@ def process_fixtures(fixtures):
         "N",
         "Y",
     )
+    # TODO add this as a param
+    """
+    fixtures["played"] = "N"
+    """
     fixtures["neutral"] = "N"
     fixtures = fixtures[["home", "away", "home_goals", "away_goals", "played", "neutral"]]
     return fixtures
