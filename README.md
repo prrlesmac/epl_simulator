@@ -11,20 +11,22 @@ to run psycopg in windows make sure to install psycopg-binary package:
 pip install psycopg-binary
 
 ToDos:
-setup a prod and dev schema/env to test
+store the 10,000 sims results in db
+calculate match odds
+show upcoming fixtures (2w) and their wdl odds
 calculation of how a game affects title odds
-implement homefield advantage in win prba
+simulate ucl group stage
+simulate ucl playoffs
 do tiebreaker for h2h of multiple ones (tiebreaker of 3 then of 2)
 do good test of ranking and tiebreaker with diff scenarios
+fe: add a 'last updated on' text box
 fix warning messages
-give an option to run the season from start (ignore all played games)
+give an option to run the season from start or from a slected date for testning (ignore all played games)
 improve logging of jobs
 write tests
 write exceptions and raise errors
 do a good readme with instructions for deploying, setting up a db, secrets to setup, etc...
-Get a static IP address in the Ec2 instance
 use cli to run commands
-long term:
 do a landing page with:
 - summary title odds per league
 - summary upcoming matches
