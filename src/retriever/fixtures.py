@@ -1,11 +1,28 @@
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
+import re
 import numpy as np
 from config import config
 from db import db_connect
 from datetime import datetime
 import time
+
+
+def extract_scores(score):
+    if pd.isna(score):
+        return pd.Series([None, None, None, None])
+    
+    match_goals = re.search(r'(\d+)–(\d+)', score)
+    home_goals, away_goals = (int(match_goals.group(1)), int(match_goals.group(2))) if match_goals else (None, None)
+
+    pens = re.findall(r'\((\d+)\)', score)
+    if len(pens) == 2:
+        home_pens, away_pens = int(pens[0]), int(pens[1])
+    else:
+        home_pens, away_pens = None, None
+    
+    return pd.Series([home_goals, away_goals, home_pens, away_pens])
 
 
 def get_fixtures(url, table_id):
@@ -19,7 +36,7 @@ def get_fixtures(url, table_id):
 
     Args:
         url (str): The URL of the webpage containing the fixture table.
-        table_id (str): table ID for geting the fixtures using beautiful soup
+        table_id (list): list table IDs for geting the fixtures using beautiful soup
 
     Returns:
         pandas.DataFrame: A DataFrame containing the fixture information,
@@ -39,26 +56,29 @@ def get_fixtures(url, table_id):
     if response.status_code == 200:
         # Parse the HTML content using BeautifulSoup
         soup = BeautifulSoup(response.text, "html.parser")
-
         # Find the table containing the fixtures
-        table = soup.find(
-            "table", {"id": table_id}
-        )  # Table ID may change, inspect the page source to confirm
+        df_all = []
+        for id in table_id:
+            table = soup.find(
+                "table", {"id": table_id}
+            )  # Table ID may change, inspect the page source to confirm
 
-        # Extract table headers
-        headers = [th.text.strip() for th in table.find("thead").find_all("th")]
+            # Extract table headers
+            headers = [th.text.strip() for th in table.find("thead").find_all("th")]
 
-        # Extract table rows
-        rows = []
-        for tr in table.find("tbody").find_all("tr"):
-            row = [td.text.strip() for td in tr.find_all("td")]
-            rows.append(row)
+            # Extract table rows
+            rows = []
+            for tr in table.find("tbody").find_all("tr"):
+                row = [td.text.strip() for td in tr.find_all("td")]
+                rows.append(row)
 
-        # Convert to a Pandas DataFrame
-        df = pd.DataFrame(
-            rows, columns=headers[1:]
-        )  # Exclude the first header if it's a placeholder
-
+            # Convert to a Pandas DataFrame
+            df = pd.DataFrame(
+                rows, columns=headers[1:]
+            )  # Exclude the first header if it's a placeholder
+            df_all.append(df)
+        
+        df_all = pd.concat(df_all)
         # Display the DataFrame
         print("Fetching fixtures data...")
     else:
@@ -77,6 +97,7 @@ def process_fixtures(fixtures):
     Args:
         fixtures (pandas.DataFrame): Raw fixtures DataFrame, typically parsed from HTML,
         with columns including 'home', 'away', and 'score'.
+        
 
     Returns:
         pandas.DataFrame: A cleaned and processed DataFrame with the following columns:
@@ -91,10 +112,8 @@ def process_fixtures(fixtures):
     fixtures.columns = fixtures.columns.str.lower()
     fixtures = fixtures[(fixtures["home"] != "") & (fixtures["away"] != "")]
     fixtures["score"] = fixtures["score"].replace("", None)
-    # Split the 'score' column into 'home_goals' and 'away_goals'
-    fixtures[["home_goals", "away_goals"]] = (
-        fixtures["score"].str.split("–", expand=True).astype("Int64")
-    )
+    # Apply function to the 'score' column and expand results into new columns
+    fixtures[['home_goals', 'away_goals', 'home_pens', 'away_pens']] = fixtures['score'].apply(extract_scores)
     fixtures["played"] = np.where(
         (fixtures["home_goals"].isnull()) | (fixtures["away_goals"].isnull()),
         "N",

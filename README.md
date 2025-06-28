@@ -11,12 +11,16 @@ to run psycopg in windows make sure to install psycopg-binary package:
 pip install psycopg-binary
 
 ToDos:
+ucl:
+- exclude country name from home/away column
+- do mapping of fixtures names and elos
+- simulate group stage
+- simulate po
+- output to db and fe
 store the 10,000 sims results in db
 calculate match odds
 show upcoming fixtures (2w) and their wdl odds
 calculation of how a game affects title odds
-simulate ucl group stage
-simulate ucl playoffs
 do tiebreaker for h2h of multiple ones (tiebreaker of 3 then of 2)
 do good test of ranking and tiebreaker with diff scenarios
 fe: add a 'last updated on' text box
