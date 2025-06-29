@@ -91,7 +91,7 @@ def get_fixtures(url, table_id):
     return df
 
 
-def process_fixtures(fixtures):
+def process_fixtures(fixtures, country):
     """
     Cleans and processes a raw fixtures DataFrame to extract match outcomes.
 
@@ -125,10 +125,16 @@ def process_fixtures(fixtures):
         "N",
         "Y",
     )
+    # remove country from team names if the league is european
+    if country in ["UCL","UEL","UECL"]:
+        fixtures['home'] = fixtures['home'].str[:-3]
+        fixtures['away'] = fixtures['away'].str[3:]
+    fixtures['home'] = fixtures['home'].str.strip()
+    fixtures['away'] = fixtures['away'].str.strip()
     # TODO add this as a param
-    """
+    
     fixtures["played"] = "N"
-    """
+    
     fixtures["neutral"] = "N"
     fixtures = fixtures[
         ["home", "away", "home_goals", "away_goals", "played", "neutral"]
@@ -142,7 +148,7 @@ if __name__ == "__main__":
     for k, v in config.fixtures_config.items():
         print("Getting fixtures for: ", k)
         fixtures = get_fixtures(v["fixtures_url"], v["table_id"])
-        fixtures = process_fixtures(fixtures)
+        fixtures = process_fixtures(fixtures, country = k)
         fixtures["country"] = k
         fixtures["updated_at"] = datetime.now()
         fixtures_all.append(fixtures)

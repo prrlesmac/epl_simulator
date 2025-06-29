@@ -11,10 +11,10 @@ to run psycopg in windows make sure to install psycopg-binary package:
 pip install psycopg-binary
 
 ToDos:
+rethink architecture to allow for continental leagues
 ucl:
-- exclude country name from home/away column
-- do mapping of fixtures names and elos
-- simulate group stage
+- add full tiebreakers
+- save ucl and others to diffeent table
 - simulate po
 - output to db and fe
 store the 10,000 sims results in db

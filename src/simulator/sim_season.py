@@ -199,19 +199,22 @@ if __name__ == "__main__":
     engine = db_connect.get_postgres_engine()
     sim_standings_all = []
     for league in config.leagues_to_sim:
+        is_continental_league = league in ['UCL','UEL','UECL']
         print("Simulating: ", league)
         schedule = pd.read_sql(
             f"SELECT * FROM {config.fixtures_table['name']} WHERE country = '{league}'",
             engine,
         )
+        elos_query = f"SELECT * FROM {config.elo_table['name']}" + (f" WHERE country = '{league}'" if not is_continental_league else "")
         elos = pd.read_sql(
-            f"SELECT * FROM {config.elo_table['name']} WHERE country = '{league}'",
+            elos_query,
             engine,
         )
-        classif_rules = config.classification[league]
-        relegation_rules = config.relegation[league]
-        schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
 
+        league_rules = config.league_rules[league]
+        classif_rules = league_rules["classification"]
+        relegation_rules = league_rules["relegation"]
+        schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
         sim_standings = run_simulation_parallel(
             schedule_played,
             schedule_pending,
@@ -227,8 +230,8 @@ if __name__ == "__main__":
             verbose=False,
         )
         """
-
-        sim_standings = aggregate_odds(sim_standings, relegation_rules)
+        if not league_rules["has_knockout"]:
+            sim_standings = aggregate_odds(sim_standings, relegation_rules)
         sim_standings["country"] = league
         sim_standings["updated_at"] = datetime.now()
         sim_standings_all.append(sim_standings)

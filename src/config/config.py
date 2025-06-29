@@ -104,6 +104,20 @@ club_name_mapping = {
     "Angers": "Angers",
     "Saint-Etienne": "Saint-Étienne",
     "Montpellier": "Montpellier",
+    ## UCL
+    "Feyenoord": "Feyenoord",
+    "Salzburg": "RB Salzburg",
+    "Benfica": "Benfica",
+    "Crvena Zvezda": "Red Star",
+    "Celtic": "Celtic",
+    "PSV": "PSV Eindhoven",
+    "Brugge": "Club Brugge",
+    "Sporting": "Sporting CP",
+    "Dinamo Zagreb": "Dinamo Zagreb",
+    "Young Boys": "Young Boys",
+    "Shakhtar": "Shakhtar",
+    "Sparta Praha": "Sparta Prague",
+    "Sturm Graz": "Sturm Graz",
 }
 
 # Database
@@ -186,68 +200,93 @@ fixtures_config = {
         "fixtures_url": "https://fbref.com/en/comps/13/schedule/Ligue-1-Scores-and-Fixtures",
         "table_id": ["sched_2024-2025_13_1"],
     },
-    # "UCL": {
-    #    "fixtures_url": "https://fbref.com/en/comps/8/2024-2025/schedule/2024-2025-Champions-League-Scores-and-Fixtures",
-    #    "table_id": ["sched_2024-2025_8_2","sched_2024-2025_8_3"],
-    # },
+     "UCL": {
+        "fixtures_url": "https://fbref.com/en/comps/8/2024-2025/schedule/2024-2025-Champions-League-Scores-and-Fixtures",
+        "table_id": ["sched_2024-2025_8_2","sched_2024-2025_8_3"],
+     },
     # UEL
     # UECL
 }
 
 ## Simulation
-number_of_simulations = 100
+number_of_simulations = 1000
 home_advantage = 80
 leagues_to_sim = list(fixtures_config.keys())
 
-# classification rules
-classification = {
-    "ENG": [
-        "points",
-        "goal_difference",
-        "goals_for",
-        "h2h_points",
-        "h2h_away_goals_for",
-    ],
-    "ESP": [
-        "points",
-        "h2h_points",
-        "h2h_goal_difference",
-        "goal_difference",
-        "goals_for",
-    ],
-    "ITA": [
-        "points",
-        "playoff",
-        "h2h_points",
-        "h2h_goal_difference",
-        "goal_difference",
-        "goals_for",
-    ],
-    "GER": [
-        "points",
-        "goal_difference",
-        "goals_for",
-        "h2h_points",
-        "h2h_goal_difference",
-        "h2h_away_goals_for",
-        "away_goals_for",
-    ],
-    "FRA": [
-        "points",
-        "goal_difference",
-        "h2h_points",
-        "h2h_goal_difference",
-        "h2h_goals_for",
-        "h2h_away_goals_for",
-        "goals_for",
-        "away_goals_for",
-    ],
+league_rules = {
+    "ENG": {
+        "has_knockout": False,
+        "classification": [
+            "points",
+            "goal_difference",
+            "goals_for",
+            "h2h_points",
+            "h2h_away_goals_for",
+        ],
+        "relegation": {"direct": [18, 19, 20], "playoff": None},
+    },
+    "ESP": {
+        "has_knockout": False,
+        "classification": [
+            "points",
+            "h2h_points",
+            "h2h_goal_difference",
+            "goal_difference",
+            "goals_for",
+        ],
+        "relegation": {"direct": [18, 19, 20], "playoff": None},
+    },
+    "ITA": {
+        "has_knockout": False,
+        "classification": [
+            "points",
+            "playoff",
+            "h2h_points",
+            "h2h_goal_difference",
+            "goal_difference",
+            "goals_for",
+        ],
+        "relegation": {"direct": [18, 19, 20], "playoff": None},
+    },
+    "GER": {
+        "has_knockout": False,
+        "classification": [
+            "points",
+            "goal_difference",
+            "goals_for",
+            "h2h_points",
+            "h2h_goal_difference",
+            "h2h_away_goals_for",
+            "away_goals_for",
+        ],
+        "relegation": {"direct": [17, 18], "playoff": [16]},
+    },
+    "FRA": {
+        "has_knockout": False,
+        "classification": [
+            "points",
+            "goal_difference",
+            "h2h_points",
+            "h2h_goal_difference",
+            "h2h_goals_for",
+            "h2h_away_goals_for",
+            "goals_for",
+            "away_goals_for",
+        ],
+        "relegation": {"direct": [17, 18], "playoff": [16]},
+    },
+    "UCL": {
+        "has_knockout": True,
+        "classification": [
+            "points",
+            "goal_difference",
+            "goals_for",
+            "away_goals_for",
+        ],
+        # No relegation info for UCL, exclude or set None
+        "relegation": None,
+        "knockout_bracket": []
+    },
 }
 
-relegation = {
-    "ENG": {"direct": [18, 19, 20], "playoff": None},
-    "ESP": {"direct": [18, 19, 20], "playoff": None},
-    "ITA": {"direct": [18, 19, 20], "playoff": None},
-    "GER": {"direct": [17, 18], "playoff": [16]},
-    "FRA": {"direct": [17, 18], "playoff": [16]},
-}
+
