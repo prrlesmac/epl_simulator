@@ -186,12 +186,12 @@ fixtures_config = {
         "fixtures_url": "https://fbref.com/en/comps/13/schedule/Ligue-1-Scores-and-Fixtures",
         "table_id": ["sched_2024-2025_13_1"],
     },
-    #"UCL": {
+    # "UCL": {
     #    "fixtures_url": "https://fbref.com/en/comps/8/2024-2025/schedule/2024-2025-Champions-League-Scores-and-Fixtures",
     #    "table_id": ["sched_2024-2025_8_2","sched_2024-2025_8_3"],
-    #},
-    #UEL
-    #UECL
+    # },
+    # UEL
+    # UECL
 }
 
 ## Simulation

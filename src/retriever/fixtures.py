@@ -12,16 +12,20 @@ import time
 def extract_scores(score):
     if pd.isna(score):
         return pd.Series([None, None, None, None])
-    
-    match_goals = re.search(r'(\d+)–(\d+)', score)
-    home_goals, away_goals = (int(match_goals.group(1)), int(match_goals.group(2))) if match_goals else (None, None)
 
-    pens = re.findall(r'\((\d+)\)', score)
+    match_goals = re.search(r"(\d+)–(\d+)", score)
+    home_goals, away_goals = (
+        (int(match_goals.group(1)), int(match_goals.group(2)))
+        if match_goals
+        else (None, None)
+    )
+
+    pens = re.findall(r"\((\d+)\)", score)
     if len(pens) == 2:
         home_pens, away_pens = int(pens[0]), int(pens[1])
     else:
         home_pens, away_pens = None, None
-    
+
     return pd.Series([home_goals, away_goals, home_pens, away_pens])
 
 
@@ -77,7 +81,7 @@ def get_fixtures(url, table_id):
                 rows, columns=headers[1:]
             )  # Exclude the first header if it's a placeholder
             df_all.append(df)
-        
+
         df_all = pd.concat(df_all)
         # Display the DataFrame
         print("Fetching fixtures data...")
@@ -97,7 +101,7 @@ def process_fixtures(fixtures):
     Args:
         fixtures (pandas.DataFrame): Raw fixtures DataFrame, typically parsed from HTML,
         with columns including 'home', 'away', and 'score'.
-        
+
 
     Returns:
         pandas.DataFrame: A cleaned and processed DataFrame with the following columns:
@@ -113,7 +117,9 @@ def process_fixtures(fixtures):
     fixtures = fixtures[(fixtures["home"] != "") & (fixtures["away"] != "")]
     fixtures["score"] = fixtures["score"].replace("", None)
     # Apply function to the 'score' column and expand results into new columns
-    fixtures[['home_goals', 'away_goals', 'home_pens', 'away_pens']] = fixtures['score'].apply(extract_scores)
+    fixtures[["home_goals", "away_goals", "home_pens", "away_pens"]] = fixtures[
+        "score"
+    ].apply(extract_scores)
     fixtures["played"] = np.where(
         (fixtures["home_goals"].isnull()) | (fixtures["away_goals"].isnull()),
         "N",
@@ -124,7 +130,9 @@ def process_fixtures(fixtures):
     fixtures["played"] = "N"
     """
     fixtures["neutral"] = "N"
-    fixtures = fixtures[["home", "away", "home_goals", "away_goals", "played", "neutral"]]
+    fixtures = fixtures[
+        ["home", "away", "home_goals", "away_goals", "played", "neutral"]
+    ]
     return fixtures
 
 
