@@ -14,8 +14,11 @@ ToDos:
 rethink architecture to allow for continental leagues
 ucl:
 - add full tiebreakers
-- save ucl and others to diffeent table
+- add aggregate odds for playoff adv
 - simulate po
+    - define qualified
+    - create bracket and sim
+    - have rules for when ties have only had 1st leg played
 - output to db and fe
 store the 10,000 sims results in db
 calculate match odds

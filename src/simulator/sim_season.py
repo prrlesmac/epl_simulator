@@ -161,7 +161,7 @@ def run_simulation(
     return standings_all
 
 
-def aggregate_odds(standings, relegation_rules):
+def aggregate_standings_outcomes(standings, qualification_mapping):
     """
     Adds title, top 4, and relegation odds columns to the standings DataFrame
     and sorts teams by their title odds in descending order.
@@ -169,35 +169,32 @@ def aggregate_odds(standings, relegation_rules):
     Args:
         standings (pandas.DataFrame): DataFrame with team standings probabilities,
             with columns representing finishing positions as strings (e.g., "1", "2", ..., "20").
-        relegation_rules (dict): dict containing the relegation rules for the league, with the following keys:
-            - "direct": positions with direct relegation, for example [18,19,20]
-            - "playoff": positions going into relegation palyoff, for example [16]
+        qualification_mapping (dict): dict containing the qualification rules for the league, with the following possible keys:
+            - "champion": positions with championship, for example [1]
+            - "top_4": positions going into UCL or top 4, for example [1,2,3,4]
+            - "relegation_direct": positions with direct relegation, for example [18,19,20]
+            - "relegation_playoff": positions going into relegation palyoff, for example [16]
 
     Returns:
         pandas.DataFrame: The same DataFrame with three new columns added:
-            - 'title_odds': Probability of finishing 1st.
-            - 'top_4_odds': Probability of finishing in the top 4.
-            - 'relegation_odds': Probability of finishing in relegation spots (18th, 19th, 20th).
+            - 'champion': Probability of finishing 1st.
+            - 'top_4': Probability of finishing in the top 4.
+            - 'relegation_playoff': Probability of finishing in relegation playoff spots (18th).
+            - 'relegation_direct': Probability of finishing in relegation spots (18th, 19th, 20th).
         The DataFrame is sorted by 'title_odds' in descending order.
     """
-    standings["title_odds"] = standings["1"]
-    standings["top_4_odds"] = standings[["1", "2", "3", "4"]].sum(axis=1)
-    direct_relegation = [str(i) for i in relegation_rules["direct"]]
-    standings["direct_relegation_odds"] = standings[direct_relegation].sum(axis=1)
-    if relegation_rules["playoff"] is not None:
-        playoff_relegation = [str(i) for i in relegation_rules["playoff"]]
-        standings["relegation_playoff_odds"] = standings[playoff_relegation].sum(axis=1)
-    else:
-        standings["relegation_playoff_odds"] = 0
-    standings = standings.sort_values(by="title_odds", ascending=False)
-
+    for k, v in qualification_mapping.items():
+        standings_list = [str(i) for i in v]
+        standings[k] = standings[standings_list].sum(axis=1)
     return standings
 
 
 if __name__ == "__main__":
     start_time = time.time()
     engine = db_connect.get_postgres_engine()
-    sim_standings_all = []
+    sim_standings_wo_ko = []
+    sim_standings_w_ko = []
+
     for league in config.leagues_to_sim:
         is_continental_league = league in ['UCL','UEL','UECL']
         print("Simulating: ", league)
@@ -213,7 +210,7 @@ if __name__ == "__main__":
 
         league_rules = config.league_rules[league]
         classif_rules = league_rules["classification"]
-        relegation_rules = league_rules["relegation"]
+        qualif_rules = league_rules["qualification"]
         schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
         sim_standings = run_simulation_parallel(
             schedule_played,
@@ -230,22 +227,33 @@ if __name__ == "__main__":
             verbose=False,
         )
         """
-        if not league_rules["has_knockout"]:
-            sim_standings = aggregate_odds(sim_standings, relegation_rules)
-        sim_standings["country"] = league
+        sim_standings = aggregate_standings_outcomes(sim_standings, qualif_rules)
+        sim_standings["league"] = league
         sim_standings["updated_at"] = datetime.now()
-        sim_standings_all.append(sim_standings)
+        if not league_rules["has_knockout"]:
+            sim_standings_wo_ko.append(sim_standings)
+        else:
+            sim_standings_w_ko.append(sim_standings)
 
     end_time = time.time()
     print(f"Simulation took {end_time - start_time:.2f} seconds")
-    sim_standings_all = pd.concat(sim_standings_all)
+    sim_standings_wo_ko = pd.concat(sim_standings_wo_ko)
+    sim_standings_w_ko = pd.concat(sim_standings_w_ko)
+
     # reconnect
     engine = db_connect.get_postgres_engine()
-    sim_standings_all.to_sql(
-        config.sim_output_table["name"],
+    sim_standings_wo_ko.to_sql(
+        config.domestic_sim_output_table["name"],
         engine,
         if_exists="replace",
         index=False,
-        dtype=config.sim_output_table["dtype"],
+        dtype=config.domestic_sim_output_table["dtype"],
+    )
+    sim_standings_w_ko.to_sql(
+        config.continental_sim_output_table["name"],
+        engine,
+        if_exists="replace",
+        index=False,
+        dtype=config.continental_sim_output_table["dtype"],
     )
     print(f"Simulations saved to db")

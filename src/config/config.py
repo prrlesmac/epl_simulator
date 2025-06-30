@@ -143,8 +143,8 @@ fixtures_table = {
         "updated_at": TIMESTAMP(),
     },
 }
-sim_output_table = {
-    "name": "sim_standings",
+domestic_sim_output_table = {
+    "name": "sim_standings_dom",
     "dtype": {
         "team": VARCHAR(100),
         "1": FLOAT(),
@@ -167,11 +167,63 @@ sim_output_table = {
         "18": FLOAT(),
         "19": FLOAT(),
         "20": FLOAT(),
-        "title_odds": FLOAT(),
-        "top_4_odds": FLOAT(),
-        "direct_relegation_odds": FLOAT(),
-        "relegation_playoff_odds": FLOAT(),
-        "country": VARCHAR(100),
+        "champion": FLOAT(),
+        "top_4": FLOAT(),
+        "relegation_direct": FLOAT(),
+        "relegation_playoff": FLOAT(),
+        "league": VARCHAR(100),
+        "updated_at": TIMESTAMP(),
+    },
+}
+
+continental_sim_output_table = {
+    "name": "sim_standings_con",
+    "dtype": {
+        "team": VARCHAR(100),
+        "1": FLOAT(),
+        "2": FLOAT(),
+        "3": FLOAT(),
+        "4": FLOAT(),
+        "5": FLOAT(),
+        "6": FLOAT(),
+        "7": FLOAT(),
+        "8": FLOAT(),
+        "9": FLOAT(),
+        "10": FLOAT(),
+        "11": FLOAT(),
+        "12": FLOAT(),
+        "13": FLOAT(),
+        "14": FLOAT(),
+        "15": FLOAT(),
+        "16": FLOAT(),
+        "17": FLOAT(),
+        "18": FLOAT(),
+        "19": FLOAT(),
+        "20": FLOAT(),
+        "21": FLOAT(),
+        "22": FLOAT(),
+        "23": FLOAT(),
+        "24": FLOAT(),
+        "25": FLOAT(),
+        "26": FLOAT(),
+        "27": FLOAT(),
+        "28": FLOAT(),
+        "29": FLOAT(),
+        "30": FLOAT(),
+        "31": FLOAT(),
+        "32": FLOAT(),
+        "33": FLOAT(),
+        "34": FLOAT(),
+        "35": FLOAT(),
+        "36": FLOAT(),
+        "playoff": FLOAT(),
+        "direct_to_round_of_16": FLOAT(),
+        "round_of_16": FLOAT(),
+        "quater_final": FLOAT(),
+        "semi_final": FLOAT(),
+        "final": FLOAT(),
+        "champion": FLOAT(),
+        "league": VARCHAR(100),
         "updated_at": TIMESTAMP(),
     },
 }
@@ -209,7 +261,7 @@ fixtures_config = {
 }
 
 ## Simulation
-number_of_simulations = 1000
+number_of_simulations = 100
 home_advantage = 80
 leagues_to_sim = list(fixtures_config.keys())
 
@@ -223,7 +275,11 @@ league_rules = {
             "h2h_points",
             "h2h_away_goals_for",
         ],
-        "relegation": {"direct": [18, 19, 20], "playoff": None},
+        "qualification": {
+            "champion": [1],
+            "top_4": [1,2,3,4],
+            "relegation_direct": [18, 19, 20],
+        },
     },
     "ESP": {
         "has_knockout": False,
@@ -234,7 +290,11 @@ league_rules = {
             "goal_difference",
             "goals_for",
         ],
-        "relegation": {"direct": [18, 19, 20], "playoff": None},
+        "qualification": {
+            "champion": [1],
+            "top_4": [1,2,3,4],
+            "relegation_direct": [18, 19, 20],
+        },
     },
     "ITA": {
         "has_knockout": False,
@@ -246,7 +306,11 @@ league_rules = {
             "goal_difference",
             "goals_for",
         ],
-        "relegation": {"direct": [18, 19, 20], "playoff": None},
+        "qualification": {
+            "champion": [1],
+            "top_4": [1,2,3,4],
+            "relegation_direct": [18, 19, 20],
+        },
     },
     "GER": {
         "has_knockout": False,
@@ -259,7 +323,12 @@ league_rules = {
             "h2h_away_goals_for",
             "away_goals_for",
         ],
-        "relegation": {"direct": [17, 18], "playoff": [16]},
+        "qualification": {
+            "champion": [1],
+            "top_4": [1,2,3,4],
+            "relegation_playoff": [16],
+            "relegation_direct": [17,18],
+        },
     },
     "FRA": {
         "has_knockout": False,
@@ -273,7 +342,12 @@ league_rules = {
             "goals_for",
             "away_goals_for",
         ],
-        "relegation": {"direct": [17, 18], "playoff": [16]},
+        "qualification": {
+            "champion": [1],
+            "top_4": [1,2,3,4],
+            "relegation_playoff": [16],
+            "relegation_direct": [17,18],
+        },
     },
     "UCL": {
         "has_knockout": True,
@@ -284,7 +358,10 @@ league_rules = {
             "away_goals_for",
         ],
         # No relegation info for UCL, exclude or set None
-        "relegation": None,
+        "qualification": {
+            "direct_to_round_of_16": list(range(1, 17)),
+            "playoff": list(range(17, 25)),
+        },
         "knockout_bracket": []
     },
 }
