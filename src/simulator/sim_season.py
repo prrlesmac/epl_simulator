@@ -152,6 +152,8 @@ def run_simulation_parallel(
         knockout_cols = standings_po.columns[standings_po.columns.str.startswith("po_")]
         standings_po = standings_po.groupby(["team"])[knockout_cols].sum().reset_index()
         standings_all = standings_all.merge(standings_po, how="left", on="team")
+        standings_all[knockout_cols] = standings_all[knockout_cols] / num_simulations
+
     return standings_all
 
 
@@ -243,13 +245,13 @@ def aggregate_standings_outcomes(standings, qualification_mapping):
 
 if __name__ == "__main__":
     start_time = time.time()
-    engine = db_connect.get_postgres_engine()
     sim_standings_wo_ko = []
     sim_standings_w_ko = []
 
     for league in config.leagues_to_sim:
         is_continental_league = league in ["UCL", "UEL", "UECL"]
         print("Simulating: ", league)
+        engine = db_connect.get_postgres_engine()
         schedule = pd.read_sql(
             f"SELECT * FROM {config.fixtures_table['name']} WHERE country = '{league}'",
             engine,
