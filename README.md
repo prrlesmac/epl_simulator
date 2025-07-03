@@ -15,9 +15,8 @@ rethink architecture to allow for continental leagues
 ucl:
 - add full tiebreakers
 - simulate po
-    - add actual elo simulation to the sim bracket functions
-    - integrate to group stage simulation
     - have rules for when ties have only had 1st leg played
+    validate that bracket format and bracket compo are compatible
     - think of better ways to get the elos for playoff than getting the from the standings_df
     - consider home and away ties and adjust the we calc for that
 - output to db and fe

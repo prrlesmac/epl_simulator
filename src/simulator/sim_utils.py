@@ -4,18 +4,30 @@ import math
 import random
 
 
-def calculate_win_probability(elo_home, elo_away):
+def calculate_win_probability(elo_home, elo_away, matchup_type="single_game", home_adv=80):
     """
     Calculate win probability using the Elo rating system.
 
     Parameters:
         elo_home (float): Elo rating of team 1
         elo_away (float): Elo rating of team 2
+        matchup_type (str): Type of matchup, can be "two-legged", "single_game_neutral", or "single_game"
+        home_adv (float): Home advantage factor, default is 80 for single game matchups
 
     Returns:
         float: Probability of team 1 winning
     """
-    return 1 / (1 + 10 ** ((elo_away - elo_home) / 400))
+    if matchup_type == "two-legged":
+        rank_diff = (elo_away - elo_home) * 1.4
+    elif matchup_type == "single_game_neutral":
+        rank_diff = (elo_away - elo_home)
+    elif matchup_type == "single_game":
+        rank_diff = (elo_away - elo_home - home_adv)
+    else:
+        print(f"Unknown matchup type: {matchup_type}. Defaulting to single game.")
+        rank_diff = (elo_away - elo_home - home_adv)
+    we = 1 / (1 + 10 ** (rank_diff / 400))
+    return we
 
 
 def simulate_match(proba):
@@ -93,11 +105,11 @@ def simulate_matches(matches_df, home_advantage):
     for index, match in matches_df.iterrows():
 
         home_advantage = 80 if match["neutral"] == "N" else 0
-        elo_home = match["elo_home"] + home_advantage
+        elo_home = match["elo_home"]
         elo_away = match["elo_away"]
 
         # Calculate win probability for Team 1
-        win_proba = calculate_win_probability(elo_home, elo_away)
+        win_proba = calculate_win_probability(elo_home, elo_away, home_adv=home_advantage)
 
         # Simulate match
         result = simulate_match(win_proba)
@@ -164,7 +176,7 @@ def apply_playoff_tiebreaker(matches_df, tied_teams):
     # matches_df has the tied teams and their elos
     elo_home = matches_df.iloc[0]["elo_home"]
     elo_away = matches_df.iloc[0]["elo_away"]
-    we = calculate_win_probability(elo_home, elo_away)
+    we = calculate_win_probability(elo_home, elo_away, matchup_type="single_game_neutral")
     result = simulate_playoff(we)
 
     standings_playoff = pd.DataFrame(
@@ -357,7 +369,7 @@ def get_standings(matches_df, classif_rules):
     return standings
 
 
-def validate_bracket(bracket_df):
+def validate_bracket(bracket_df, bracket_format):
     """
     Validates a playoff bracket DataFrame.
 
@@ -369,6 +381,8 @@ def validate_bracket(bracket_df):
 
     Args:
         bracket_df (pd.DataFrame): A DataFrame with columns ['team1', 'team2'] representing matchups.
+        bracket_format (dict): Dictionary defining the format of each round in the knockout stage.
+            Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
 
     Raises:
         ValueError: If the bracket has invalid team slots, duplicates, or wrong number of teams.
@@ -395,14 +409,22 @@ def validate_bracket(bracket_df):
     # Number of actual teams must be at least 2
     if num_teams < 2:
         raise ValueError("At least two teams are required in the bracket.")
+    # check that bracket format matches the number of rounds
+    expected_rounds = int(math.log2(num_slots))
+    if len(bracket_format) != expected_rounds:
+        raise ValueError(
+            f"Bracket format does not match the number of rounds. Expected {expected_rounds} rounds, got {len(bracket_format)}."
+        )
 
 
-def simulate_playoff_bracket(bracket_df, elos):
+def simulate_playoff_bracket(bracket_df, bracket_format, elos):
     """
     Simulates a knockout playoff bracket using ELO ratings.
 
     Args:
         bracket_df (pd.DataFrame): Bracket structure with columns ['team1', 'team2'].
+        bracket_format (dict): Dictionary defining the format of each round.
+            Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
         elos (pd.DataFrame): DataFrame with columns ['team', 'elo'] representing team ELO ratings.
 
     Returns:
@@ -416,13 +438,14 @@ def simulate_playoff_bracket(bracket_df, elos):
     teams_progression = {}
 
     # Validate the bracket structure
-    validate_bracket(bracket_df)
+    validate_bracket(bracket_df, bracket_format)
 
     current_round = bracket_df.copy()
     round_number = 1
 
     while len(current_round) > 0:
         round_label = f"po_r{2 * len(current_round)}"
+        round_format = bracket_format[round_label]
         rounds.append(round_label)
 
         winners = []
@@ -439,7 +462,7 @@ def simulate_playoff_bracket(bracket_df, elos):
                 match_elos = pd.Series([team1, team2]).map(elos_dict)
 
                 # Calculate win probability for Team 1
-                win_proba = calculate_win_probability(match_elos[0], match_elos[1])
+                win_proba = calculate_win_probability(match_elos[0], match_elos[1], matchup_type=round_format)
 
                 # Simulate match
                 result = simulate_playoff(win_proba)

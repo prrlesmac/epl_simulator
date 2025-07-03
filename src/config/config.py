@@ -380,5 +380,12 @@ league_rules = {
             (6, "Bye"),
             (11, 22),
         ],
+        "knockout_format": {
+            "po_r32": "two-legged",
+            "po_r16": "two-legged",
+            "po_r8": "two-legged",  
+            "po_r4": "two-legged",
+            "po_r2": "single_game_neutral",
+        }
     },
 }

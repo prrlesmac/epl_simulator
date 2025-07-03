@@ -52,6 +52,7 @@ def single_simulation(
     classif_rules,
     has_knockout=False,
     bracket_composition=None,
+    bracket_format=None,
 ):
     """
     Simulates the remaining matches and computes the final standings.
@@ -65,6 +66,8 @@ def single_simulation(
         bracket_composition (list, optional): List of tuples defining the knockout
             bracket structure, e.g., [(1, 2), (3, 4)] for pairs of teams.
             Required if `has_knockout` is True.
+        bracket_format (dict, optional): Dictionary defining the format of each round in the knockout stage.
+            Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
 
     Returns:
         pd.DataFrame: The standings DataFrame after simulating the pending matches and combining with played matches.
@@ -81,7 +84,7 @@ def single_simulation(
         elos = schedule_final.drop_duplicates(subset=["home"])[
             ["home", "elo_home"]
         ].rename(columns={"home": "team", "elo_home": "elo"})
-        playoff_df = simulate_playoff_bracket(bracket, elos)
+        playoff_df = simulate_playoff_bracket(bracket, bracket_format, elos)
         standings_df = standings_df.merge(playoff_df, how="left", on="team")
 
     return standings_df
@@ -93,6 +96,7 @@ def run_simulation_parallel(
     classif_rules,
     has_knockout=False,
     bracket_composition=None,
+    bracket_format=None,
     num_simulations=1000,
 ):
     """
@@ -108,6 +112,8 @@ def run_simulation_parallel(
         bracket_composition (list, optional): List of tuples defining the knockout
             bracket structure, e.g., [(1, 2), (3, 4)] for pairs of teams.
             Required if `has_knockout` is True.
+        bracket_format (dict, optional): Dictionary defining the format of each round in the knockout stage.
+            Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
         num_simulations (int, optional): Number of simulations to run in parallel. Defaults to 1000.
 
     Returns:
@@ -125,6 +131,7 @@ def run_simulation_parallel(
                 classif_rules,
                 has_knockout,
                 bracket_composition,
+                bracket_format,
             )
         ] * num_simulations
         standings_list = pool.starmap(single_simulation, args)
@@ -268,6 +275,7 @@ if __name__ == "__main__":
         bracket_composition = (
             league_rules["knockout_bracket"] if is_continental_league else None
         )
+        bracket_format = league_rules["knockout_format"] if is_continental_league else None
         classif_rules = league_rules["classification"]
         qualif_rules = league_rules["qualification"]
         schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
@@ -277,6 +285,7 @@ if __name__ == "__main__":
             classif_rules,
             has_knockout=is_continental_league,
             bracket_composition=bracket_composition,
+            bracket_format=bracket_format,
             num_simulations=config.number_of_simulations,
         )
         """
