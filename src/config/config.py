@@ -261,7 +261,7 @@ fixtures_config = {
 }
 
 ## Simulation
-number_of_simulations = 100
+number_of_simulations = 10000
 home_advantage = 80
 leagues_to_sim = list(fixtures_config.keys())
 
@@ -362,7 +362,24 @@ league_rules = {
             "direct_to_round_of_16": list(range(1, 17)),
             "playoff": list(range(17, 25)),
         },
-        "knockout_bracket": []
+        "knockout_bracket": [
+            (1, "Bye"),
+            (16, 17),
+            (8, "Bye"),
+            (9, 24),
+            (4, "Bye"),
+            (13, 20),
+            (5, "Bye"),
+            (12, 21),
+            (2, "Bye"),
+            (15, 18),
+            (7, "Bye"),
+            (10, 23),
+            (3, "Bye"),
+            (14, 19),
+            (6, "Bye"),
+            (11, 22)
+        ]
     },
 }
 

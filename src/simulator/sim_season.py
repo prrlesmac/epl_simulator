@@ -1,4 +1,4 @@
-from simulator.sim_utils import simulate_matches, get_standings
+from simulator.sim_utils import simulate_matches, get_standings, draw_from_pots, create_bracket_from_composition, simulate_playoff_bracket
 import pandas as pd
 from config import config
 from db import db_connect
@@ -40,7 +40,7 @@ def split_and_merge_schedule(schedule, elos):
     return schedule_played, schedule_pending
 
 
-def single_simulation(schedule_played, schedule_pending, classif_rules):
+def single_simulation(schedule_played, schedule_pending, classif_rules, has_knockout=False, bracket_composition=None):
     """
     Simulates the remaining matches and computes the final standings.
 
@@ -48,6 +48,11 @@ def single_simulation(schedule_played, schedule_pending, classif_rules):
         schedule_played (pd.DataFrame): DataFrame containing matches already played.
         schedule_pending (pd.DataFrame): DataFrame containing matches yet to be played.
         classif_rules (callable or object): Rules or function used to compute standings/classification.
+        has_knockout (bool, optional): If True, includes knockout stage simulation.
+            Default is False, meaning only league standings are simulated.
+        bracket_composition (list, optional): List of tuples defining the knockout
+            bracket structure, e.g., [(1, 2), (3, 4)] for pairs of teams.
+            Required if `has_knockout` is True.
 
     Returns:
         pd.DataFrame: The standings DataFrame after simulating the pending matches and combining with played matches.
@@ -56,11 +61,26 @@ def single_simulation(schedule_played, schedule_pending, classif_rules):
     schedule_final = pd.concat([schedule_played, simulated_pending], ignore_index=True)
     standings_df = get_standings(schedule_final, classif_rules)
 
+    if has_knockout:
+        # If knockout stage is included, simulate it
+        draw = draw_from_pots(standings_df, pot_size=2)
+        bracket = create_bracket_from_composition(draw, bracket_composition)
+        # TODO think ofb etter ways to pull elos
+        elos = schedule_final.drop_duplicates(subset=["home"])[["home", "elo_home"]].rename(columns={"home": "team", "elo_home": "elo"})
+        playoff_df = simulate_playoff_bracket(bracket, elos)
+        standings_df = standings_df.merge( 
+            playoff_df,
+            how="left",
+            on="team"
+        )
+
     return standings_df
 
 
+
+
 def run_simulation_parallel(
-    schedule_played, schedule_pending, classif_rules, num_simulations=1000
+    schedule_played, schedule_pending, classif_rules, has_knockout=False, bracket_composition=None, num_simulations=1000
 ):
     """
     Run multiple simulations of pending matches in parallel using multiprocessing,
@@ -70,6 +90,11 @@ def run_simulation_parallel(
         schedule_played (pd.DataFrame): DataFrame of matches already played.
         schedule_pending (pd.DataFrame): DataFrame of matches yet to be played.
         classif_rules (callable or object): Rules or function to compute standings/classification.
+        has_knockout (bool, optional): If True, includes knockout stage simulation.
+            Default is False, meaning only league standings are simulated.
+        bracket_composition (list, optional): List of tuples defining the knockout
+            bracket structure, e.g., [(1, 2), (3, 4)] for pairs of teams.
+            Required if `has_knockout` is True.
         num_simulations (int, optional): Number of simulations to run in parallel. Defaults to 1000.
 
     Returns:
@@ -80,9 +105,9 @@ def run_simulation_parallel(
     print(f"Running {num_simulations} simulations using multiprocessing...")
 
     with Pool(processes=cpu_count()) as pool:
-        args = [(schedule_played, schedule_pending, classif_rules)] * num_simulations
+        args = [(schedule_played, schedule_pending, classif_rules, has_knockout, bracket_composition)] * num_simulations
         standings_list = pool.starmap(single_simulation, args)
-
+        #standings_list = [single_simulation(schedule_played, schedule_pending, classif_rules, has_knockout, bracket_composition)]
     # Aggregate position frequencies
     standings_all = (
         pd.concat(standings_list)
@@ -100,6 +125,19 @@ def run_simulation_parallel(
     )
     standings_all.columns = standings_all.columns.astype(str)
 
+    if has_knockout:
+        # Add knockout stage results if applicable
+        standings_po = pd.concat(standings_list)
+        knockout_cols = standings_po.columns[standings_po.columns.str.startswith("po_")]
+        standings_po = (
+            standings_po
+            .groupby(["team"])[knockout_cols]
+            .sum()
+            .reset_index()
+        )
+        standings_all = standings_all.merge(
+            standings_po, how="left", on="team"
+        )
     return standings_all
 
 
@@ -118,7 +156,7 @@ def run_simulation(
         schedule_played (pandas.DataFrame): DataFrame of already played matches.
         schedule_pending (pandas.DataFrame): DataFrame of pending matches, ready
             for simulation (e.g., includes Elo ratings).
-        classification_rules (list): successive order of the criteria to apply to classify positions
+        classif_rules (list): successive order of the criteria to apply to classify positions
         num_simulations (int, optional): Number of simulation iterations. Default is 1000.
         verbose (bool, optional): If True, prints iteration numbers. Default is False.
 
@@ -209,6 +247,7 @@ if __name__ == "__main__":
         )
 
         league_rules = config.league_rules[league]
+        bracket_composition = league_rules["knockout_bracket"] if is_continental_league else None
         classif_rules = league_rules["classification"]
         qualif_rules = league_rules["qualification"]
         schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
@@ -216,6 +255,8 @@ if __name__ == "__main__":
             schedule_played,
             schedule_pending,
             classif_rules,
+            has_knockout=is_continental_league,
+            bracket_composition=bracket_composition,
             num_simulations=config.number_of_simulations,
         )
         """

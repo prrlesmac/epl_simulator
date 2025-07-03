@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import math
+import random
 
 
 def calculate_win_probability(elo_home, elo_away):
@@ -354,3 +355,131 @@ def get_standings(matches_df, classif_rules):
     )
 
     return standings
+
+def validate_bracket(bracket_df):
+    # Combine all teams into a single Series
+    teams = pd.concat([bracket_df["team1"], bracket_df["team2"]])
+    # Check for empty slots (NaN or empty string)
+    if teams.isnull().any() or (teams.astype(str).str.strip() == "").any():
+        raise ValueError("Bracket contains empty team slots.")
+    # Exclude 'Bye' from unique team check and count
+    teams_no_bye = teams[teams != "Bye"]
+    # Check for duplicate teams (excluding 'Bye')
+    if teams_no_bye.duplicated().any():
+        raise ValueError("Duplicate teams found in the bracket.")
+    # Number of actual teams (excluding 'Bye')
+    num_teams = len(teams_no_bye)
+    # Number of slots (including 'Bye')
+    num_slots = len(teams)
+    # Number of teams must be a power of 2 (including 'Bye' slots)
+    if num_slots == 0 or (num_slots & (num_slots - 1)) != 0:
+        raise ValueError("Total number of slots (including 'Bye') must be a power of 2.")
+    # Number of actual teams must be at least 2
+    if num_teams < 2:
+        raise ValueError("At least two teams are required in the bracket.")
+
+
+def simulate_playoff_bracket(bracket_df, elos):
+    elos_dict = dict(zip(elos['team'], elos['elo']))
+    rounds = []
+    teams_progression = {}
+
+    # Validate the bracket structure
+    validate_bracket(bracket_df)
+
+    current_round = bracket_df.copy()
+    round_number = 1
+
+    while len(current_round) > 0:
+        round_label = f"po_r{2 * len(current_round)}"
+        rounds.append(round_label)
+
+        winners = []
+        for _, row in current_round.iterrows():
+            team1, team2 = row["team1"], row["team2"]
+
+            # Randomly choose a winner
+            if team1 == "Bye":
+                winner = team2
+            elif team2 == "Bye":
+                winner = team1
+            else:
+                # add logic to get elo ratings from a df called elos
+                match_elos = pd.Series([team1, team2]).map(elos_dict)
+
+                # Calculate win probability for Team 1
+                win_proba = calculate_win_probability(match_elos[0], match_elos[1])
+
+                # Simulate match
+                result = simulate_playoff(win_proba)
+                winner = team1 if result == 1 else team2
+            winners.append(winner)
+
+            # Track participation
+            for team in [team1, team2]:
+                if team not in teams_progression:
+                    teams_progression[team] = {}
+                teams_progression[team][round_label] = 1
+                if len(current_round) == 1 and team == winner:
+                    teams_progression[team]["po_champion"] = 1
+    
+
+        # Prepare next round
+        it = iter(winners)
+        next_round = list(zip(it, it))
+        current_round = pd.DataFrame(next_round, columns=["team1", "team2"]) if next_round else pd.DataFrame()
+
+        round_number += 1
+
+    # Build output DataFrame
+    all_teams = list(teams_progression.keys())
+    rounds.append("Champion")
+    all_rounds = rounds
+
+    result = pd.DataFrame(index=all_teams, columns=all_rounds).fillna(0).astype(int)
+    for team, progress in teams_progression.items():
+        for rnd in progress:
+            result.loc[team, rnd] = progress[rnd]
+
+    return result.reset_index().rename(columns={"index": "team"})
+
+
+
+def draw_from_pots(df, pot_size=2):
+    df = df.copy()
+    df = df.sort_values("pos").reset_index(drop=True)
+    
+    # Map position → team
+    pos_to_team = dict(zip(df["pos"], df["team"]))
+
+    # Sort positions and group into pots
+    sorted_positions = sorted(pos_to_team.keys())
+    pots = [sorted_positions[i:i+pot_size] for i in range(0, len(sorted_positions), pot_size)]
+
+    draw_result = []
+    for pot in pots:
+        teams = [pos_to_team[pos] for pos in pot]
+        random.shuffle(teams)  # shuffle in-place
+        draw_result.extend(teams)
+
+    # Assign back to a DataFrame
+    return pd.DataFrame({
+        "draw_order": range(1, len(draw_result) + 1),
+        "team": draw_result
+    })
+
+
+def create_bracket_from_composition(df_with_draw, bracket_composition):
+    pos_to_team = dict(zip(df_with_draw["draw_order"], df_with_draw["team"]))
+    pairs = []
+
+    for pos1, pos2 in bracket_composition:
+        team1 = pos_to_team.get(pos1) if pos1 != "Bye" else "Bye"
+        team2 = pos_to_team.get(pos2) if pos2 != "Bye" else "Bye"
+
+        if team1 == "Bye" and team2 == "Bye":
+            raise ValueError("Invalid bracket: both sides cannot be 'Bye'")
+        
+        pairs.append((team1, team2))
+
+    return pd.DataFrame(pairs, columns=["team1", "team2"])
