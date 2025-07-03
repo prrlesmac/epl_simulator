@@ -356,6 +356,7 @@ def get_standings(matches_df, classif_rules):
 
     return standings
 
+
 def validate_bracket(bracket_df):
     """
     Validates a playoff bracket DataFrame.
@@ -388,7 +389,9 @@ def validate_bracket(bracket_df):
     num_slots = len(teams)
     # Number of teams must be a power of 2 (including 'Bye' slots)
     if num_slots == 0 or (num_slots & (num_slots - 1)) != 0:
-        raise ValueError("Total number of slots (including 'Bye') must be a power of 2.")
+        raise ValueError(
+            "Total number of slots (including 'Bye') must be a power of 2."
+        )
     # Number of actual teams must be at least 2
     if num_teams < 2:
         raise ValueError("At least two teams are required in the bracket.")
@@ -404,11 +407,11 @@ def simulate_playoff_bracket(bracket_df, elos):
 
     Returns:
         pd.DataFrame: A wide-format DataFrame with one row per team and binary indicators for each round and champion status.
-    
+
     Raises:
         ValueError: If the bracket is invalid.
     """
-    elos_dict = dict(zip(elos['team'], elos['elo']))
+    elos_dict = dict(zip(elos["team"], elos["elo"]))
     rounds = []
     teams_progression = {}
 
@@ -450,12 +453,15 @@ def simulate_playoff_bracket(bracket_df, elos):
                 teams_progression[team][round_label] = 1
                 if len(current_round) == 1 and team == winner:
                     teams_progression[team]["po_champion"] = 1
-    
 
         # Prepare next round
         it = iter(winners)
         next_round = list(zip(it, it))
-        current_round = pd.DataFrame(next_round, columns=["team1", "team2"]) if next_round else pd.DataFrame()
+        current_round = (
+            pd.DataFrame(next_round, columns=["team1", "team2"])
+            if next_round
+            else pd.DataFrame()
+        )
 
         round_number += 1
 
@@ -472,7 +478,6 @@ def simulate_playoff_bracket(bracket_df, elos):
     return result.reset_index().rename(columns={"index": "team"})
 
 
-
 def draw_from_pots(df, pot_size=2):
     """
     Randomly draws teams from position-based pots.
@@ -486,13 +491,16 @@ def draw_from_pots(df, pot_size=2):
     """
     df = df.copy()
     df = df.sort_values("pos").reset_index(drop=True)
-    
+
     # Map position → team
     pos_to_team = dict(zip(df["pos"], df["team"]))
 
     # Sort positions and group into pots
     sorted_positions = sorted(pos_to_team.keys())
-    pots = [sorted_positions[i:i+pot_size] for i in range(0, len(sorted_positions), pot_size)]
+    pots = [
+        sorted_positions[i : i + pot_size]
+        for i in range(0, len(sorted_positions), pot_size)
+    ]
 
     draw_result = []
     for pot in pots:
@@ -501,10 +509,9 @@ def draw_from_pots(df, pot_size=2):
         draw_result.extend(teams)
 
     # Assign back to a DataFrame
-    return pd.DataFrame({
-        "draw_order": range(1, len(draw_result) + 1),
-        "team": draw_result
-    })
+    return pd.DataFrame(
+        {"draw_order": range(1, len(draw_result) + 1), "team": draw_result}
+    )
 
 
 def create_bracket_from_composition(df_with_draw, bracket_composition):
@@ -513,7 +520,7 @@ def create_bracket_from_composition(df_with_draw, bracket_composition):
 
     Args:
         df_with_draw (pd.DataFrame): DataFrame with columns ['draw_order', 'team'] from draw.
-        bracket_composition (list of tuple): List of (pos1, pos2) tuples representing matchups. 
+        bracket_composition (list of tuple): List of (pos1, pos2) tuples representing matchups.
             Values can be integers (draw positions) or 'Bye'.
 
     Returns:
@@ -531,7 +538,7 @@ def create_bracket_from_composition(df_with_draw, bracket_composition):
 
         if team1 == "Bye" and team2 == "Bye":
             raise ValueError("Invalid bracket: both sides cannot be 'Bye'")
-        
+
         pairs.append((team1, team2))
 
     return pd.DataFrame(pairs, columns=["team1", "team2"])

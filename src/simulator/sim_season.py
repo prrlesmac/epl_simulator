@@ -1,4 +1,10 @@
-from simulator.sim_utils import simulate_matches, get_standings, draw_from_pots, create_bracket_from_composition, simulate_playoff_bracket
+from simulator.sim_utils import (
+    simulate_matches,
+    get_standings,
+    draw_from_pots,
+    create_bracket_from_composition,
+    simulate_playoff_bracket,
+)
 import pandas as pd
 from config import config
 from db import db_connect
@@ -40,7 +46,13 @@ def split_and_merge_schedule(schedule, elos):
     return schedule_played, schedule_pending
 
 
-def single_simulation(schedule_played, schedule_pending, classif_rules, has_knockout=False, bracket_composition=None):
+def single_simulation(
+    schedule_played,
+    schedule_pending,
+    classif_rules,
+    has_knockout=False,
+    bracket_composition=None,
+):
     """
     Simulates the remaining matches and computes the final standings.
 
@@ -66,21 +78,22 @@ def single_simulation(schedule_played, schedule_pending, classif_rules, has_knoc
         draw = draw_from_pots(standings_df, pot_size=2)
         bracket = create_bracket_from_composition(draw, bracket_composition)
         # TODO think ofb etter ways to pull elos
-        elos = schedule_final.drop_duplicates(subset=["home"])[["home", "elo_home"]].rename(columns={"home": "team", "elo_home": "elo"})
+        elos = schedule_final.drop_duplicates(subset=["home"])[
+            ["home", "elo_home"]
+        ].rename(columns={"home": "team", "elo_home": "elo"})
         playoff_df = simulate_playoff_bracket(bracket, elos)
-        standings_df = standings_df.merge( 
-            playoff_df,
-            how="left",
-            on="team"
-        )
+        standings_df = standings_df.merge(playoff_df, how="left", on="team")
 
     return standings_df
 
 
-
-
 def run_simulation_parallel(
-    schedule_played, schedule_pending, classif_rules, has_knockout=False, bracket_composition=None, num_simulations=1000
+    schedule_played,
+    schedule_pending,
+    classif_rules,
+    has_knockout=False,
+    bracket_composition=None,
+    num_simulations=1000,
 ):
     """
     Run multiple simulations of pending matches in parallel using multiprocessing,
@@ -105,9 +118,17 @@ def run_simulation_parallel(
     print(f"Running {num_simulations} simulations using multiprocessing...")
 
     with Pool(processes=cpu_count()) as pool:
-        args = [(schedule_played, schedule_pending, classif_rules, has_knockout, bracket_composition)] * num_simulations
+        args = [
+            (
+                schedule_played,
+                schedule_pending,
+                classif_rules,
+                has_knockout,
+                bracket_composition,
+            )
+        ] * num_simulations
         standings_list = pool.starmap(single_simulation, args)
-        #standings_list = [single_simulation(schedule_played, schedule_pending, classif_rules, has_knockout, bracket_composition)]
+        # standings_list = [single_simulation(schedule_played, schedule_pending, classif_rules, has_knockout, bracket_composition)]
     # Aggregate position frequencies
     standings_all = (
         pd.concat(standings_list)
@@ -129,15 +150,8 @@ def run_simulation_parallel(
         # Add knockout stage results if applicable
         standings_po = pd.concat(standings_list)
         knockout_cols = standings_po.columns[standings_po.columns.str.startswith("po_")]
-        standings_po = (
-            standings_po
-            .groupby(["team"])[knockout_cols]
-            .sum()
-            .reset_index()
-        )
-        standings_all = standings_all.merge(
-            standings_po, how="left", on="team"
-        )
+        standings_po = standings_po.groupby(["team"])[knockout_cols].sum().reset_index()
+        standings_all = standings_all.merge(standings_po, how="left", on="team")
     return standings_all
 
 
@@ -234,20 +248,24 @@ if __name__ == "__main__":
     sim_standings_w_ko = []
 
     for league in config.leagues_to_sim:
-        is_continental_league = league in ['UCL','UEL','UECL']
+        is_continental_league = league in ["UCL", "UEL", "UECL"]
         print("Simulating: ", league)
         schedule = pd.read_sql(
             f"SELECT * FROM {config.fixtures_table['name']} WHERE country = '{league}'",
             engine,
         )
-        elos_query = f"SELECT * FROM {config.elo_table['name']}" + (f" WHERE country = '{league}'" if not is_continental_league else "")
+        elos_query = f"SELECT * FROM {config.elo_table['name']}" + (
+            f" WHERE country = '{league}'" if not is_continental_league else ""
+        )
         elos = pd.read_sql(
             elos_query,
             engine,
         )
 
         league_rules = config.league_rules[league]
-        bracket_composition = league_rules["knockout_bracket"] if is_continental_league else None
+        bracket_composition = (
+            league_rules["knockout_bracket"] if is_continental_league else None
+        )
         classif_rules = league_rules["classification"]
         qualif_rules = league_rules["qualification"]
         schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)

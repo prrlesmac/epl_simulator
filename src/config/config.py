@@ -252,10 +252,10 @@ fixtures_config = {
         "fixtures_url": "https://fbref.com/en/comps/13/schedule/Ligue-1-Scores-and-Fixtures",
         "table_id": ["sched_2024-2025_13_1"],
     },
-     "UCL": {
+    "UCL": {
         "fixtures_url": "https://fbref.com/en/comps/8/2024-2025/schedule/2024-2025-Champions-League-Scores-and-Fixtures",
-        "table_id": ["sched_2024-2025_8_2","sched_2024-2025_8_3"],
-     },
+        "table_id": ["sched_2024-2025_8_2", "sched_2024-2025_8_3"],
+    },
     # UEL
     # UECL
 }
@@ -277,7 +277,7 @@ league_rules = {
         ],
         "qualification": {
             "champion": [1],
-            "top_4": [1,2,3,4],
+            "top_4": [1, 2, 3, 4],
             "relegation_direct": [18, 19, 20],
         },
     },
@@ -292,7 +292,7 @@ league_rules = {
         ],
         "qualification": {
             "champion": [1],
-            "top_4": [1,2,3,4],
+            "top_4": [1, 2, 3, 4],
             "relegation_direct": [18, 19, 20],
         },
     },
@@ -308,7 +308,7 @@ league_rules = {
         ],
         "qualification": {
             "champion": [1],
-            "top_4": [1,2,3,4],
+            "top_4": [1, 2, 3, 4],
             "relegation_direct": [18, 19, 20],
         },
     },
@@ -325,9 +325,9 @@ league_rules = {
         ],
         "qualification": {
             "champion": [1],
-            "top_4": [1,2,3,4],
+            "top_4": [1, 2, 3, 4],
             "relegation_playoff": [16],
-            "relegation_direct": [17,18],
+            "relegation_direct": [17, 18],
         },
     },
     "FRA": {
@@ -344,9 +344,9 @@ league_rules = {
         ],
         "qualification": {
             "champion": [1],
-            "top_4": [1,2,3,4],
+            "top_4": [1, 2, 3, 4],
             "relegation_playoff": [16],
-            "relegation_direct": [17,18],
+            "relegation_direct": [17, 18],
         },
     },
     "UCL": {
@@ -378,9 +378,7 @@ league_rules = {
             (3, "Bye"),
             (14, 19),
             (6, "Bye"),
-            (11, 22)
-        ]
+            (11, 22),
+        ],
     },
 }
-
-
