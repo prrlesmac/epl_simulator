@@ -19,6 +19,7 @@ ucl:
     - integrate to group stage simulation
     - have rules for when ties have only had 1st leg played
     - think of better ways to get the elos for playoff than getting the from the standings_df
+    - consider home and away ties and adjust the we calc for that
 - output to db and fe
 store the 10,000 sims results in db
 calculate match odds

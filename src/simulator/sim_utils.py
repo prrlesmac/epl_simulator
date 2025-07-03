@@ -357,6 +357,21 @@ def get_standings(matches_df, classif_rules):
     return standings
 
 def validate_bracket(bracket_df):
+    """
+    Validates a playoff bracket DataFrame.
+
+    Checks for:
+    - Missing or empty team slots
+    - Duplicate team entries (excluding 'Bye')
+    - Total number of slots being a power of 2
+    - At least 2 non-'Bye' teams
+
+    Args:
+        bracket_df (pd.DataFrame): A DataFrame with columns ['team1', 'team2'] representing matchups.
+
+    Raises:
+        ValueError: If the bracket has invalid team slots, duplicates, or wrong number of teams.
+    """
     # Combine all teams into a single Series
     teams = pd.concat([bracket_df["team1"], bracket_df["team2"]])
     # Check for empty slots (NaN or empty string)
@@ -380,6 +395,19 @@ def validate_bracket(bracket_df):
 
 
 def simulate_playoff_bracket(bracket_df, elos):
+    """
+    Simulates a knockout playoff bracket using ELO ratings.
+
+    Args:
+        bracket_df (pd.DataFrame): Bracket structure with columns ['team1', 'team2'].
+        elos (pd.DataFrame): DataFrame with columns ['team', 'elo'] representing team ELO ratings.
+
+    Returns:
+        pd.DataFrame: A wide-format DataFrame with one row per team and binary indicators for each round and champion status.
+    
+    Raises:
+        ValueError: If the bracket is invalid.
+    """
     elos_dict = dict(zip(elos['team'], elos['elo']))
     rounds = []
     teams_progression = {}
@@ -446,6 +474,16 @@ def simulate_playoff_bracket(bracket_df, elos):
 
 
 def draw_from_pots(df, pot_size=2):
+    """
+    Randomly draws teams from position-based pots.
+
+    Args:
+        df (pd.DataFrame): DataFrame with columns ['team', 'pos'] where 'pos' determines pot grouping.
+        pot_size (int): Number of positions per pot (default is 2).
+
+    Returns:
+        pd.DataFrame: A DataFrame with columns ['draw_order', 'team'] indicating the randomized draw result.
+    """
     df = df.copy()
     df = df.sort_values("pos").reset_index(drop=True)
     
@@ -470,6 +508,20 @@ def draw_from_pots(df, pot_size=2):
 
 
 def create_bracket_from_composition(df_with_draw, bracket_composition):
+    """
+    Creates a playoff bracket based on a predefined composition and a team draw.
+
+    Args:
+        df_with_draw (pd.DataFrame): DataFrame with columns ['draw_order', 'team'] from draw.
+        bracket_composition (list of tuple): List of (pos1, pos2) tuples representing matchups. 
+            Values can be integers (draw positions) or 'Bye'.
+
+    Returns:
+        pd.DataFrame: A DataFrame with columns ['team1', 'team2'] representing the bracket.
+
+    Raises:
+        ValueError: If both sides of a match are 'Bye'.
+    """
     pos_to_team = dict(zip(df_with_draw["draw_order"], df_with_draw["team"]))
     pairs = []
 
