@@ -12,16 +12,17 @@ pip install psycopg-binary
 
 ToDos:
 rethink architecture to allow for continental leagues
+do mapping of elo club names to fbref club names in python and not change in db
+fix continental_sim_output_table schema definition
+check if relegation playoffs are showing up in league schedules
 ucl:
 - add full tiebreakers
 - simulate po
     - have rules for when ties have only had 1st leg played
-    validate that bracket format and bracket compo are compatible
     - think of better ways to get the elos for playoff than getting the from the standings_df
-    - consider home and away ties and adjust the we calc for that
-- output to db and fe
 store the 10,000 sims results in db
 calculate match odds
+think of right sorting for odds tables in fe
 show upcoming fixtures (2w) and their wdl odds
 calculation of how a game affects title odds
 do tiebreaker for h2h of multiple ones (tiebreaker of 3 then of 2)

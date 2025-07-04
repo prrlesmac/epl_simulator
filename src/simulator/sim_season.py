@@ -42,6 +42,11 @@ def split_and_merge_schedule(schedule, elos):
         .rename(columns={"elo_x": "elo_home", "elo_y": "elo_away"})
         .drop(columns=["club_x", "club_y"])
     )
+    # if elo is missing send warning and fill with 1000 
+    if schedule_pending["elo_home"].isnull().any() or schedule_pending["elo_away"].isnull().any():
+        print("Warning: Some Elo ratings are missing. Filling with default value of 1000.")
+        schedule_pending["elo_home"].fillna(1000, inplace=True)
+        schedule_pending["elo_away"].fillna(1000, inplace=True)
 
     return schedule_played, schedule_pending
 

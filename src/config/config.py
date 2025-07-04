@@ -118,6 +118,66 @@ club_name_mapping = {
     "Shakhtar": "Shakhtar",
     "Sparta Praha": "Sparta Prague",
     "Sturm Graz": "Sturm Graz",
+    ## UEL
+    'FK Riga': 'FK Rīgas FS',
+    'Fenerbahce': 'Fenerbahçe',
+    'Bodoe Glimt': 'Bodø/Glimt',
+    'PAOK': 'PAOK',
+    'Braga': 'Braga',
+    'Alkmaar': 'AZ Alkmaar',
+    'Elfsborg': 'Elfsborg',
+    'Porto': 'Porto',
+    'Twente': 'Twente',
+    'Midtjylland': 'Midtjylland',
+    'Hoffenheim': 'Hoffenheim',
+    'Ajax': 'Ajax',
+    'M Tel Aviv': 'Maccabi Tel Aviv',
+    'Anderlecht': 'Anderlecht',
+    'Dynamo Kyiv': 'Dynamo Kyiv',
+    'Karabakh Agdam': 'Qarabağ',
+    'Malmoe': 'Malmö',
+    'Viktoria Plzen': 'Viktoria Plzeň',
+    'Rangers': 'Rangers',
+    'Ferencvaros': 'Ferencváros',
+    'Besiktas': 'Beşiktaş',
+    'Slavia Praha': 'Slavia Prague',
+    'Olympiakos': 'Olympiacos',
+    'Steaua': 'FCSB',
+    'Galatasaray': 'Galatasaray',
+    'St Gillis': 'Union SG',
+    'Razgrad': 'Ludogorets',
+    # UECL
+    'FK Astana': 'Astana FK',
+    'HJK Helsinki': 'HJK',
+    'StGallen': 'St. Gallen',
+    'Rapid Wien': 'Rapid Wien',
+    'Backa Topola': 'TSC Bačka Top',
+    'Mlada Boleslav': 'Mladá Boleslav',
+    'LASK': 'LASK',
+    'Noah': 'FC Noah',
+    'Bueyueksehir': 'Başakşehir',
+    'The New Saints': 'The New Saints',
+    'Omonia': 'AC Omonia',
+    'APOEL': 'APOEL',
+    'Olimpija Ljubljana': 'Olimpija',
+    'Legia': 'Legia Warsaw',
+    'Larne': 'Larne FC',
+    'Paphos': 'Pafos FC',
+    'Lugano': 'Lugano',
+    'Shamrock': 'Shamrock Rov',
+    'Dinamo Minsk': 'Dinamo Minsk',
+    'Hearts': 'Hearts',
+    'Cercle Brugge': 'Cercle Brugge',
+    'Molde': 'Molde',
+    'Gent': 'Gent',
+    'Djurgarden': 'Djurgården',
+    'Petrocub': 'Petrocub',
+    'Celje': 'NK Celje',
+    'FC Kobenhavn': 'FC Copenhagen',
+    'Panathinaikos': 'Panathinaikos',
+    'Jagiellonia': 'Jagiellonia',
+    'Borac Banja Luka': 'Borac Banja Luka',
+    'Guimarães': 'Vitória',
 }
 
 # Database
@@ -256,12 +316,18 @@ fixtures_config = {
         "fixtures_url": "https://fbref.com/en/comps/8/2024-2025/schedule/2024-2025-Champions-League-Scores-and-Fixtures",
         "table_id": ["sched_2024-2025_8_2", "sched_2024-2025_8_3"],
     },
-    # UEL
-    # UECL
+    "UEL": {
+        "fixtures_url": "https://fbref.com/en/comps/19/2024-2025/schedule/2024-2025-Europa-League-Scores-and-Fixtures",
+        "table_id": ["sched_2024-2025_19_2", "sched_2024-2025_19_3"],
+    },
+    "UECL": {
+        "fixtures_url": "https://fbref.com/en/comps/882/2024-2025/schedule/2024-2025-Conference-League-Scores-and-Fixtures",
+        "table_id": ["sched_2024-2025_882_2", "sched_2024-2025_882_3"],
+    },
 }
 
 ## Simulation
-number_of_simulations = 10000
+number_of_simulations = 100
 home_advantage = 80
 leagues_to_sim = list(fixtures_config.keys())
 
@@ -350,6 +416,84 @@ league_rules = {
         },
     },
     "UCL": {
+        "has_knockout": True,
+        "classification": [
+            "points",
+            "goal_difference",
+            "goals_for",
+            "away_goals_for",
+        ],
+        # No relegation info for UCL, exclude or set None
+        "qualification": {
+            "direct_to_round_of_16": list(range(1, 17)),
+            "playoff": list(range(17, 25)),
+        },
+        "knockout_bracket": [
+            (1, "Bye"),
+            (16, 17),
+            (8, "Bye"),
+            (9, 24),
+            (4, "Bye"),
+            (13, 20),
+            (5, "Bye"),
+            (12, 21),
+            (2, "Bye"),
+            (15, 18),
+            (7, "Bye"),
+            (10, 23),
+            (3, "Bye"),
+            (14, 19),
+            (6, "Bye"),
+            (11, 22),
+        ],
+        "knockout_format": {
+            "po_r32": "two-legged",
+            "po_r16": "two-legged",
+            "po_r8": "two-legged",  
+            "po_r4": "two-legged",
+            "po_r2": "single_game_neutral",
+        }
+    },
+    "UEL": {
+        "has_knockout": True,
+        "classification": [
+            "points",
+            "goal_difference",
+            "goals_for",
+            "away_goals_for",
+        ],
+        # No relegation info for UCL, exclude or set None
+        "qualification": {
+            "direct_to_round_of_16": list(range(1, 17)),
+            "playoff": list(range(17, 25)),
+        },
+        "knockout_bracket": [
+            (1, "Bye"),
+            (16, 17),
+            (8, "Bye"),
+            (9, 24),
+            (4, "Bye"),
+            (13, 20),
+            (5, "Bye"),
+            (12, 21),
+            (2, "Bye"),
+            (15, 18),
+            (7, "Bye"),
+            (10, 23),
+            (3, "Bye"),
+            (14, 19),
+            (6, "Bye"),
+            (11, 22),
+        ],
+        "knockout_format": {
+            "po_r32": "two-legged",
+            "po_r16": "two-legged",
+            "po_r8": "two-legged",  
+            "po_r4": "two-legged",
+            "po_r2": "single_game_neutral",
+        }
+    },
+    "UECL": {
         "has_knockout": True,
         "classification": [
             "points",
