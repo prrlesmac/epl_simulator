@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, TIMESTAMP
+from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, TIMESTAMP, DATE
 
 # mapping from club elo to fb ref
 club_name_mapping = {
@@ -203,6 +203,8 @@ db_table_definitions = {
             "played": VARCHAR(10),
             "neutral": VARCHAR(10),
             "country": VARCHAR(100),
+            "date": DATE(),
+            "round": VARCHAR(100),
             "updated_at": TIMESTAMP(),
         },
     },

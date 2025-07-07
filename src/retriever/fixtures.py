@@ -114,7 +114,7 @@ def process_fixtures(fixtures, country):
     """
 
     fixtures.columns = fixtures.columns.str.lower()
-    fixtures = fixtures[(fixtures["home"] != "") & (fixtures["away"] != "")]
+    fixtures = fixtures[(fixtures["home"] != "") & (fixtures["away"] != "")].copy()
     fixtures["score"] = fixtures["score"].replace("", None)
     # Apply function to the 'score' column and expand results into new columns
     fixtures[["home_goals", "away_goals", "home_pens", "away_pens"]] = fixtures[
@@ -132,12 +132,12 @@ def process_fixtures(fixtures, country):
     fixtures["home"] = fixtures["home"].str.strip()
     fixtures["away"] = fixtures["away"].str.strip()
     # TODO add this as a param
-
     fixtures["played"] = "N"
-
     fixtures["neutral"] = "N"
+    if "round" not in fixtures.columns:
+        fixtures["round"] = None
     fixtures = fixtures[
-        ["home", "away", "home_goals", "away_goals", "played", "neutral"]
+        ["home", "away", "home_goals", "away_goals", "played", "neutral", "round", "date"]
     ]
     return fixtures
 
