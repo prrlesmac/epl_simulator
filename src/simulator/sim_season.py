@@ -265,10 +265,10 @@ if __name__ == "__main__":
         print("Simulating: ", league)
         engine = db_connect.get_postgres_engine()
         schedule = pd.read_sql(
-            f"SELECT * FROM {config.fixtures_table['name']} WHERE country = '{league}'",
+            f"SELECT * FROM {config.db_table_definitions['fixtures_table']['name']} WHERE country = '{league}'",
             engine,
         )
-        elos_query = f"SELECT * FROM {config.elo_table['name']}" + (
+        elos_query = f"SELECT * FROM {config.db_table_definitions['elo_table']['name']}" + (
             f" WHERE country = '{league}'" if not is_continental_league else ""
         )
         elos = pd.read_sql(
@@ -318,17 +318,17 @@ if __name__ == "__main__":
     # reconnect
     engine = db_connect.get_postgres_engine()
     sim_standings_wo_ko.to_sql(
-        config.domestic_sim_output_table["name"],
+        config.db_table_definitions["domestic_sim_output_table"]["name"],
         engine,
         if_exists="replace",
         index=False,
-        dtype=config.domestic_sim_output_table["dtype"],
+        dtype=config.db_table_definitions["domestic_sim_output_table"]["dtype"],
     )
     sim_standings_w_ko.to_sql(
-        config.continental_sim_output_table["name"],
+        config.db_table_definitions["continental_sim_output_table"]["name"],
         engine,
         if_exists="replace",
         index=False,
-        dtype=config.continental_sim_output_table["dtype"],
+        dtype=config.db_table_definitions["continental_sim_output_table"]["dtype"],
     )
     print(f"Simulations saved to db")

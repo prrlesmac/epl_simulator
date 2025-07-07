@@ -80,10 +80,10 @@ if __name__ == "__main__":
     elos["club"] = elos["club"].replace(config.club_name_mapping)
     elos["updated_at"] = datetime.now()
     elos.to_sql(
-        config.elo_table["name"],
+        config.db_table_definitions["elo_table"]["name"],
         engine,
         if_exists="replace",
         index=False,
-        dtype=config.elo_table["dtype"],
+        dtype=config.db_table_definitions["elo_table"]["dtype"],
     )
     print("Elos updated...")
