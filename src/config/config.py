@@ -459,7 +459,26 @@ league_rules = {
             "po_r8": "two-legged",  
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
-        }
+        },
+        "knockout_draw": None
+        #   [
+        #     ("Liverpool", "Bye"),
+        #     ("Paris S-G", "Brest"),
+        #     ("Aston Villa", "Bye"),
+        #     ("Atalanta", "Club Brugge"),
+        #     ("Arsenal", "Bye"),
+        #     ("PSV Eindhoven", "Juventus"),
+        #     ("Atlético Madrid", "Bye"),
+        #     ("Real Madrid", "Manchester City"),
+        #     ("Barcelona", "Bye"),
+        #     ("Benfica", "Monaco"),
+        #     ("Lille", "Bye"),
+        #     ("Dortmund", "Sporting CP"),
+        #     ("Inter", "Bye"),
+        #     ("Milan", "Feyenoord"),
+        #     ("Leverkusen", "Bye"),
+        #     ("Bayern Munich", "Celtic"),
+        # ],
     },
     "UEL": {
         "has_knockout": True,
@@ -498,7 +517,8 @@ league_rules = {
             "po_r8": "two-legged",  
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
-        }
+        },
+        "knockout_draw": None
     },
     "UECL": {
         "has_knockout": True,
@@ -537,6 +557,7 @@ league_rules = {
             "po_r8": "two-legged",  
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
-        }
+        },
+        "knockout_draw": None
     },
 }

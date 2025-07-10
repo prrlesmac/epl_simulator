@@ -33,15 +33,15 @@ def split_and_merge_schedule(schedule, elos):
             - schedule_pending (pandas.DataFrame): Matches not yet played, with added
               'elo_home' and 'elo_away' columns representing Elo ratings for each team.
     """
-    schedule_played = schedule[schedule["played"] == "Y"]
-    schedule_pending = schedule[schedule["played"] == "N"]
-
-    schedule_pending = (
-        schedule_pending.merge(elos, how="left", left_on="home", right_on="club")
+    schedule = (
+        schedule.merge(elos, how="left", left_on="home", right_on="club")
         .merge(elos, how="left", left_on="away", right_on="club")
         .rename(columns={"elo_x": "elo_home", "elo_y": "elo_away"})
         .drop(columns=["club_x", "club_y"])
     )
+    schedule_played = schedule[schedule["played"] == "Y"]
+    schedule_pending = schedule[schedule["played"] == "N"]
+
     # if elo is missing send warning and fill with 1000 
     if schedule_pending["elo_home"].isnull().any() or schedule_pending["elo_away"].isnull().any():
         print("Warning: Some Elo ratings are missing. Filling with default value of 1000.")
@@ -58,6 +58,7 @@ def single_simulation(
     has_knockout=False,
     bracket_composition=None,
     bracket_format=None,
+    bracket_draw=None,
 ):
     """
     Simulates the remaining matches and computes the final standings.
@@ -73,6 +74,9 @@ def single_simulation(
             Required if `has_knockout` is True.
         bracket_format (dict, optional): Dictionary defining the format of each round in the knockout stage.
             Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
+        bracket_draw (list, optional): List of tuples defining the knockout
+            bracket structure, e.g., [(Team1, Team2), (Team3, Team4)] for pairs of teams.
+            Required if `has_knockout` is True.
 
     Returns:
         pd.DataFrame: The standings DataFrame after simulating the pending matches and combining with played matches.
@@ -83,19 +87,14 @@ def single_simulation(
     standings_df = get_standings(schedule_final, classif_rules)
 
     if has_knockout:
-        # find last row in schedule_played and see what round is
-        if not schedule_played.empty:
-            previous_round = schedule_played.iloc[-1]["round"]
-        else:
-            previous_round = "League"
-        if not schedule_pending.empty:
-            next_round = schedule_pending.iloc[0]["round"]
-        else:
-            next_round = None
-        if previous_round == "League" and next_round == "League":
+        knockout_schedule_pending = schedule_pending[schedule_pending["round"]!="League"].copy()
+        simulated_pending = simulate_matches(knockout_schedule_pending, config.home_advantage)
+        if bracket_draw is None:
             draw = draw_from_pots(standings_df, pot_size=2)
             bracket = create_bracket_from_composition(draw, bracket_composition)
-        # TODO think ofb etter ways to pull elos
+        else:
+            bracket = pd.DataFrame(bracket_draw, columns=["team1", "team2"])
+        # TODO think of better ways to pull elos
         elos = schedule_final.drop_duplicates(subset=["home"])[
             ["home", "elo_home"]
         ].rename(columns={"home": "team", "elo_home": "elo"})
@@ -112,6 +111,7 @@ def run_simulation_parallel(
     has_knockout=False,
     bracket_composition=None,
     bracket_format=None,
+    bracket_draw=None,
     num_simulations=1000,
 ):
     """
@@ -129,6 +129,9 @@ def run_simulation_parallel(
             Required if `has_knockout` is True.
         bracket_format (dict, optional): Dictionary defining the format of each round in the knockout stage.
             Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
+        bracket_draw (list, optional): List of tuples defining the knockout
+            bracket structure, e.g., [(Team1, Team2), (Team3, Team4)] for pairs of teams.
+            Required if `has_knockout` is True.
         num_simulations (int, optional): Number of simulations to run in parallel. Defaults to 1000.
 
     Returns:
@@ -147,6 +150,7 @@ def run_simulation_parallel(
                 has_knockout,
                 bracket_composition,
                 bracket_format,
+                bracket_draw
             )
         ] * num_simulations
         standings_list = pool.starmap(single_simulation, args)
@@ -278,6 +282,10 @@ if __name__ == "__main__":
             f"SELECT * FROM {config.db_table_definitions['fixtures_table']['name']} WHERE country = '{league}'",
             engine,
         )
+        # if value in "date" column is after cutoff_date, set played to "N"
+        if config.cutoff_date: 
+            schedule["date"] = pd.to_datetime(schedule["date"], errors="coerce")
+            schedule.loc[schedule["date"] > pd.to_datetime(config.cutoff_date), "played"] = "N"
         elos_query = f"SELECT * FROM {config.db_table_definitions['elo_table']['name']}" + (
             f" WHERE country = '{league}'" if not is_continental_league else ""
         )
@@ -291,6 +299,7 @@ if __name__ == "__main__":
             league_rules["knockout_bracket"] if is_continental_league else None
         )
         bracket_format = league_rules["knockout_format"] if is_continental_league else None
+        bracket_draw = league_rules["knockout_draw"] if is_continental_league else None
         classif_rules = league_rules["classification"]
         qualif_rules = league_rules["qualification"]
         schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
@@ -301,6 +310,7 @@ if __name__ == "__main__":
             has_knockout=is_continental_league,
             bracket_composition=bracket_composition,
             bracket_format=bracket_format,
+            bracket_draw=bracket_draw,
             num_simulations=config.number_of_simulations,
         )
         """

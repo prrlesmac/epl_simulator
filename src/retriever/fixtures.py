@@ -94,7 +94,7 @@ def get_fixtures(url, table_id):
     return df_all
 
 
-def process_fixtures(fixtures, country, cutoff_date=None):
+def process_fixtures(fixtures, country):
     """
     Cleans and processes a raw fixtures DataFrame to extract match outcomes.
 
@@ -105,9 +105,7 @@ def process_fixtures(fixtures, country, cutoff_date=None):
         fixtures (pandas.DataFrame): Raw fixtures DataFrame, typically parsed from HTML,
         with columns including 'home', 'away', and 'score'.
         country (str): The country or league identifier to adjust team names and processing.
-        cutoff_date (str, optional): A date string in 'YYYY-MM-DD' format to filter fixtures.
-            If provided, only fixtures after this date will be assumed to not have been played yet
-
+   
     Returns:
         pandas.DataFrame: A cleaned and processed DataFrame with the following columns:
             - 'home': Home team name
@@ -136,11 +134,7 @@ def process_fixtures(fixtures, country, cutoff_date=None):
         fixtures["away"] = fixtures["away"].str[3:]
     fixtures["home"] = fixtures["home"].str.strip()
     fixtures["away"] = fixtures["away"].str.strip()
-    # TODO add this as a param
-    # if value in "date" column is after cutoff_date, set played to "N"
-    if cutoff_date: 
-        fixtures["date"] = pd.to_datetime(fixtures["date"], errors="coerce")
-        fixtures.loc[fixtures["date"] > pd.to_datetime(cutoff_date), "played"] = "N"
+
     fixtures["neutral"] = "N"
     if "round" not in fixtures.columns:
         fixtures["round"] = "League"
