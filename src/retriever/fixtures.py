@@ -55,7 +55,6 @@ def get_fixtures(url, table_id):
     time.sleep(5)
     # Send a GET request to fetch the HTML content
     response = requests.get(url)
-
     # Check if the request was successful
     if response.status_code == 200:
         # Parse the HTML content using BeautifulSoup
@@ -64,8 +63,8 @@ def get_fixtures(url, table_id):
         df_all = []
         for id in table_id:
             table = soup.find(
-                "table", {"id": table_id}
-            )  # Table ID may change, inspect the page source to confirm
+                "table", {"id": id}
+            )
 
             # Extract table headers
             headers = [th.text.strip() for th in table.find("thead").find_all("th")]
@@ -73,25 +72,29 @@ def get_fixtures(url, table_id):
             # Extract table rows
             rows = []
             for tr in table.find("tbody").find_all("tr"):
-                row = [td.text.strip() for td in tr.find_all("td")]
+                row_th = [tr.find("th").text.strip()] if tr.find("th") else [""]
+                row_td = ([td.text.strip() for td in tr.find_all("td")])
+                row = row_th + row_td
                 rows.append(row)
-
             # Convert to a Pandas DataFrame
             df = pd.DataFrame(
-                rows, columns=headers[1:]
+                rows, columns=headers
             )  # Exclude the first header if it's a placeholder
-            df_all.append(df)
+            # exclude rows where Home and Away are empty
+            df = df[(df["Home"] != "") | (df["Away"] != "")]
+            df = df.drop(columns=['xG'])
 
+            df_all.append(df)
         df_all = pd.concat(df_all)
         # Display the DataFrame
         print("Fetching fixtures data...")
     else:
         print(f"Failed to fetch the page. Status code: {response.status_code}")
 
-    return df
+    return df_all
 
 
-def process_fixtures(fixtures, country):
+def process_fixtures(fixtures, country, cutoff_date=None):
     """
     Cleans and processes a raw fixtures DataFrame to extract match outcomes.
 
@@ -101,7 +104,9 @@ def process_fixtures(fixtures, country):
     Args:
         fixtures (pandas.DataFrame): Raw fixtures DataFrame, typically parsed from HTML,
         with columns including 'home', 'away', and 'score'.
-
+        country (str): The country or league identifier to adjust team names and processing.
+        cutoff_date (str, optional): A date string in 'YYYY-MM-DD' format to filter fixtures.
+            If provided, only fixtures after this date will be assumed to not have been played yet
 
     Returns:
         pandas.DataFrame: A cleaned and processed DataFrame with the following columns:
@@ -132,10 +137,14 @@ def process_fixtures(fixtures, country):
     fixtures["home"] = fixtures["home"].str.strip()
     fixtures["away"] = fixtures["away"].str.strip()
     # TODO add this as a param
-    fixtures["played"] = "N"
+    # if value in "date" column is after cutoff_date, set played to "N"
+    if cutoff_date: 
+        fixtures["date"] = pd.to_datetime(fixtures["date"], errors="coerce")
+        fixtures.loc[fixtures["date"] > pd.to_datetime(cutoff_date), "played"] = "N"
     fixtures["neutral"] = "N"
     if "round" not in fixtures.columns:
-        fixtures["round"] = None
+        fixtures["round"] = "League"
+    fixtures["round"] = fixtures["round"].fillna("League")
     fixtures = fixtures[
         ["home", "away", "home_goals", "away_goals", "played", "neutral", "round", "date"]
     ]
@@ -148,7 +157,7 @@ if __name__ == "__main__":
     for k, v in config.fixtures_config.items():
         print("Getting fixtures for: ", k)
         fixtures = get_fixtures(v["fixtures_url"], v["table_id"])
-        fixtures = process_fixtures(fixtures, country=k)
+        fixtures = process_fixtures(fixtures, country=k, cutoff_date=config.cutoff_date)
         fixtures["country"] = k
         fixtures["updated_at"] = datetime.now()
         fixtures_all.append(fixtures)

@@ -77,14 +77,24 @@ def single_simulation(
     Returns:
         pd.DataFrame: The standings DataFrame after simulating the pending matches and combining with played matches.
     """
-    simulated_pending = simulate_matches(schedule_pending.copy(), config.home_advantage)
+    league_schedule_pending = schedule_pending[schedule_pending["round"]=="League"].copy()
+    simulated_pending = simulate_matches(league_schedule_pending, config.home_advantage)
     schedule_final = pd.concat([schedule_played, simulated_pending], ignore_index=True)
     standings_df = get_standings(schedule_final, classif_rules)
 
     if has_knockout:
-        # If knockout stage is included, simulate it
-        draw = draw_from_pots(standings_df, pot_size=2)
-        bracket = create_bracket_from_composition(draw, bracket_composition)
+        # find last row in schedule_played and see what round is
+        if not schedule_played.empty:
+            previous_round = schedule_played.iloc[-1]["round"]
+        else:
+            previous_round = "League"
+        if not schedule_pending.empty:
+            next_round = schedule_pending.iloc[0]["round"]
+        else:
+            next_round = None
+        if previous_round == "League" and next_round == "League":
+            draw = draw_from_pots(standings_df, pot_size=2)
+            bracket = create_bracket_from_composition(draw, bracket_composition)
         # TODO think ofb etter ways to pull elos
         elos = schedule_final.drop_duplicates(subset=["home"])[
             ["home", "elo_home"]
@@ -312,23 +322,26 @@ if __name__ == "__main__":
 
     end_time = time.time()
     print(f"Simulation took {end_time - start_time:.2f} seconds")
-    sim_standings_wo_ko = pd.concat(sim_standings_wo_ko)
-    sim_standings_w_ko = pd.concat(sim_standings_w_ko)
 
     # reconnect
     engine = db_connect.get_postgres_engine()
-    sim_standings_wo_ko.to_sql(
-        config.db_table_definitions["domestic_sim_output_table"]["name"],
-        engine,
-        if_exists="replace",
-        index=False,
-        dtype=config.db_table_definitions["domestic_sim_output_table"]["dtype"],
-    )
-    sim_standings_w_ko.to_sql(
-        config.db_table_definitions["continental_sim_output_table"]["name"],
-        engine,
-        if_exists="replace",
-        index=False,
-        dtype=config.db_table_definitions["continental_sim_output_table"]["dtype"],
-    )
+    if sim_standings_wo_ko:
+        sim_standings_wo_ko = pd.concat(sim_standings_wo_ko)
+        sim_standings_wo_ko.to_sql(
+            config.db_table_definitions["domestic_sim_output_table"]["name"],
+            engine,
+            if_exists="replace",
+            index=False,
+            dtype=config.db_table_definitions["domestic_sim_output_table"]["dtype"],
+        )
+    if sim_standings_w_ko:
+        sim_standings_w_ko = pd.concat(sim_standings_w_ko)
+        sim_standings_w_ko.to_sql(
+            config.db_table_definitions["continental_sim_output_table"]["name"],
+            engine,
+            if_exists="replace",
+            index=False,
+            dtype=config.db_table_definitions["continental_sim_output_table"]["dtype"],
+        )
+
     print(f"Simulations saved to db")

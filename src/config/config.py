@@ -333,9 +333,10 @@ fixtures_config = {
 }
 
 ## Simulation
-number_of_simulations = 100
+number_of_simulations = 1000
 home_advantage = 80
 leagues_to_sim = list(fixtures_config.keys())
+cutoff_date = None
 
 league_rules = {
     "ENG": {
