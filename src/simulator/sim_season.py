@@ -39,8 +39,8 @@ def split_and_merge_schedule(schedule, elos):
         .rename(columns={"elo_x": "elo_home", "elo_y": "elo_away"})
         .drop(columns=["club_x", "club_y"])
     )
-    schedule_played = schedule[schedule["played"] == "Y"]
-    schedule_pending = schedule[schedule["played"] == "N"]
+    schedule_played = schedule[schedule["played"] == "Y"].copy()
+    schedule_pending = schedule[schedule["played"] == "N"].copy()
 
     # if elo is missing send warning and fill with 1000 
     if schedule_pending["elo_home"].isnull().any() or schedule_pending["elo_away"].isnull().any():
@@ -81,14 +81,17 @@ def single_simulation(
     Returns:
         pd.DataFrame: The standings DataFrame after simulating the pending matches and combining with played matches.
     """
+    league_schedule_played = schedule_played[schedule_played["round"]=="League"].copy()
     league_schedule_pending = schedule_pending[schedule_pending["round"]=="League"].copy()
     simulated_pending = simulate_matches(league_schedule_pending, config.home_advantage)
-    schedule_final = pd.concat([schedule_played, simulated_pending], ignore_index=True)
+    schedule_final = pd.concat([league_schedule_played, simulated_pending], ignore_index=True)
     standings_df = get_standings(schedule_final, classif_rules)
 
     if has_knockout:
+        knockout_schedule_played = schedule_played[schedule_played["round"]!="League"].copy()
         knockout_schedule_pending = schedule_pending[schedule_pending["round"]!="League"].copy()
         simulated_pending = simulate_matches(knockout_schedule_pending, config.home_advantage)
+        playoff_schedule = pd.concat([knockout_schedule_played, simulated_pending], ignore_index=True)
         if bracket_draw is None:
             draw = draw_from_pots(standings_df, pot_size=2)
             bracket = create_bracket_from_composition(draw, bracket_composition)
@@ -98,7 +101,7 @@ def single_simulation(
         elos = schedule_final.drop_duplicates(subset=["home"])[
             ["home", "elo_home"]
         ].rename(columns={"home": "team", "elo_home": "elo"})
-        playoff_df = simulate_playoff_bracket(bracket, bracket_format, elos)
+        playoff_df = simulate_playoff_bracket(bracket, bracket_format, elos, playoff_schedule)
         standings_df = standings_df.merge(playoff_df, how="left", on="team")
 
     return standings_df
@@ -283,9 +286,12 @@ if __name__ == "__main__":
             engine,
         )
         # if value in "date" column is after cutoff_date, set played to "N"
-        if config.cutoff_date: 
+        if config.played_cutoff_date: 
             schedule["date"] = pd.to_datetime(schedule["date"], errors="coerce")
-            schedule.loc[schedule["date"] > pd.to_datetime(config.cutoff_date), "played"] = "N"
+            schedule.loc[schedule["date"] > pd.to_datetime(config.played_cutoff_date), "played"] = "N"
+        if config.schedule_cutoff_date: 
+        # remove all rows after the date:
+            schedule = schedule[schedule["date"] <= pd.to_datetime(config.schedule_cutoff_date)].copy()
         elos_query = f"SELECT * FROM {config.db_table_definitions['elo_table']['name']}" + (
             f" WHERE country = '{league}'" if not is_continental_league else ""
         )

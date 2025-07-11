@@ -205,6 +205,7 @@ db_table_definitions = {
             "country": VARCHAR(100),
             "date": DATE(),
             "round": VARCHAR(100),
+            "notes": VARCHAR(255),
             "updated_at": TIMESTAMP(),
         },
     },
@@ -336,7 +337,8 @@ fixtures_config = {
 number_of_simulations = 1000
 home_advantage = 80
 leagues_to_sim = list(fixtures_config.keys())
-cutoff_date = None
+played_cutoff_date = None
+schedule_cutoff_date = None
 
 league_rules = {
     "ENG": {

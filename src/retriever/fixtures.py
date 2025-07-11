@@ -140,7 +140,7 @@ def process_fixtures(fixtures, country):
         fixtures["round"] = "League"
     fixtures["round"] = fixtures["round"].fillna("League")
     fixtures = fixtures[
-        ["home", "away", "home_goals", "away_goals", "played", "neutral", "round", "date"]
+        ["home", "away", "home_goals", "away_goals", "played", "neutral", "round", "date", "notes"]
     ]
     return fixtures
 
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     for k, v in config.fixtures_config.items():
         print("Getting fixtures for: ", k)
         fixtures = get_fixtures(v["fixtures_url"], v["table_id"])
-        fixtures = process_fixtures(fixtures, country=k, cutoff_date=config.cutoff_date)
+        fixtures = process_fixtures(fixtures, country=k)
         fixtures["country"] = k
         fixtures["updated_at"] = datetime.now()
         fixtures_all.append(fixtures)

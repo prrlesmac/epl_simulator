@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import math
 import random
+import re
 
 
 def calculate_win_probability(elo_home, elo_away, matchup_type="single_game", home_adv=80):
@@ -69,6 +70,48 @@ def simulate_match(proba):
     # EloA = EloA + EloDiff
 
     return (GH, GA)
+
+
+def simulate_extra_time(proba):
+    """
+    Simulates the outcome of a football match extra time based on a win probability of 90-minute game.
+
+    Given the probability of team 1 winning, this function estimates expected
+    goals for both teams using a mathematical model, then simulates the actual
+    number of goals scored using Poisson distributions.
+
+    Args:
+        proba (float): The probability of team 1 (home team) winning,
+                       should be between 0 and 1.
+
+    Returns:
+        str: 1 if team 1 wins, 2 if team 2 wins
+    """
+
+    ExpGH = np.where(
+        proba < 0.5,
+        0.2 + 1.1 * math.sqrt(proba / 0.5),
+        1.69 / (1.12 * math.sqrt(2 - proba / 0.5) + 0.18),
+    ) * 1/3
+    ExpGA = np.where(
+        (1 - proba) < 0.5,
+        0.2 + 1.1 * math.sqrt((1 - proba) / 0.5),
+        1.69 / (1.12 * math.sqrt(2 - (1 - proba) / 0.5) + 0.18),
+    ) * 1/3
+    Base = np.random.poisson(0.18 * min(ExpGA, ExpGH))
+    GH = np.random.poisson(ExpGH - 0.18 * min(ExpGA, ExpGH)) + Base
+    GA = np.random.poisson(ExpGA - 0.18 * min(ExpGA, ExpGH)) + Base
+
+    if GH > GA:
+        result = 1
+    elif GH < GA:
+        result = 2
+    else:
+        # if it's a tie, we need to simulate penalties as random
+        random_sim = np.random.rand()
+        result = 1 if random_sim <= 0.5 else 2
+
+    return result
 
 
 def simulate_playoff(proba):
@@ -359,8 +402,13 @@ def get_standings(matches_df, classif_rules):
             else:
                 standings[rule] = np.nan
 
+    # Add a random tie-breaker for remaining ties (e.g., team name or index)
+    standings["__tiebreaker__"] = standings.index 
+
+    # Extend classification rules with the tiebreaker
+    extended_rules = classif_rules + ["__tiebreaker__"]
     standings["pos"] = (
-        standings[classif_rules]
+        standings[extended_rules]
         .apply(tuple, axis=1)
         .rank(method="min", ascending=False)
         .astype(int)
@@ -417,7 +465,7 @@ def validate_bracket(bracket_df, bracket_format):
         )
 
 
-def simulate_playoff_bracket(bracket_df, bracket_format, elos):
+def simulate_playoff_bracket(bracket_df, bracket_format, elos, playoff_schedule):
     """
     Simulates a knockout playoff bracket using ELO ratings.
 
@@ -426,6 +474,7 @@ def simulate_playoff_bracket(bracket_df, bracket_format, elos):
         bracket_format (dict): Dictionary defining the format of each round.
             Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
         elos (pd.DataFrame): DataFrame with columns ['team', 'elo'] representing team ELO ratings.
+        playoff_schedule (pd.DataFrame, optional): DataFrame with pending matches to simulate.
 
     Returns:
         pd.DataFrame: A wide-format DataFrame with one row per team and binary indicators for each round and champion status.
@@ -452,21 +501,54 @@ def simulate_playoff_bracket(bracket_df, bracket_format, elos):
         for _, row in current_round.iterrows():
             team1, team2 = row["team1"], row["team2"]
 
-            # Randomly choose a winner
             if team1 == "Bye":
                 winner = team2
             elif team2 == "Bye":
                 winner = team1
             else:
+                # find the winner from the playoff schedule
+                tie_matches = playoff_schedule[
+                    ((playoff_schedule["home"] == team1) & (playoff_schedule["away"] == team2)) |
+                    ((playoff_schedule["home"] == team2) & (playoff_schedule["away"] == team1))
+                ].copy()
                 # add logic to get elo ratings from a df called elos
                 match_elos = pd.Series([team1, team2]).map(elos_dict)
-
                 # Calculate win probability for Team 1
                 win_proba = calculate_win_probability(match_elos[0], match_elos[1], matchup_type=round_format)
 
-                # Simulate match
-                result = simulate_playoff(win_proba)
-                winner = team1 if result == 1 else team2
+                if not tie_matches.empty:
+                    # case 1 : both legs have been played
+                    # if both legs have been played, find the winner
+                    if all(tie_matches["played"] == "Y"):
+                        string_result = tie_matches.iloc[-1]["notes"]
+                        match = re.search(r";\s*(.*?)\s+won", string_result)
+                        if match:
+                            winner = match.group(1)
+
+                    # case 2: one leg has been played
+                    elif any(tie_matches["played"] == "Y"):
+                        # find the winner from the goals scored
+                        # tie matches has both teams in home and away columns because it's two legs
+                        t1_goals = tie_matches[tie_matches["home"] == team1]["home_goals"].sum() + \
+                            tie_matches[tie_matches["away"] == team1]["away_goals"].sum()
+                        t2_goals = tie_matches[tie_matches["home"] == team2]["home_goals"].sum() + \
+                            tie_matches[tie_matches["away"] == team2]["away_goals"].sum()
+                        if t1_goals > t2_goals:
+                            winner = team1  
+                        elif t2_goals > t1_goals:
+                            winner = team2
+                        else:
+                            # if it's a tie, we need to simulate extra time and penalties
+                            result = simulate_extra_time(win_proba)
+                            winner = team1 if result == 1 else team2
+                    else:
+                        # case 3: no legs have been pplayed
+                        result = simulate_playoff(win_proba)
+                        winner = team1 if result == 1 else team2
+                else:
+                    # case 3: no legs have been pplayed
+                    result = simulate_playoff(win_proba)
+                    winner = team1 if result == 1 else team2
             winners.append(winner)
 
             # Track participation
@@ -476,7 +558,7 @@ def simulate_playoff_bracket(bracket_df, bracket_format, elos):
                 teams_progression[team][round_label] = 1
                 if len(current_round) == 1 and team == winner:
                     teams_progression[team]["po_champion"] = 1
-
+            
         # Prepare next round
         it = iter(winners)
         next_round = list(zip(it, it))
