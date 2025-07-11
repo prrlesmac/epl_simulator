@@ -290,8 +290,14 @@ if __name__ == "__main__":
             schedule["date"] = pd.to_datetime(schedule["date"], errors="coerce")
             schedule.loc[schedule["date"] > pd.to_datetime(config.played_cutoff_date), "played"] = "N"
         if config.schedule_cutoff_date: 
-        # remove all rows after the date:
-            schedule = schedule[schedule["date"] <= pd.to_datetime(config.schedule_cutoff_date)].copy()
+        # remove all rows after the date for non league rounds:
+            schedule = schedule[
+                (schedule["round"] == "League")
+                | (
+                    (schedule["round"] != "League")
+                    & (schedule["date"] <= pd.to_datetime(config.schedule_cutoff_date))
+                    )
+                ].copy()
         elos_query = f"SELECT * FROM {config.db_table_definitions['elo_table']['name']}" + (
             f" WHERE country = '{league}'" if not is_continental_league else ""
         )

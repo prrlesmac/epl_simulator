@@ -500,6 +500,7 @@ def simulate_playoff_bracket(bracket_df, bracket_format, elos, playoff_schedule)
         winners = []
         for _, row in current_round.iterrows():
             team1, team2 = row["team1"], row["team2"]
+            #print(f"Simulating match between {team1} and {team2} in round {round_label}")
 
             if team1 == "Bye":
                 winner = team2
@@ -513,20 +514,42 @@ def simulate_playoff_bracket(bracket_df, bracket_format, elos, playoff_schedule)
                 ].copy()
                 # add logic to get elo ratings from a df called elos
                 match_elos = pd.Series([team1, team2]).map(elos_dict)
+                # if elo is missing send warning and fill with 1000 
+                if match_elos.isnull().any():
+                    missing_teams = match_elos[match_elos.isnull()].index.tolist()
+                    for team in missing_teams:
+                        match_elos[team] = 1000
                 # Calculate win probability for Team 1
                 win_proba = calculate_win_probability(match_elos[0], match_elos[1], matchup_type=round_format)
 
                 if not tie_matches.empty:
+                    #print("Tie matches found")
                     # case 1 : both legs have been played
                     # if both legs have been played, find the winner
                     if all(tie_matches["played"] == "Y"):
+                        #print("Both legs have been played")
                         string_result = tie_matches.iloc[-1]["notes"]
                         match = re.search(r";\s*(.*?)\s+won", string_result)
                         if match:
                             winner = match.group(1)
-
-                    # case 2: one leg has been played
+                            # check that winner is one of the teams
+                            if winner not in [team1, team2]:
+                                raise Warning(f"Winner {winner} not in teams {team1}, {team2}")
+                        else:
+                            # get winner from most goals scored
+                            t1_goals = tie_matches[tie_matches["home"] == team1]["home_goals"].sum() + \
+                                tie_matches[tie_matches["away"] == team1]["away_goals"].sum()
+                            t2_goals = tie_matches[tie_matches["home"] == team2]["home_goals"].sum() + \
+                                tie_matches[tie_matches["away"] == team2]["away_goals"].sum()
+                            if t1_goals > t2_goals:
+                                winner = team1  
+                            elif t2_goals > t1_goals:
+                                winner = team2
+                            else:
+                                raise ValueError("Both teams scored the same number of goals, cannot determine winner.")
+                    # case 2: one leg has been played   
                     elif any(tie_matches["played"] == "Y"):
+                        #print("One leg has been played")
                         # find the winner from the goals scored
                         # tie matches has both teams in home and away columns because it's two legs
                         t1_goals = tie_matches[tie_matches["home"] == team1]["home_goals"].sum() + \
@@ -542,15 +565,17 @@ def simulate_playoff_bracket(bracket_df, bracket_format, elos, playoff_schedule)
                             result = simulate_extra_time(win_proba)
                             winner = team1 if result == 1 else team2
                     else:
+                        #print("No legs have been played")
                         # case 3: no legs have been pplayed
                         result = simulate_playoff(win_proba)
                         winner = team1 if result == 1 else team2
                 else:
+                    #print("No tie matches found")
                     # case 3: no legs have been pplayed
                     result = simulate_playoff(win_proba)
                     winner = team1 if result == 1 else team2
             winners.append(winner)
-
+            #print(f"Winner of match {team1} vs {team2} is {winner}")
             # Track participation
             for team in [team1, team2]:
                 if team not in teams_progression:
