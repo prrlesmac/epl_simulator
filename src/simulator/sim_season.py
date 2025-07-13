@@ -314,7 +314,20 @@ if __name__ == "__main__":
         bracket_draw = league_rules["knockout_draw"] if is_continental_league else None
         classif_rules = league_rules["classification"]
         qualif_rules = league_rules["qualification"]
+
+        # if schedule has non-league matches but not a bracket draw then raise error
+        if is_continental_league and bracket_draw is None and not schedule[schedule["round"] != "League"].empty:
+            raise ValueError(
+                f"League {league} has knockout matches but no bracket draw defined. "
+                "Please provide a bracket_draw in the league rules."
+            )
         schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
+        # if there is a bracket draw but league has not fnished then raise error
+        if is_continental_league and bracket_draw is not None and not schedule_pending[schedule_pending["round"] == "League"].empty:
+            raise ValueError(
+                f"League {league} has a bracket draw defined but league phase is unfinished. "
+                "Please remove the bracket draw."
+            )
         sim_standings = run_simulation_parallel(
             schedule_played,
             schedule_pending,
