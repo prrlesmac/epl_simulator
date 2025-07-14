@@ -177,7 +177,8 @@ club_name_mapping = {
     'Panathinaikos': 'Panathinaikos',
     'Jagiellonia': 'Jagiellonia',
     'Borac Banja Luka': 'Borac Banja Luka',
-    'Guimarães': 'Vitória',
+    'Guimaraes': 'Vitória',
+    'Vikingur' : 'KV',
 }
 
 # Database
@@ -297,6 +298,7 @@ db_table_definitions = {
 
 # Data scraping
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+elo_date = '2025-06-01'  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
 fixtures_config = {
     "ENG": {
@@ -334,7 +336,7 @@ fixtures_config = {
 }
 
 ## Simulation
-number_of_simulations = 10000
+number_of_simulations = 10
 home_advantage = 80
 leagues_to_sim = list(fixtures_config.keys())
 played_cutoff_date = None
@@ -462,25 +464,25 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
-        "knockout_draw": None
-        #   [
-        #     ("Liverpool", "Bye"),
-        #     ("Paris S-G", "Brest"),
-        #     ("Aston Villa", "Bye"),
-        #     ("Atalanta", "Club Brugge"),
-        #     ("Arsenal", "Bye"),
-        #     ("PSV Eindhoven", "Juventus"),
-        #     ("Atlético Madrid", "Bye"),
-        #     ("Real Madrid", "Manchester City"),
-        #     ("Barcelona", "Bye"),
-        #     ("Benfica", "Monaco"),
-        #     ("Lille", "Bye"),
-        #     ("Dortmund", "Sporting CP"),
-        #     ("Inter", "Bye"),
-        #     ("Milan", "Feyenoord"),
-        #     ("Leverkusen", "Bye"),
-        #     ("Bayern Munich", "Celtic"),
-        # ],
+        "knockout_draw": #None
+          [
+            ("Liverpool", "Bye"),
+            ("Paris S-G", "Brest"),
+            ("Aston Villa", "Bye"),
+            ("Atalanta", "Club Brugge"),
+            ("Arsenal", "Bye"),
+            ("PSV Eindhoven", "Juventus"),
+            ("Atlético Madrid", "Bye"),
+            ("Real Madrid", "Manchester City"),
+            ("Barcelona", "Bye"),
+            ("Benfica", "Monaco"),
+            ("Lille", "Bye"),
+            ("Dortmund", "Sporting CP"),
+            ("Inter", "Bye"),
+            ("Milan", "Feyenoord"),
+            ("Leverkusen", "Bye"),
+            ("Bayern Munich", "Celtic"),
+        ],
     },
     "UEL": {
         "has_knockout": True,
@@ -520,7 +522,25 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
-        "knockout_draw": None
+        "knockout_draw": #None
+          [
+            ("Tottenham", "Bye"),
+            ("Galatasaray", "AZ Alkmaar"),
+            ("Eint Frankfurt", "Bye"),
+            ("Ajax", "Union SG"),
+            ("Olympiacos", "Bye"),
+            ("Twente", "Bodø/Glimt"),
+            ("Lazio", "Bye"),
+            ("Viktoria Plzeň", "Ferencváros"),
+            ("Rangers", "Bye"),
+            ("Anderlecht", "Fenerbahçe"),
+            ("Athletic Club", "Bye"),
+            ("Roma", "Porto"),
+            ("Lyon", "Bye"),
+            ("FCSB", "PAOK"),
+            ("Manchester Utd", "Bye"),
+            ("Real Sociedad", "Midtjylland"),
+        ],
     },
     "UECL": {
         "has_knockout": True,
@@ -560,6 +580,24 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
-        "knockout_draw": None
-    },
+        "knockout_draw": #None
+          [
+            ("Vitória", "Bye"),
+            ("Betis", "Gent"),
+            ("Cercle Brugge", "Bye"),
+            ("TSC Bačka Top", "Jagiellonia"),
+            ("Lugano", "Bye"),
+            ("NK Celje", "APOEL"),
+            ("Fiorentina", "Bye"),
+            ("Panathinaikos", "Manchester City"),
+            ("Djurgården", "Bye"),
+            ("Pafos FC", "AC Omonia"),
+            ("Rapid Wien", "Bye"),
+            ("Borac Banja Luka", "Olimpija"),
+            ("Legia Warsaw", "Bye"),
+            ("Molde", "Shamrock Rov"),
+            ("Chelsea", "Bye"),
+            ("FC Copenhagen", "Heidenheim"),
+        ],   
+ },
 }
