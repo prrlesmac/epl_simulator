@@ -52,7 +52,8 @@ jobs:
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
-
+    needs: test
+    
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
