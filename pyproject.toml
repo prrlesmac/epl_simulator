@@ -27,3 +27,10 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["*"]
+
+[tool.coverage.run]
+omit = [
+  "config.py",
+  "db_connect.py",
+  "__init__.py"
+]
