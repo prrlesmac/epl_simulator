@@ -62,12 +62,6 @@ def simulate_match(proba):
     Base = np.random.poisson(0.18 * min(ExpGA, ExpGH))
     GH = np.random.poisson(ExpGH - 0.18 * min(ExpGA, ExpGH)) + Base
     GA = np.random.poisson(ExpGA - 0.18 * min(ExpGA, ExpGH)) + Base
-    # Diff = abs(GH - GA)
-    # K = 30 * np.where(Diff <= 1, 1, np.where(Diff == 2, 1.25, 1.25 + (Diff - 2) / 8))
-    # Res = np.where(GH > GA, 1, np.where(GH == GA, 0.5, 0))
-    # EloDiff = (proba - Res) * K
-    # EloH = EloH - EloDiff
-    # EloA = EloA + EloDiff
 
     return (GH, GA)
 
@@ -128,6 +122,8 @@ def simulate_playoff(proba):
     Returns:
         str: 1 if team 1 wins, 2 if team 2 wins
     """
+    if not 0 <= proba <= 1:
+        raise ValueError("Probability must be between 0 and 1 (inclusive).")
     random_sim = np.random.rand()
     result = 1 if random_sim <= proba else 2
 
