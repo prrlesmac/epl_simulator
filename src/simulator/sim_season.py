@@ -272,106 +272,150 @@ def aggregate_standings_outcomes(standings, qualification_mapping):
     return standings
 
 
-if __name__ == "__main__":
-    start_time = time.time()
-    sim_standings_wo_ko = []
-    sim_standings_w_ko = []
-
-    for league in config.leagues_to_sim:
-        is_continental_league = league in ["UCL", "UEL", "UECL"]
-        print("Simulating: ", league)
-        engine = db_connect.get_postgres_engine()
-        schedule = pd.read_sql(
-            f"SELECT * FROM {config.db_table_definitions['fixtures_table']['name']} WHERE country = '{league}'",
-            engine,
-        )
-        # if value in "date" column is after cutoff_date, set played to "N"
-        if config.played_cutoff_date: 
-            schedule["date"] = pd.to_datetime(schedule["date"], errors="coerce")
-            schedule.loc[schedule["date"] > pd.to_datetime(config.played_cutoff_date), "played"] = "N"
-        if config.schedule_cutoff_date: 
-        # remove all rows after the date for non league rounds:
-            schedule = schedule[
-                (schedule["round"] == "League")
-                | (
-                    (schedule["round"] != "League")
-                    & (schedule["date"] <= pd.to_datetime(config.schedule_cutoff_date))
-                    )
-                ].copy()
-        elos_query = f"SELECT * FROM {config.db_table_definitions['elo_table']['name']}" + (
-            f" WHERE country = '{league}'" if not is_continental_league else ""
-        )
-        elos = pd.read_sql(
-            elos_query,
-            engine,
-        )
-
-        league_rules = config.league_rules[league]
-        bracket_composition = (
-            league_rules["knockout_bracket"] if is_continental_league else None
-        )
-        bracket_format = league_rules["knockout_format"] if is_continental_league else None
-        bracket_draw = league_rules["knockout_draw"] if is_continental_league else None
-        classif_rules = league_rules["classification"]
-        qualif_rules = league_rules["qualification"]
-
-        # if schedule has non-league matches but not a bracket draw then raise error
-        if is_continental_league and bracket_draw is None and not schedule[schedule["round"] != "League"].empty:
-            raise ValueError(
-                f"League {league} has knockout matches but no bracket draw defined. "
-                "Please provide a bracket_draw in the league rules."
+def load_league_data(league):
+    """
+    Load schedule and Elo data for a specific league from the database.
+    
+    Args:
+        league (str): The league identifier to load data for.
+        
+    Returns:
+        tuple: (schedule_df, elos_df) DataFrames containing schedule and Elo data.
+    """
+    is_continental_league = league in ["UCL", "UEL", "UECL"]
+    engine = db_connect.get_postgres_engine()
+    
+    schedule = pd.read_sql(
+        f"SELECT * FROM {config.db_table_definitions['fixtures_table']['name']} WHERE country = '{league}'",
+        engine,
+    )
+    
+    # Apply cutoff dates if configured
+    if config.played_cutoff_date: 
+        schedule["date"] = pd.to_datetime(schedule["date"], errors="coerce")
+        schedule.loc[schedule["date"] > pd.to_datetime(config.played_cutoff_date), "played"] = "N"
+    
+    if config.schedule_cutoff_date: 
+        schedule = schedule[
+            (schedule["round"] == "League")
+            | (
+                (schedule["round"] != "League")
+                & (schedule["date"] <= pd.to_datetime(config.schedule_cutoff_date))
             )
-        schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
-        # if there is a bracket draw but league has not fnished then raise error
-        if is_continental_league and bracket_draw is not None and not schedule_pending[schedule_pending["round"] == "League"].empty:
-            raise ValueError(
-                f"League {league} has a bracket draw defined but league phase is unfinished. "
-                "Please remove the bracket draw."
-            )
-        sim_standings = run_simulation_parallel(
-            schedule_played,
-            schedule_pending,
-            classif_rules,
-            has_knockout=is_continental_league,
-            bracket_composition=bracket_composition,
-            bracket_format=bracket_format,
-            bracket_draw=bracket_draw,
-            num_simulations=config.number_of_simulations,
-        )
-        """
-        sim_standings = run_simulation(
-            schedule_played,
-            schedule_pending,
-            classif_rules,
-            num_simulations=config.number_of_simulations,
-            verbose=False,
-        )
-        """
-        sim_standings = aggregate_standings_outcomes(sim_standings, qualif_rules)
-        sim_standings["league"] = league
-        sim_standings["updated_at"] = datetime.now()
-        if not league_rules["has_knockout"]:
-            sim_standings_wo_ko.append(sim_standings)
-        else:
-            sim_standings_w_ko.append(sim_standings)
+        ].copy()
+    
+    elos_query = f"SELECT * FROM {config.db_table_definitions['elo_table']['name']}" + (
+        f" WHERE country = '{league}'" if not is_continental_league else ""
+    )
+    elos = pd.read_sql(elos_query, engine)
+    
+    return schedule, elos
 
-    end_time = time.time()
-    print(f"Simulation took {end_time - start_time:.2f} seconds")
 
-    # reconnect
+def validate_league_configuration(league, schedule, league_rules):
+    """
+    Validate that the league configuration is consistent with the schedule data.
+    
+    Args:
+        league (str): The league identifier.
+        schedule (pd.DataFrame): The schedule DataFrame.
+        league_rules (dict): The league rules configuration.
+        
+    Raises:
+        ValueError: If the configuration is inconsistent.
+    """
+    is_continental_league = league in ["UCL", "UEL", "UECL"]
+    bracket_draw = league_rules.get("knockout_draw")
+    
+    has_knockout_matches = not schedule[schedule["round"] != "League"].empty
+    has_pending_league_matches = not schedule[
+        (schedule["round"] == "League") & (schedule["played"] == "N")
+    ].empty
+    
+    if is_continental_league and bracket_draw is None and has_knockout_matches:
+        raise ValueError(
+            f"League {league} has knockout matches but no bracket draw defined. "
+            "Please provide a bracket_draw in the league rules."
+        )
+    
+    if is_continental_league and bracket_draw is not None and has_pending_league_matches:
+        raise ValueError(
+            f"League {league} has a bracket draw defined but league phase is unfinished. "
+            "Please remove the bracket draw."
+        )
+
+
+def simulate_league(league, schedule, elos):
+    """
+    Simulate a single league and return the results.
+    
+    Args:    
+        league (str): The league identifier to simulate.
+        schedule (pd.DataFrame): DataFrame containing schedule of matches played and to be played
+        elos (pd.DataFrame): DataFrame containing the elo rating for each team
+        
+    Returns:
+        pd.DataFrame: The simulation results for the league.
+    """
+    is_continental_league = league in ["UCL", "UEL", "UECL"]
+    print("Simulating: ", league)
+        
+    # Get league configuration
+    league_rules = config.league_rules[league]
+    bracket_composition = league_rules.get("knockout_bracket") if is_continental_league else None
+    bracket_format = league_rules.get("knockout_format") if is_continental_league else None
+    bracket_draw = league_rules.get("knockout_draw") if is_continental_league else None
+    classif_rules = league_rules["classification"]
+    qualif_rules = league_rules["qualification"]
+    
+    # Validate configuration
+    validate_league_configuration(league, schedule, league_rules)
+    
+    # Prepare data for simulation
+    schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
+    
+    # Run simulation
+    sim_standings = run_simulation_parallel(
+        schedule_played,
+        schedule_pending,
+        classif_rules,
+        has_knockout=is_continental_league,
+        bracket_composition=bracket_composition,
+        bracket_format=bracket_format,
+        bracket_draw=bracket_draw,
+        num_simulations=config.number_of_simulations,
+    )
+    
+    # Aggregate results
+    sim_standings = aggregate_standings_outcomes(sim_standings, qualif_rules)
+    sim_standings["league"] = league
+    sim_standings["updated_at"] = datetime.now()
+    
+    return sim_standings, league_rules.get("has_knockout", False)
+
+
+def save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko):
+    """
+    Save simulation results to the database.
+    
+    Args:
+        sim_standings_wo_ko (list): List of DataFrames for leagues without knockout stages.
+        sim_standings_w_ko (list): List of DataFrames for leagues with knockout stages.
+    """
     engine = db_connect.get_postgres_engine()
     if sim_standings_wo_ko:
-        sim_standings_wo_ko = pd.concat(sim_standings_wo_ko)
-        sim_standings_wo_ko.to_sql(
+        sim_standings_wo_ko_df = pd.concat(sim_standings_wo_ko)
+        sim_standings_wo_ko_df.to_sql(
             config.db_table_definitions["domestic_sim_output_table"]["name"],
             engine,
             if_exists="replace",
             index=False,
             dtype=config.db_table_definitions["domestic_sim_output_table"]["dtype"],
         )
+    
     if sim_standings_w_ko:
-        sim_standings_w_ko = pd.concat(sim_standings_w_ko)
-        sim_standings_w_ko.to_sql(
+        sim_standings_w_ko_df = pd.concat(sim_standings_w_ko)
+        sim_standings_w_ko_df.to_sql(
             config.db_table_definitions["continental_sim_output_table"]["name"],
             engine,
             if_exists="replace",
@@ -379,4 +423,30 @@ if __name__ == "__main__":
             dtype=config.db_table_definitions["continental_sim_output_table"]["dtype"],
         )
 
-    print(f"Simulations saved to db")
+
+def run_all_simulations():
+    """
+    Main function to run simulations for all configured leagues.
+    """
+    start_time = time.time()
+    sim_standings_wo_ko = []
+    sim_standings_w_ko = []
+
+    for league in config.leagues_to_sim:
+        schedule, elos = load_league_data(league)
+        sim_standings, has_knockout = simulate_league(league, schedule, elos)
+        if has_knockout:
+            sim_standings_w_ko.append(sim_standings)
+        else:
+            sim_standings_wo_ko.append(sim_standings)
+
+    end_time = time.time()
+    print(f"Simulation took {end_time - start_time:.2f} seconds")
+
+    # Save results to database
+    save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko)
+    print("Simulations saved to db")
+
+
+if __name__ == "__main__":
+    run_all_simulations()
