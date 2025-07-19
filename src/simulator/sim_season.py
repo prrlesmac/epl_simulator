@@ -312,19 +312,17 @@ def load_league_data(league):
     return schedule, elos
 
 
-def validate_league_configuration(league, schedule, league_rules):
+def validate_league_configuration(schedule, league_rules):
     """
     Validate that the league configuration is consistent with the schedule data.
     
     Args:
-        league (str): The league identifier.
         schedule (pd.DataFrame): The schedule DataFrame.
         league_rules (dict): The league rules configuration.
         
     Raises:
         ValueError: If the configuration is inconsistent.
     """
-    is_continental_league = league in ["UCL", "UEL", "UECL"]
     bracket_draw = league_rules.get("knockout_draw")
     
     has_knockout_matches = not schedule[schedule["round"] != "League"].empty
@@ -332,44 +330,45 @@ def validate_league_configuration(league, schedule, league_rules):
         (schedule["round"] == "League") & (schedule["played"] == "N")
     ].empty
     
-    if is_continental_league and bracket_draw is None and has_knockout_matches:
+    if league_rules['has_knockout'] and bracket_draw is None and has_knockout_matches:
         raise ValueError(
-            f"League {league} has knockout matches but no bracket draw defined. "
+            f"League has knockout matches but no bracket draw defined. "
             "Please provide a bracket_draw in the league rules."
         )
     
-    if is_continental_league and bracket_draw is not None and has_pending_league_matches:
+    if league_rules['has_knockout'] and bracket_draw is not None and has_pending_league_matches:
         raise ValueError(
-            f"League {league} has a bracket draw defined but league phase is unfinished. "
+            f"League has a bracket draw defined but league phase is unfinished. "
             "Please remove the bracket draw."
         )
 
 
-def simulate_league(league, schedule, elos):
+def simulate_league(league_rules, schedule, elos):
     """
     Simulate a single league and return the results.
     
     Args:    
-        league (str): The league identifier to simulate.
+        league_rules (Dict): the league rules from the config
+            should include has knockout, knockout bracket, knockout format,
+            kncokout draw, classification and qualification
         schedule (pd.DataFrame): DataFrame containing schedule of matches played and to be played
         elos (pd.DataFrame): DataFrame containing the elo rating for each team
         
     Returns:
         pd.DataFrame: The simulation results for the league.
     """
-    is_continental_league = league in ["UCL", "UEL", "UECL"]
-    print("Simulating: ", league)
+    print("Simulating league")
         
     # Get league configuration
-    league_rules = config.league_rules[league]
-    bracket_composition = league_rules.get("knockout_bracket") if is_continental_league else None
-    bracket_format = league_rules.get("knockout_format") if is_continental_league else None
-    bracket_draw = league_rules.get("knockout_draw") if is_continental_league else None
+    has_knockout = league_rules.get("has_knockout")
+    bracket_composition = league_rules.get("knockout_bracket")
+    bracket_format = league_rules.get("knockout_format")
+    bracket_draw = league_rules.get("knockout_draw")
     classif_rules = league_rules["classification"]
     qualif_rules = league_rules["qualification"]
     
     # Validate configuration
-    validate_league_configuration(league, schedule, league_rules)
+    validate_league_configuration(schedule, league_rules)
     
     # Prepare data for simulation
     schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
@@ -379,7 +378,7 @@ def simulate_league(league, schedule, elos):
         schedule_played,
         schedule_pending,
         classif_rules,
-        has_knockout=is_continental_league,
+        has_knockout=has_knockout,
         bracket_composition=bracket_composition,
         bracket_format=bracket_format,
         bracket_draw=bracket_draw,
@@ -388,10 +387,9 @@ def simulate_league(league, schedule, elos):
     
     # Aggregate results
     sim_standings = aggregate_standings_outcomes(sim_standings, qualif_rules)
-    sim_standings["league"] = league
     sim_standings["updated_at"] = datetime.now()
     
-    return sim_standings, league_rules.get("has_knockout", False)
+    return sim_standings
 
 
 def save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko):
@@ -434,8 +432,11 @@ def run_all_simulations():
 
     for league in config.leagues_to_sim:
         schedule, elos = load_league_data(league)
-        sim_standings, has_knockout = simulate_league(league, schedule, elos)
-        if has_knockout:
+        league_rules = config.league_rules[league]
+        sim_standings = simulate_league(league_rules, schedule, elos)
+        sim_standings["league"] = league
+
+        if config.league_rules[league]['has_knockout']:
             sim_standings_w_ko.append(sim_standings)
         else:
             sim_standings_wo_ko.append(sim_standings)
