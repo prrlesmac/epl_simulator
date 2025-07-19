@@ -436,8 +436,8 @@ league_rules = {
         ],
         # No relegation info for UCL, exclude or set None
         "qualification": {
-            "direct_to_round_of_16": list(range(1, 17)),
-            "playoff": list(range(17, 25)),
+            "direct_to_round_of_16": list(range(1, 9)),
+            "playoff": list(range(9, 25)),
         },
         "knockout_bracket": [
             (1, "Bye"),
