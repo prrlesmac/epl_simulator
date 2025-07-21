@@ -5,7 +5,9 @@ import random
 import re
 
 
-def calculate_win_probability(elo_home, elo_away, matchup_type="single_game", home_adv=80):
+def calculate_win_probability(
+    elo_home, elo_away, matchup_type="single_game", home_adv=80
+):
     """
     Calculate win probability using the Elo rating system.
 
@@ -21,12 +23,12 @@ def calculate_win_probability(elo_home, elo_away, matchup_type="single_game", ho
     if matchup_type == "two-legged":
         rank_diff = (elo_away - elo_home) * 1.4
     elif matchup_type == "single_game_neutral":
-        rank_diff = (elo_away - elo_home)
+        rank_diff = elo_away - elo_home
     elif matchup_type == "single_game":
-        rank_diff = (elo_away - elo_home - home_adv)
+        rank_diff = elo_away - elo_home - home_adv
     else:
         print(f"Unknown matchup type: {matchup_type}. Defaulting to single game.")
-        rank_diff = (elo_away - elo_home - home_adv)
+        rank_diff = elo_away - elo_home - home_adv
     we = 1 / (1 + 10 ** (rank_diff / 400))
     return we
 
@@ -82,16 +84,24 @@ def simulate_extra_time(proba):
         str: 1 if team 1 wins, 2 if team 2 wins
     """
 
-    ExpGH = np.where(
-        proba < 0.5,
-        0.2 + 1.1 * math.sqrt(proba / 0.5),
-        1.69 / (1.12 * math.sqrt(2 - proba / 0.5) + 0.18),
-    ) * 1/3
-    ExpGA = np.where(
-        (1 - proba) < 0.5,
-        0.2 + 1.1 * math.sqrt((1 - proba) / 0.5),
-        1.69 / (1.12 * math.sqrt(2 - (1 - proba) / 0.5) + 0.18),
-    ) * 1/3
+    ExpGH = (
+        np.where(
+            proba < 0.5,
+            0.2 + 1.1 * math.sqrt(proba / 0.5),
+            1.69 / (1.12 * math.sqrt(2 - proba / 0.5) + 0.18),
+        )
+        * 1
+        / 3
+    )
+    ExpGA = (
+        np.where(
+            (1 - proba) < 0.5,
+            0.2 + 1.1 * math.sqrt((1 - proba) / 0.5),
+            1.69 / (1.12 * math.sqrt(2 - (1 - proba) / 0.5) + 0.18),
+        )
+        * 1
+        / 3
+    )
     Base = np.random.poisson(0.18 * min(ExpGA, ExpGH))
     GH = np.random.poisson(ExpGH - 0.18 * min(ExpGA, ExpGH)) + Base
     GA = np.random.poisson(ExpGA - 0.18 * min(ExpGA, ExpGH)) + Base
@@ -148,7 +158,9 @@ def simulate_matches(matches_df, home_advantage):
         elo_away = match["elo_away"]
 
         # Calculate win probability for Team 1
-        win_proba = calculate_win_probability(elo_home, elo_away, home_adv=home_advantage)
+        win_proba = calculate_win_probability(
+            elo_home, elo_away, home_adv=home_advantage
+        )
 
         # Simulate match
         result = simulate_match(win_proba)
@@ -215,7 +227,9 @@ def apply_playoff_tiebreaker(matches_df, tied_teams):
     # matches_df has the tied teams and their elos
     elo_home = matches_df.iloc[0]["elo_home"]
     elo_away = matches_df.iloc[0]["elo_away"]
-    we = calculate_win_probability(elo_home, elo_away, matchup_type="single_game_neutral")
+    we = calculate_win_probability(
+        elo_home, elo_away, matchup_type="single_game_neutral"
+    )
     result = simulate_playoff(we)
 
     standings_playoff = pd.DataFrame(
@@ -399,7 +413,7 @@ def get_standings(matches_df, classif_rules):
                 standings[rule] = np.nan
 
     # Add a random tie-breaker for remaining ties (e.g., team name or index)
-    standings["__tiebreaker__"] = standings.index 
+    standings["__tiebreaker__"] = standings.index
 
     # Extend classification rules with the tiebreaker
     extended_rules = classif_rules + ["__tiebreaker__"]
@@ -475,28 +489,40 @@ def simulate_playoff_bracket(bracket_df, bracket_format, elos, playoff_schedule)
         Wide-format DataFrame with one row per team and binary indicators for each round
     """
     validate_bracket(bracket_df, bracket_format)
-    
+
     elos_dict = dict(zip(elos["team"], elos["elo"]))
     teams_progression = {}
     rounds = []
-    
+
     current_round = bracket_df.copy()
-    
+
     while len(current_round) > 0:
         round_label = f"po_r{2 * len(current_round)}"
         round_format = bracket_format[round_label]
         rounds.append(round_label)
-        
-        winners = _simulate_round(current_round, round_format, elos_dict, 
-                                playoff_schedule, teams_progression, round_label)
-        
+
+        winners = _simulate_round(
+            current_round,
+            round_format,
+            elos_dict,
+            playoff_schedule,
+            teams_progression,
+            round_label,
+        )
+
         current_round = _prepare_next_round(winners)
-    
+
     return _build_results_dataframe(teams_progression, rounds)
 
 
-def _simulate_round(current_round, round_format, elos_dict, playoff_schedule,
-                   teams_progression, round_label):
+def _simulate_round(
+    current_round,
+    round_format,
+    elos_dict,
+    playoff_schedule,
+    teams_progression,
+    round_label,
+):
     """
     Simulate all matches in a single playoff round and update team progression.
 
@@ -512,16 +538,19 @@ def _simulate_round(current_round, round_format, elos_dict, playoff_schedule,
         list: A list of team names that won their respective matchups in this round.
     """
     winners = []
-    
+
     for _, row in current_round.iterrows():
         team1, team2 = row["team1"], row["team2"]
-        
-        winner = _simulate_match(team1, team2, round_format, elos_dict, playoff_schedule)
+
+        winner = _simulate_match(
+            team1, team2, round_format, elos_dict, playoff_schedule
+        )
         winners.append(winner)
-        
-        _track_team_progression(team1, team2, winner, teams_progression, 
-                              round_label, len(current_round))
-    
+
+        _track_team_progression(
+            team1, team2, winner, teams_progression, round_label, len(current_round)
+        )
+
     return winners
 
 
@@ -543,17 +572,19 @@ def _simulate_match(team1, team2, round_format, elos_dict, playoff_schedule):
         return team2
     if team2 == "Bye":
         return team1
-    
+
     team1_elo = elos_dict.get(team1, 1000)
     team2_elo = elos_dict.get(team2, 1000)
-    
-    win_proba = calculate_win_probability(team1_elo, team2_elo, matchup_type=round_format)
+
+    win_proba = calculate_win_probability(
+        team1_elo, team2_elo, matchup_type=round_format
+    )
     tie_matches = _get_tie_matches(team1, team2, playoff_schedule)
-    
+
     if tie_matches.empty:
         result = simulate_playoff(win_proba)
         return team1 if result == 1 else team2
-    
+
     return _determine_winner_from_schedule(team1, team2, tie_matches, win_proba)
 
 
@@ -570,8 +601,8 @@ def _get_tie_matches(team1, team2, playoff_schedule):
         pd.DataFrame: Subset of playoff_schedule for matches between the two teams.
     """
     return playoff_schedule[
-        ((playoff_schedule["home"] == team1) & (playoff_schedule["away"] == team2)) |
-        ((playoff_schedule["home"] == team2) & (playoff_schedule["away"] == team1))
+        ((playoff_schedule["home"] == team1) & (playoff_schedule["away"] == team2))
+        | ((playoff_schedule["home"] == team2) & (playoff_schedule["away"] == team1))
     ].copy()
 
 
@@ -614,13 +645,13 @@ def _get_winner_from_completed_matches(team1, team2, tie_matches):
     """
     string_result = tie_matches.iloc[-1]["notes"]
     match = re.search(r";\s*(.*?)\s+won", string_result)
-    
+
     if match:
         winner = match.group(1)
         if winner not in [team1, team2]:
             raise Warning(f"Winner {winner} not in teams {team1}, {team2}")
         return winner
-    
+
     return _get_winner_by_goals(team1, team2, tie_matches)
 
 
@@ -638,7 +669,7 @@ def _get_winner_from_partial_matches(team1, team2, tie_matches, win_proba):
         str: Name of the winning team.
     """
     t1_goals, t2_goals = _calculate_total_goals(team1, team2, tie_matches)
-    
+
     if t1_goals > t2_goals:
         return team1
     elif t2_goals > t1_goals:
@@ -664,13 +695,15 @@ def _get_winner_by_goals(team1, team2, tie_matches):
         ValueError: If both teams have equal total goals.
     """
     t1_goals, t2_goals = _calculate_total_goals(team1, team2, tie_matches)
-    
+
     if t1_goals > t2_goals:
         return team1
     elif t2_goals > t1_goals:
         return team2
     else:
-        raise ValueError("Both teams scored the same number of goals, cannot determine winner.")
+        raise ValueError(
+            "Both teams scored the same number of goals, cannot determine winner."
+        )
 
 
 def _calculate_total_goals(team1, team2, tie_matches):
@@ -685,16 +718,22 @@ def _calculate_total_goals(team1, team2, tie_matches):
     Returns:
         tuple: Total goals for team1 and team2.
     """
-    t1_goals = (tie_matches[tie_matches["home"] == team1]["home_goals"].sum() + 
-               tie_matches[tie_matches["away"] == team1]["away_goals"].sum())
-    
-    t2_goals = (tie_matches[tie_matches["home"] == team2]["home_goals"].sum() + 
-               tie_matches[tie_matches["away"] == team2]["away_goals"].sum())
-    
+    t1_goals = (
+        tie_matches[tie_matches["home"] == team1]["home_goals"].sum()
+        + tie_matches[tie_matches["away"] == team1]["away_goals"].sum()
+    )
+
+    t2_goals = (
+        tie_matches[tie_matches["home"] == team2]["home_goals"].sum()
+        + tie_matches[tie_matches["away"] == team2]["away_goals"].sum()
+    )
+
     return t1_goals, t2_goals
 
 
-def _track_team_progression(team1, team2, winner, teams_progression, round_label, round_size):
+def _track_team_progression(
+    team1, team2, winner, teams_progression, round_label, round_size
+):
     """
     Track and update team progression through each round.
 
@@ -709,9 +748,9 @@ def _track_team_progression(team1, team2, winner, teams_progression, round_label
     for team in [team1, team2]:
         if team not in teams_progression:
             teams_progression[team] = {}
-        
+
         teams_progression[team][round_label] = 1
-        
+
         if round_size == 1 and team == winner:
             teams_progression[team]["po_champion"] = 1
 
@@ -728,10 +767,10 @@ def _prepare_next_round(winners):
     """
     if len(winners) < 2:
         return pd.DataFrame()
-    
+
     it = iter(winners)
     next_round_pairs = list(zip(it, it))
-    
+
     return pd.DataFrame(next_round_pairs, columns=["team1", "team2"])
 
 
@@ -748,13 +787,13 @@ def _build_results_dataframe(teams_progression, rounds):
     """
     all_teams = list(teams_progression.keys())
     all_rounds = rounds + ["Champion"]
-    
+
     result = pd.DataFrame(index=all_teams, columns=all_rounds).fillna(0).astype(int)
-    
+
     for team, progress in teams_progression.items():
         for round_name in progress:
             result.loc[team, round_name] = progress[round_name]
-    
+
     return result.reset_index().rename(columns={"index": "team"})
 
 

@@ -62,9 +62,7 @@ def get_fixtures(url, table_id):
         # Find the table containing the fixtures
         df_all = []
         for id in table_id:
-            table = soup.find(
-                "table", {"id": id}
-            )
+            table = soup.find("table", {"id": id})
 
             # Extract table headers
             headers = [th.text.strip() for th in table.find("thead").find_all("th")]
@@ -73,7 +71,7 @@ def get_fixtures(url, table_id):
             rows = []
             for tr in table.find("tbody").find_all("tr"):
                 row_th = [tr.find("th").text.strip()] if tr.find("th") else [""]
-                row_td = ([td.text.strip() for td in tr.find_all("td")])
+                row_td = [td.text.strip() for td in tr.find_all("td")]
                 row = row_th + row_td
                 rows.append(row)
             # Convert to a Pandas DataFrame
@@ -82,7 +80,7 @@ def get_fixtures(url, table_id):
             )  # Exclude the first header if it's a placeholder
             # exclude rows where Home and Away are empty
             df = df[(df["Home"] != "") | (df["Away"] != "")]
-            df = df.drop(columns=['xG'])
+            df = df.drop(columns=["xG"])
 
             df_all.append(df)
         df_all = pd.concat(df_all)
@@ -105,7 +103,7 @@ def process_fixtures(fixtures, country):
         fixtures (pandas.DataFrame): Raw fixtures DataFrame, typically parsed from HTML,
         with columns including 'home', 'away', and 'score'.
         country (str): The country or league identifier to adjust team names and processing.
-   
+
     Returns:
         pandas.DataFrame: A cleaned and processed DataFrame with the following columns:
             - 'home': Home team name
@@ -140,7 +138,17 @@ def process_fixtures(fixtures, country):
         fixtures["round"] = "League"
     fixtures["round"] = fixtures["round"].fillna("League")
     fixtures = fixtures[
-        ["home", "away", "home_goals", "away_goals", "played", "neutral", "round", "date", "notes"]
+        [
+            "home",
+            "away",
+            "home_goals",
+            "away_goals",
+            "played",
+            "neutral",
+            "round",
+            "date",
+            "notes",
+        ]
     ]
     return fixtures
 

@@ -119,72 +119,71 @@ club_name_mapping = {
     "Sparta Praha": "Sparta Prague",
     "Sturm Graz": "Sturm Graz",
     ## UEL
-    'FK Riga': 'FK Rīgas FS',
-    'Fenerbahce': 'Fenerbahçe',
-    'Bodoe Glimt': 'Bodø/Glimt',
-    'PAOK': 'PAOK',
-    'Braga': 'Braga',
-    'Alkmaar': 'AZ Alkmaar',
-    'Elfsborg': 'Elfsborg',
-    'Porto': 'Porto',
-    'Twente': 'Twente',
-    'Midtjylland': 'Midtjylland',
-    'Hoffenheim': 'Hoffenheim',
-    'Ajax': 'Ajax',
-    'M Tel Aviv': 'Maccabi Tel Aviv',
-    'Anderlecht': 'Anderlecht',
-    'Dynamo Kyiv': 'Dynamo Kyiv',
-    'Karabakh Agdam': 'Qarabağ',
-    'Malmoe': 'Malmö',
-    'Viktoria Plzen': 'Viktoria Plzeň',
-    'Rangers': 'Rangers',
-    'Ferencvaros': 'Ferencváros',
-    'Besiktas': 'Beşiktaş',
-    'Slavia Praha': 'Slavia Prague',
-    'Olympiakos': 'Olympiacos',
-    'Steaua': 'FCSB',
-    'Galatasaray': 'Galatasaray',
-    'St Gillis': 'Union SG',
-    'Razgrad': 'Ludogorets',
+    "FK Riga": "FK Rīgas FS",
+    "Fenerbahce": "Fenerbahçe",
+    "Bodoe Glimt": "Bodø/Glimt",
+    "PAOK": "PAOK",
+    "Braga": "Braga",
+    "Alkmaar": "AZ Alkmaar",
+    "Elfsborg": "Elfsborg",
+    "Porto": "Porto",
+    "Twente": "Twente",
+    "Midtjylland": "Midtjylland",
+    "Hoffenheim": "Hoffenheim",
+    "Ajax": "Ajax",
+    "M Tel Aviv": "Maccabi Tel Aviv",
+    "Anderlecht": "Anderlecht",
+    "Dynamo Kyiv": "Dynamo Kyiv",
+    "Karabakh Agdam": "Qarabağ",
+    "Malmoe": "Malmö",
+    "Viktoria Plzen": "Viktoria Plzeň",
+    "Rangers": "Rangers",
+    "Ferencvaros": "Ferencváros",
+    "Besiktas": "Beşiktaş",
+    "Slavia Praha": "Slavia Prague",
+    "Olympiakos": "Olympiacos",
+    "Steaua": "FCSB",
+    "Galatasaray": "Galatasaray",
+    "St Gillis": "Union SG",
+    "Razgrad": "Ludogorets",
     # UECL
-    'FK Astana': 'Astana FK',
-    'HJK Helsinki': 'HJK',
-    'StGallen': 'St. Gallen',
-    'Rapid Wien': 'Rapid Wien',
-    'Backa Topola': 'TSC Bačka Top',
-    'Mlada Boleslav': 'Mladá Boleslav',
-    'LASK': 'LASK',
-    'Noah': 'FC Noah',
-    'Bueyueksehir': 'Başakşehir',
-    'The New Saints': 'The New Saints',
-    'Omonia': 'AC Omonia',
-    'APOEL': 'APOEL',
-    'Olimpija Ljubljana': 'Olimpija',
-    'Legia': 'Legia Warsaw',
-    'Larne': 'Larne FC',
-    'Paphos': 'Pafos FC',
-    'Lugano': 'Lugano',
-    'Shamrock': 'Shamrock Rov',
-    'Dinamo Minsk': 'Dinamo Minsk',
-    'Hearts': 'Hearts',
-    'Cercle Brugge': 'Cercle Brugge',
-    'Molde': 'Molde',
-    'Gent': 'Gent',
-    'Djurgarden': 'Djurgården',
-    'Petrocub': 'Petrocub',
-    'Celje': 'NK Celje',
-    'FC Kobenhavn': 'FC Copenhagen',
-    'Panathinaikos': 'Panathinaikos',
-    'Jagiellonia': 'Jagiellonia',
-    'Borac Banja Luka': 'Borac Banja Luka',
-    'Guimaraes': 'Vitória',
-    'Vikingur' : 'KV',
+    "FK Astana": "Astana FK",
+    "HJK Helsinki": "HJK",
+    "StGallen": "St. Gallen",
+    "Rapid Wien": "Rapid Wien",
+    "Backa Topola": "TSC Bačka Top",
+    "Mlada Boleslav": "Mladá Boleslav",
+    "LASK": "LASK",
+    "Noah": "FC Noah",
+    "Bueyueksehir": "Başakşehir",
+    "The New Saints": "The New Saints",
+    "Omonia": "AC Omonia",
+    "APOEL": "APOEL",
+    "Olimpija Ljubljana": "Olimpija",
+    "Legia": "Legia Warsaw",
+    "Larne": "Larne FC",
+    "Paphos": "Pafos FC",
+    "Lugano": "Lugano",
+    "Shamrock": "Shamrock Rov",
+    "Dinamo Minsk": "Dinamo Minsk",
+    "Hearts": "Hearts",
+    "Cercle Brugge": "Cercle Brugge",
+    "Molde": "Molde",
+    "Gent": "Gent",
+    "Djurgarden": "Djurgården",
+    "Petrocub": "Petrocub",
+    "Celje": "NK Celje",
+    "FC Kobenhavn": "FC Copenhagen",
+    "Panathinaikos": "Panathinaikos",
+    "Jagiellonia": "Jagiellonia",
+    "Borac Banja Luka": "Borac Banja Luka",
+    "Guimaraes": "Vitória",
+    "Vikingur": "KV",
 }
 
 # Database
 db_table_definitions = {
-
-    'elo_table': {
+    "elo_table": {
         "name": "current_elos",
         "dtype": {
             "club": VARCHAR(100),
@@ -194,7 +193,7 @@ db_table_definitions = {
             "updated_at": TIMESTAMP(),
         },
     },
-    'fixtures_table': {
+    "fixtures_table": {
         "name": "fixtures",
         "dtype": {
             "home": VARCHAR(100),
@@ -210,7 +209,7 @@ db_table_definitions = {
             "updated_at": TIMESTAMP(),
         },
     },
-    'domestic_sim_output_table': {
+    "domestic_sim_output_table": {
         "name": "sim_standings_dom",
         "dtype": {
             "team": VARCHAR(100),
@@ -242,7 +241,7 @@ db_table_definitions = {
             "updated_at": TIMESTAMP(),
         },
     },
-    'continental_sim_output_table': {
+    "continental_sim_output_table": {
         "name": "sim_standings_con",
         "dtype": {
             "team": VARCHAR(100),
@@ -298,7 +297,7 @@ db_table_definitions = {
 
 # Data scraping
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-elo_date = '2025-06-01'  # For testing purposes, set a fixed date
+elo_date = "2025-06-01"  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
 fixtures_config = {
     "ENG": {
@@ -460,12 +459,11 @@ league_rules = {
         "knockout_format": {
             "po_r32": "two-legged",
             "po_r16": "two-legged",
-            "po_r8": "two-legged",  
+            "po_r8": "two-legged",
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
-        "knockout_draw": #None
-          [
+        "knockout_draw": [  # None
             ("Liverpool", "Bye"),
             ("Paris S-G", "Brest"),
             ("Aston Villa", "Bye"),
@@ -518,12 +516,11 @@ league_rules = {
         "knockout_format": {
             "po_r32": "two-legged",
             "po_r16": "two-legged",
-            "po_r8": "two-legged",  
+            "po_r8": "two-legged",
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
-        "knockout_draw": #None
-          [
+        "knockout_draw": [  # None
             ("Tottenham", "Bye"),
             ("Galatasaray", "AZ Alkmaar"),
             ("Eint Frankfurt", "Bye"),
@@ -576,12 +573,11 @@ league_rules = {
         "knockout_format": {
             "po_r32": "two-legged",
             "po_r16": "two-legged",
-            "po_r8": "two-legged",  
+            "po_r8": "two-legged",
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
-        "knockout_draw": #None
-          [
+        "knockout_draw": [  # None
             ("Vitória", "Bye"),
             ("Betis", "Gent"),
             ("Cercle Brugge", "Bye"),
@@ -598,6 +594,6 @@ league_rules = {
             ("Molde", "Shamrock Rov"),
             ("Chelsea", "Bye"),
             ("FC Copenhagen", "Heidenheim"),
-        ],   
- },
+        ],
+    },
 }

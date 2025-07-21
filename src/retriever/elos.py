@@ -72,8 +72,8 @@ def filter_elos(elos, country, level):
 
     # correct red star to avoid duplicates
     filtered_elos.loc[
-        (filtered_elos["club"] == "Red Star")
-        & (filtered_elos["country"] == "FRA"), "club"
+        (filtered_elos["club"] == "Red Star") & (filtered_elos["country"] == "FRA"),
+        "club",
     ] = "Red Star FC"
 
     return filtered_elos
