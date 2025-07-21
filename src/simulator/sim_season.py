@@ -343,7 +343,7 @@ def validate_league_configuration(schedule, league_rules):
         )
 
 
-def simulate_league(league_rules, schedule, elos):
+def simulate_league(league_rules, schedule, elos, num_simulations=1000):
     """
     Simulate a single league and return the results.
     
@@ -353,7 +353,7 @@ def simulate_league(league_rules, schedule, elos):
             kncokout draw, classification and qualification
         schedule (pd.DataFrame): DataFrame containing schedule of matches played and to be played
         elos (pd.DataFrame): DataFrame containing the elo rating for each team
-        
+        num_simulations (int, optional): Number of simulations to run in parallel. Defaults to 1000.        
     Returns:
         pd.DataFrame: The simulation results for the league.
     """
@@ -382,7 +382,7 @@ def simulate_league(league_rules, schedule, elos):
         bracket_composition=bracket_composition,
         bracket_format=bracket_format,
         bracket_draw=bracket_draw,
-        num_simulations=config.number_of_simulations,
+        num_simulations=num_simulations
     )
     
     # Aggregate results
@@ -433,7 +433,7 @@ def run_all_simulations():
     for league in config.leagues_to_sim:
         schedule, elos = load_league_data(league)
         league_rules = config.league_rules[league]
-        sim_standings = simulate_league(league_rules, schedule, elos)
+        sim_standings = simulate_league(league_rules, schedule, elos, num_simulations=config.number_of_simulations)
         sim_standings["league"] = league
 
         if config.league_rules[league]['has_knockout']:
