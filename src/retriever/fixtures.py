@@ -86,10 +86,11 @@ def get_fixtures(url, table_id):
         df_all = pd.concat(df_all)
         # Display the DataFrame
         print("Fetching fixtures data...")
+        return df_all
     else:
         print(f"Failed to fetch the page. Status code: {response.status_code}")
 
-    return df_all
+    return None
 
 
 def process_fixtures(fixtures, country):
