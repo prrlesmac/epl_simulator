@@ -140,7 +140,7 @@ def simulate_playoff(proba):
     return result
 
 
-def simulate_matches(matches_df, home_advantage):
+def simulate_matches_data_frame(matches_df):
     """
     Simulate matches and determine winners.
 
@@ -192,7 +192,6 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
         A DataFrame with two columns: 'team' and the selected `rule` metric, prefixed with 'h2h_'.
         It reflects the standings of tied teams based only on the matches they played against each other.
     """
-
     tied_matches_df = matches_df.copy()
     tied_matches_df = tied_matches_df[
         (matches_df["home"].isin(tied_teams)) & (matches_df["away"].isin(tied_teams))
@@ -786,7 +785,7 @@ def _build_results_dataframe(teams_progression, rounds):
         pd.DataFrame: DataFrame summarizing tournament outcome for all teams.
     """
     all_teams = list(teams_progression.keys())
-    all_rounds = rounds + ["Champion"]
+    all_rounds = rounds + ["po_champion"]
 
     result = pd.DataFrame(index=all_teams, columns=all_rounds).fillna(0).astype(int)
 

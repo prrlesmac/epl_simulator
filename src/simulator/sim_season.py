@@ -1,5 +1,5 @@
 from simulator.sim_utils import (
-    simulate_matches,
+    simulate_matches_data_frame,
     get_standings,
     draw_from_pots,
     create_bracket_from_composition,
@@ -92,7 +92,7 @@ def single_simulation(
     league_schedule_pending = schedule_pending[
         schedule_pending["round"] == "League"
     ].copy()
-    simulated_pending = simulate_matches(league_schedule_pending, config.home_advantage)
+    simulated_pending = simulate_matches_data_frame(league_schedule_pending)
     schedule_final = pd.concat(
         [league_schedule_played, simulated_pending], ignore_index=True
     )
@@ -105,9 +105,7 @@ def single_simulation(
         knockout_schedule_pending = schedule_pending[
             schedule_pending["round"] != "League"
         ].copy()
-        simulated_pending = simulate_matches(
-            knockout_schedule_pending, config.home_advantage
-        )
+        simulated_pending = simulate_matches_data_frame(knockout_schedule_pending)
         playoff_schedule = pd.concat(
             [knockout_schedule_played, simulated_pending], ignore_index=True
         )
@@ -238,7 +236,7 @@ def run_simulation(
         if verbose:
             print(f"Simulation {i+1}/{num_simulations}")
         # Simulate matches and compute standings
-        simulated_pending = simulate_matches(schedule_pending.copy())
+        simulated_pending = simulate_matches_data_frame(schedule_pending.copy())
         schedule_final = pd.concat(
             [schedule_played, simulated_pending], ignore_index=True
         )
