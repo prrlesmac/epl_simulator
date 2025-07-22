@@ -215,20 +215,13 @@ class TestIntegration:
     """Integration tests combining both functions."""
 
     @patch("requests.get")
-    def test_get_and_filter_elos_integration(self, mock_get):
+    def test_get_and_filter_elos_integration(self, mock_get, sample_csv_response):
         """Test the integration of get_elos and filter_elos functions."""
-        # Mock response with comprehensive data
-        csv_data = """Club,Country,Level,Elo
-        Barcelona,ESP,1,2150
-        Real Madrid,ESP,1,2100
-        Manchester United,ENG,1,2050
-        Liverpool,ENG,1,2000
-        Red Star,FRA,2,1800
-        Bayern Munich,GER,1,2080"""
+
 
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.text = csv_data
+        mock_response.text = sample_csv_response
         mock_get.return_value = mock_response
 
         # Get data and filter
