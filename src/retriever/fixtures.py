@@ -52,7 +52,7 @@ def get_fixtures(url, table_id):
         AttributeError: If the expected table or structure is not found in the HTML.
     """
 
-    time.sleep(5)
+    time.sleep(10)
     # Send a GET request to fetch the HTML content
     response = requests.get(url)
     # Check if the request was successful
