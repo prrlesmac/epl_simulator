@@ -133,7 +133,7 @@ class TestGetFixtures:
         assert "xG" not in result.columns  # Should be dropped
         assert "Barcelona" in result["Home"].values
         assert "Real Madrid" in result["Away"].values
-        mock_sleep.assert_called_once_with(5)
+        mock_sleep.assert_called_once_with(10)
 
     @patch("time.sleep")
     @patch("requests.get")
