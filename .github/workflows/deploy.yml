@@ -43,49 +43,49 @@ jobs:
         docker build -t test-build .
         echo "Docker build successful"
 
-  deploy:
-    name: Deploy to EC2
-    runs-on: ubuntu-latest
-    needs: test
+  # deploy:
+  #   name: Deploy to EC2
+  #   runs-on: ubuntu-latest
+  #   needs: test
     
-    steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+  #   steps:
+  #   - name: Checkout repo
+  #     uses: actions/checkout@v3
 
-    - name: Set up SSH
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+  #   - name: Set up SSH
+  #     run: |
+  #       mkdir -p ~/.ssh
+  #       echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+  #       chmod 600 ~/.ssh/id_rsa
+  #       ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-    - name: Deploy via SSH
-      run: |
-        ssh -i ~/.ssh/id_rsa -p ${{ secrets.EC2_SSH_PORT || 22 }} ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-          set -e
+  #   - name: Deploy via SSH
+  #     run: |
+  #       ssh -i ~/.ssh/id_rsa -p ${{ secrets.EC2_SSH_PORT || 22 }} ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+  #         set -e
 
-          echo "Pulling latest code..."
-          cd /home/${{ secrets.EC2_USER }}/${{ secrets.APP_NAME || 'myapp' }}
-          git pull origin main
+  #         echo "Pulling latest code..."
+  #         cd /home/${{ secrets.EC2_USER }}/${{ secrets.APP_NAME || 'myapp' }}
+  #         git pull origin main
 
-          echo "Get secrets from env file"
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+  #         echo "Get secrets from env file"
+  #         echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+  #         echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+  #         echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+  #         echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+  #         echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
 
-          echo "Building Docker image..."
-          docker build -t ${{ secrets.APP_NAME || 'myapp' }} .
+  #         echo "Building Docker image..."
+  #         docker build -t ${{ secrets.APP_NAME || 'myapp' }} .
 
-          echo "Stopping and removing old container..."
-          docker stop ${{ secrets.APP_NAME || 'myapp' }} || true
-          docker rm ${{ secrets.APP_NAME || 'myapp' }} || true
+  #         echo "Stopping and removing old container..."
+  #         docker stop ${{ secrets.APP_NAME || 'myapp' }} || true
+  #         docker rm ${{ secrets.APP_NAME || 'myapp' }} || true
           
-          echo "Running new container..."
-          docker run -d --name ${{ secrets.APP_NAME || 'myapp' }} ${{ secrets.APP_NAME || 'myapp' }}
+  #         echo "Running new container..."
+  #         docker run -d --name ${{ secrets.APP_NAME || 'myapp' }} ${{ secrets.APP_NAME || 'myapp' }}
 
-          echo "Deleting unused images"
-          docker image prune -af
+  #         echo "Deleting unused images"
+  #         docker image prune -af
 
-        EOF
+  #       EOF
