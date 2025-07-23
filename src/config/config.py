@@ -165,7 +165,7 @@ club_name_mapping = {
     "HJK Helsinki": "HJK",
     "StGallen": "St. Gallen",
     "Rapid Wien": "Rapid Wien",
-    "Backa Topola": "TSC Bačka Top",
+    "Backa Topola": "TSC",
     "Mlada Boleslav": "Mladá Boleslav",
     "LASK": "LASK",
     "Noah": "FC Noah",
