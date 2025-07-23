@@ -24,6 +24,9 @@ club_name_mapping = {
     "Brentford": "Brentford",
     "Tottenham": "Tottenham",
     "Brighton": "Brighton",
+    "Leeds":"Leeds United",
+    "Burnley": "Burnley",
+    "Sunderland": "Sunderland",
     # ESP
     "Barcelona": "Barcelona",
     "Real Madrid": "Real Madrid",
@@ -45,6 +48,9 @@ club_name_mapping = {
     "Leganes": "Leganés",
     "Las Palmas": "Las Palmas",
     "Valladolid": "Valladolid",
+    "Levante": "Levante",
+    "Elche": "Elche",
+    "Oviedo": "Oviedo",
     ## ITA
     "Inter": "Inter",
     "Atalanta": "Atalanta",
@@ -66,6 +72,9 @@ club_name_mapping = {
     "Empoli": "Empoli",
     "Venezia": "Venezia",
     "Monza": "Monza",
+    "Sassuolo": "Sassuolo",
+    "Pisa": "Pisa",
+    "Cremonese": "Cremonese",
     ## GER
     "Bayern": "Bayern Munich",
     "Leverkusen": "Leverkusen",
@@ -85,6 +94,8 @@ club_name_mapping = {
     "Heidenheim": "Heidenheim",
     "Bochum": "Bochum",
     "Holstein": "Holstein Kiel",
+    "Koeln": "Köln",
+    "Hamburg": "Hamburger SV",
     ## FRA
     "Paris SG": "Paris S-G",
     "Lille": "Lille",
@@ -104,6 +115,9 @@ club_name_mapping = {
     "Angers": "Angers",
     "Saint-Etienne": "Saint-Étienne",
     "Montpellier": "Montpellier",
+    "Lorient": "Lorient",
+    "Paris FC": "Paris FC",
+    "Metz": "Metz",
     ## UCL
     "Feyenoord": "Feyenoord",
     "Salzburg": "RB Salzburg",
@@ -301,24 +315,24 @@ elo_date = "2025-06-01"  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
 fixtures_config = {
     "ENG": {
-        "fixtures_url": "https://fbref.com/en/comps/9/schedule/Premier-League-Scores-and-Fixtures",
-        "table_id": ["sched_2024-2025_9_1"],
+        "fixtures_url": "https://fbref.com/en/comps/9/2025-2026/schedule/2025-2026-Premier-League-Scores-and-Fixtures",
+        "table_id": ["sched_2025-2026_9_1"],
     },
     "ESP": {
-        "fixtures_url": "https://fbref.com/en/comps/12/schedule/La-Liga-Scores-and-Fixtures",
-        "table_id": ["sched_2024-2025_12_1"],
+        "fixtures_url": "https://fbref.com/en/comps/12/2025-2026/schedule/2025-2026-La-Liga-Scores-and-Fixtures",
+        "table_id": ["sched_2025-2026_12_1"],
     },
     "ITA": {
-        "fixtures_url": "https://fbref.com/en/comps/11/schedule/Serie-A-Scores-and-Fixtures",
-        "table_id": ["sched_2024-2025_11_1"],
+        "fixtures_url": "https://fbref.com/en/comps/11/2025-2026/schedule/2025-2026-Serie-A-Scores-and-Fixtures",
+        "table_id": ["sched_2025-2026_11_1"],
     },
     "GER": {
-        "fixtures_url": "https://fbref.com/en/comps/20/schedule/Bundesliga-Scores-and-Fixtures",
-        "table_id": ["sched_2024-2025_20_1"],
+        "fixtures_url": "https://fbref.com/en/comps/20/2025-2026/schedule/2025-2026-Bundesliga-Scores-and-Fixtures",
+        "table_id": ["sched_2025-2026_20_1"],
     },
     "FRA": {
-        "fixtures_url": "https://fbref.com/en/comps/13/schedule/Ligue-1-Scores-and-Fixtures",
-        "table_id": ["sched_2024-2025_13_1"],
+        "fixtures_url": "https://fbref.com/en/comps/13/2025-2026/schedule/2025-2026-Ligue-1-Scores-and-Fixtures",
+        "table_id": ["sched_2025-2026_13_1"],
     },
     "UCL": {
         "fixtures_url": "https://fbref.com/en/comps/8/2024-2025/schedule/2024-2025-Champions-League-Scores-and-Fixtures",
@@ -335,7 +349,7 @@ fixtures_config = {
 }
 
 ## Simulation
-number_of_simulations = 1000
+number_of_simulations = 100
 home_advantage = 80
 leagues_to_sim = list(fixtures_config.keys())
 played_cutoff_date = None
