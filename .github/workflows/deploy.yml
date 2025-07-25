@@ -45,6 +45,7 @@ jobs:
 
   build-and-push:
     runs-on: ubuntu-latest
+    #needs: test
 
     steps:
       - name: Checkout code
@@ -68,6 +69,10 @@ jobs:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
         run: |
+          echo "ACCOUNT: $AWS_ACCOUNT_ID"
+          echo "REGION: $AWS_REGION"
+          echo "REGISTRY: $REGISTRY"
+
           docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
           docker tag $ECR_REPOSITORY:$IMAGE_TAG $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
