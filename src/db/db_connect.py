@@ -10,6 +10,7 @@ def get_postgres_engine():
 
     db_creds_json = os.getenv("DB_CREDS")
     db_creds = json.loads(db_creds_json)
+    print(db_creds)
     user = db_creds["DB_USER"]
     password = db_creds["DB_PASSWORD"]
     host = db_creds["DB_HOST"]
