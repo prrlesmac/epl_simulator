@@ -382,7 +382,6 @@ def simulate_league(league_rules, schedule, elos, num_simulations=1000):
     Returns:
         pd.DataFrame: The simulation results for the league.
     """
-    print("Simulating league")
 
     # Get league configuration
     has_knockout = league_rules.get("has_knockout")
@@ -458,6 +457,7 @@ def run_all_simulations():
     for league in config.leagues_to_sim:
         schedule, elos = load_league_data(league)
         league_rules = config.league_rules[league]
+        print("Simulating league: ", league)
         sim_standings = simulate_league(
             league_rules, schedule, elos, num_simulations=config.number_of_simulations
         )
