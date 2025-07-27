@@ -363,6 +363,7 @@ def get_standings(matches_df, classif_rules):
             # find tied teams
             pos_counts = standings["pos"].value_counts()
             ties = pos_counts[pos_counts >= 2]
+            # playoff tie-breaker for italy championship or relegation
             if is_playoff:
                 ties = ties[ties.index.isin([1, 18])]
 
@@ -843,3 +844,4 @@ def create_bracket_from_composition(df_with_draw, bracket_composition):
         pairs.append((team1, team2))
 
     return pd.DataFrame(pairs, columns=["team1", "team2"])
+

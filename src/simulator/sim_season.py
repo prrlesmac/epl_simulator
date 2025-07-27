@@ -205,64 +205,6 @@ def run_simulation_parallel(
     return standings_all
 
 
-def run_simulation(
-    schedule_played,
-    schedule_pending,
-    classif_rules,
-    num_simulations=1000,
-    verbose=False,
-):
-    """
-    Runs a Monte Carlo simulation of a football season by repeatedly simulating
-    pending matches and calculating final league standings.
-
-    Args:
-        schedule_played (pandas.DataFrame): DataFrame of already played matches.
-        schedule_pending (pandas.DataFrame): DataFrame of pending matches, ready
-            for simulation (e.g., includes Elo ratings).
-        classif_rules (list): successive order of the criteria to apply to classify positions
-        num_simulations (int, optional): Number of simulation iterations. Default is 1000.
-        verbose (bool, optional): If True, prints iteration numbers. Default is False.
-
-    Returns:
-        pandas.DataFrame: A DataFrame where each row is a team and each column is
-        a finishing position (e.g., 1, 2, 3, ...) with values representing the
-        proportion of times the team finished in that position across simulations.
-    """
-    standings_list = []
-    print(f"Run simulations...")
-
-    for i in range(num_simulations):
-        if verbose:
-            print(f"Simulation {i+1}/{num_simulations}")
-        # Simulate matches and compute standings
-        simulated_pending = simulate_matches_data_frame(schedule_pending.copy())
-        schedule_final = pd.concat(
-            [schedule_played, simulated_pending], ignore_index=True
-        )
-        standings_df = get_standings(schedule_final, classif_rules)
-        standings_list.append(standings_df)
-
-    # Aggregate position frequencies
-    standings_all = (
-        pd.concat(standings_list)
-        .groupby(["team", "pos"])
-        .size()
-        .reset_index(name="count")
-    )
-    standings_all["count"] = standings_all["count"] / num_simulations
-
-    # Pivot to final probability table
-    standings_all = (
-        standings_all.pivot(index="team", columns="pos", values="count")
-        .reset_index()
-        .fillna(0)
-    )
-    standings_all.columns = standings_all.columns.astype(str)
-
-    return standings_all
-
-
 def aggregate_standings_outcomes(standings, qualification_mapping):
     """
     Adds title, top 4, and relegation odds columns to the standings DataFrame

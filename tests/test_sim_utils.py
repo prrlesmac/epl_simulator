@@ -3,10 +3,12 @@ from unittest.mock import patch
 from io import StringIO
 import numpy as np
 import pandas as pd
+import random
 from simulator.sim_utils import (
     calculate_win_probability,
     simulate_match,
     simulate_playoff,
+    simulate_extra_time,
     simulate_matches_data_frame,
     apply_h2h_tiebreaker,
     apply_playoff_tiebreaker,
@@ -24,6 +26,8 @@ from simulator.sim_utils import (
     _track_team_progression,
     _prepare_next_round,
     _build_results_dataframe,
+    draw_from_pots,
+    create_bracket_from_composition
 )
 
 
@@ -204,6 +208,10 @@ class TestSimulatePlayoffs:
         for _ in range(100):
             assert simulate_playoff(0.0) == 2
 
+    def test_simulate_extra_time_returns_valid_output(self):
+        """Ensure output is always 1 or 2."""
+        results = [simulate_extra_time(0.5) for _ in range(100)]
+        assert all(result in [1, 2] for result in results)
 
 class TestSimulateMatchesDataFrame:
 
@@ -903,6 +911,22 @@ class TestPlayoffSimulation:
                     "played": "Y",
                     "notes": "C won",
                 },
+                {
+                    "home": "E",
+                    "away": "F",
+                    "home_goals": 0,
+                    "away_goals": 0,
+                    "played": "Y",
+                    "notes": "",
+                },
+                {
+                    "home": "F",
+                    "away": "E",
+                    "home_goals": 3,
+                    "away_goals": 1,
+                    "played": "Y",
+                    "notes": "",
+                },
             ]
         )
         self.playoff_schedule_partial = pd.DataFrame(
@@ -991,15 +1015,45 @@ class TestPlayoffSimulation:
         winner = _get_winner_from_completed_matches("A", "B", self.playoff_schedule)
         assert winner == "A"
 
-    def test_get_winner_from_partial_matches(self):
-        winner = _get_winner_from_partial_matches(
+    def test_get_winner_from_notes_success(self):
+        df = pd.DataFrame([
+            {"notes": "First leg played"},
+            {"notes": "; Team A won on aggregate"}
+        ])
+        winner = _get_winner_from_completed_matches("Team A", "Team B", df)
+        assert winner == "Team A"
+
+    def test_get_winner_from_notes_other_team(self):
+        df = pd.DataFrame([
+            {"notes": "First leg played"},
+            {"notes": "; Team B won after extra time"}
+        ])
+        winner = _get_winner_from_completed_matches("Team A", "Team B", df)
+        assert winner == "Team B"
+
+    def test_get_winner_from_notes_invalid_team(self):
+        df = pd.DataFrame([
+            {"notes": "First leg played"},
+            {"notes": "; Team C won on penalties"}
+        ])
+        with pytest.raises(Warning, match="Winner Team C not in teams Team A, Team B"):
+            _get_winner_from_completed_matches("Team A", "Team B", df)
+
+    def test_get_winner_from_partial_matches_case_1(self):
+        winner1 = _get_winner_from_partial_matches(
             "A", "B", self.playoff_schedule_partial, 0.7
         )
-        assert winner in ["A", "B"]
+        winner2 = _get_winner_from_partial_matches(
+            "C", "D", self.playoff_schedule_partial, 0.7
+        )
+        assert winner1 in ["A","B"]
+        assert winner2 in ["C","D"]
 
     def test_get_winner_by_goals(self):
         winner = _get_winner_by_goals("A", "B", self.playoff_schedule)
         assert winner == "A"
+        winner = _get_winner_by_goals("E", "F", self.playoff_schedule)
+        assert winner == "F"
 
     def test_calculate_total_goals(self):
         t1_goals, t2_goals = _calculate_total_goals("A", "B", self.playoff_schedule)
@@ -1040,6 +1094,104 @@ class TestPlayoffSimulation:
         )
         pd.testing.assert_frame_equal(df, mock_df, check_dtype=False)
 
+class TestDrawFromPots:
+
+    def setup_method(self):
+        # Use a fixed seed for reproducibility where needed
+        random.seed(42)
+        self.df = pd.DataFrame({
+            "team": ["Team A", "Team B", "Team C", "Team D", "Team E", "Team F"],
+            "pos": [1, 2, 3, 4, 5, 6]
+        })
+
+    def test_returns_valid_draw(self):
+        result = draw_from_pots(self.df, pot_size=2)
+        assert isinstance(result, pd.DataFrame)
+        assert list(result.columns) == ["draw_order", "team"]
+        assert len(result) == len(self.df)      
+        assert set(result.iloc[0:2]["team"]) == {"Team A", "Team B"}
+        assert set(result.iloc[2:4]["team"]) == {"Team C", "Team D"}
+        assert set(result.iloc[4:6]["team"]) == {"Team E", "Team F"}
+
+    def test_all_teams_present(self):
+        result = draw_from_pots(self.df, pot_size=2)
+        original_teams = set(self.df["team"])
+        drawn_teams = set(result["team"])
+        assert drawn_teams == original_teams
+
+    def test_draw_is_random_within_pots(self):
+        # Draw twice and check that at least one pot is ordered differently
+        result1 = draw_from_pots(self.df, pot_size=2)
+        result2 = draw_from_pots(self.df, pot_size=2)
+
+        def get_pot_teams(draw_df, pot_index, pot_size):
+            return draw_df["team"].tolist()[pot_index * pot_size : (pot_index + 1) * pot_size]
+
+        pot_differences = [
+            get_pot_teams(result1, i, 2) != get_pot_teams(result2, i, 2)
+            for i in range(len(self.df) // 2)
+        ]
+        assert any(pot_differences)
+
+    def test_handles_uneven_pots(self):
+        df = pd.DataFrame({
+            "team": ["A", "B", "C", "D", "E"],
+            "pos": [1, 2, 3, 4, 5]
+        })
+        result = draw_from_pots(df, pot_size=2)
+        assert len(result) == 5
+        assert set(result["team"]) == set(df["team"])
+        # Final pot should have only 1 team, rest have 2
+        assert result["draw_order"].max() == 5
+
+    def test_single_pot(self):
+        df = pd.DataFrame({
+            "team": ["X", "Y"],
+            "pos": [1, 2]
+        })
+        result = draw_from_pots(df, pot_size=2)
+        assert set(result["team"]) == {"X", "Y"}
+        assert len(result) == 2
+
+class TestCreateBracketFromComposition:
+
+    def setup_method(self):
+        self.draw_df = pd.DataFrame({
+            "draw_order": [1, 2, 3, 4],
+            "team": ["Team A", "Team B", "Team C", "Team D"]
+        })
+
+    def test_basic_bracket_creation(self):
+        composition = [(1, 4), (2, 3)]
+        result = create_bracket_from_composition(self.draw_df, composition)
+        expected = pd.DataFrame({
+            "team1": ["Team A", "Team B"],
+            "team2": ["Team D", "Team C"]
+        })
+        pd.testing.assert_frame_equal(result, expected)
+
+    def test_bye_slot_in_composition(self):
+        composition = [(1, "Bye"), ("Bye", 2)]
+        result = create_bracket_from_composition(self.draw_df, composition)
+        expected = pd.DataFrame({
+            "team1": ["Team A", "Bye"],
+            "team2": ["Bye", "Team B"]
+        })
+        pd.testing.assert_frame_equal(result, expected)
+
+    def test_raises_error_on_double_bye(self):
+        composition = [("Bye", "Bye")]
+        with pytest.raises(ValueError, match="both sides cannot be 'Bye'"):
+            create_bracket_from_composition(self.draw_df, composition)
+
+    def test_partial_bracket_with_unused_draws(self):
+        composition = [(3, 1)]
+        result = create_bracket_from_composition(self.draw_df, composition)
+        expected = pd.DataFrame({
+            "team1": ["Team C"],
+            "team2": ["Team A"]
+        })
+        pd.testing.assert_frame_equal(result, expected)
 
 if __name__ == "__main__":
     pytest.main([__file__])
