@@ -33,7 +33,7 @@ def calculate_win_probability(
     return we
 
 
-def simulate_match(proba):
+def simulate_match(proba, goal_adj = 1):
     """
     Simulates the outcome of a football match based on a win probability.
 
@@ -44,6 +44,8 @@ def simulate_match(proba):
     Args:
         proba (float): The probability of team 1 (home team) winning,
                        should be between 0 and 1.
+        goal_adj (float): An adjustment factor that reduces expected goals
+                        Mainly used to simulate xtra times where a factor of 1/3 is applied
 
     Returns:
         tuple: A tuple (GH, GA) where:
@@ -55,13 +57,13 @@ def simulate_match(proba):
         proba < 0.5,
         0.2 + 1.1 * math.sqrt(proba / 0.5),
         1.69 / (1.12 * math.sqrt(2 - proba / 0.5) + 0.18),
-    )
+    ) * goal_adj
     ExpGA = np.where(
         (1 - proba) < 0.5,
         0.2 + 1.1 * math.sqrt((1 - proba) / 0.5),
         1.69 / (1.12 * math.sqrt(2 - (1 - proba) / 0.5) + 0.18),
-    )
-    Base = np.random.poisson(0.18 * min(ExpGA, ExpGH))
+    ) * goal_adj
+    Base = np.random.poisson(0.18 * min(ExpGA, ExpGH)) * goal_adj
     GH = np.random.poisson(ExpGH - 0.18 * min(ExpGA, ExpGH)) + Base
     GA = np.random.poisson(ExpGA - 0.18 * min(ExpGA, ExpGH)) + Base
 
@@ -84,27 +86,7 @@ def simulate_extra_time(proba):
         str: 1 if team 1 wins, 2 if team 2 wins
     """
 
-    ExpGH = (
-        np.where(
-            proba < 0.5,
-            0.2 + 1.1 * math.sqrt(proba / 0.5),
-            1.69 / (1.12 * math.sqrt(2 - proba / 0.5) + 0.18),
-        )
-        * 1
-        / 3
-    )
-    ExpGA = (
-        np.where(
-            (1 - proba) < 0.5,
-            0.2 + 1.1 * math.sqrt((1 - proba) / 0.5),
-            1.69 / (1.12 * math.sqrt(2 - (1 - proba) / 0.5) + 0.18),
-        )
-        * 1
-        / 3
-    )
-    Base = np.random.poisson(0.18 * min(ExpGA, ExpGH))
-    GH = np.random.poisson(ExpGH - 0.18 * min(ExpGA, ExpGH)) + Base
-    GA = np.random.poisson(ExpGA - 0.18 * min(ExpGA, ExpGH)) + Base
+    GH, GA = simulate_match(proba, goal_adj=1/3)
 
     if GH > GA:
         result = 1
@@ -541,7 +523,7 @@ def _simulate_round(
     for _, row in current_round.iterrows():
         team1, team2 = row["team1"], row["team2"]
 
-        winner = _simulate_match(
+        winner = get_match_winner_from_playoff(
             team1, team2, round_format, elos_dict, playoff_schedule
         )
         winners.append(winner)
@@ -553,7 +535,7 @@ def _simulate_round(
     return winners
 
 
-def _simulate_match(team1, team2, round_format, elos_dict, playoff_schedule):
+def get_match_winner_from_playoff(team1, team2, round_format, elos_dict, playoff_schedule):
     """
     Simulate a single playoff match between two teams.
 
@@ -674,6 +656,7 @@ def _get_winner_from_partial_matches(team1, team2, tie_matches, win_proba):
     elif t2_goals > t1_goals:
         return team2
     else:
+        # simulate extra time
         result = simulate_extra_time(win_proba)
         return team1 if result == 1 else team2
 

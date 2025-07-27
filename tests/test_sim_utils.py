@@ -15,7 +15,6 @@ from simulator.sim_utils import (
     validate_bracket,
     simulate_playoff_bracket,
     _simulate_round,
-    _simulate_match,
     _get_tie_matches,
     _determine_winner_from_schedule,
     _get_winner_from_completed_matches,
