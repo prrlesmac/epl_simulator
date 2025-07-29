@@ -78,7 +78,7 @@ def filter_elos(elos, country, level):
     return filtered_elos
 
 
-if __name__ == "__main__":
+def main_elos():
     engine = db_connect.get_postgres_engine()
     elos = get_elos(config.elo_rating_url)
     elos = filter_elos(elos, None, None)
@@ -92,3 +92,6 @@ if __name__ == "__main__":
         dtype=config.db_table_definitions["elo_table"]["dtype"],
     )
     print("Elos updated...")
+
+if __name__ == "__main__":
+    main_elos()

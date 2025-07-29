@@ -153,8 +153,7 @@ def process_fixtures(fixtures, country):
     ]
     return fixtures
 
-
-if __name__ == "__main__":
+def main_fixtures():
     engine = db_connect.get_postgres_engine()
     fixtures_all = []
     for k, v in config.fixtures_config.items():
@@ -173,3 +172,7 @@ if __name__ == "__main__":
         dtype=config.db_table_definitions["fixtures_table"]["dtype"],
     )
     print("Fixtures updated")
+
+
+if __name__ == "__main__":
+    main_fixtures()
