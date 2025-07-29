@@ -93,5 +93,6 @@ def main_elos():
     )
     print("Elos updated...")
 
+
 if __name__ == "__main__":
     main_elos()

@@ -153,6 +153,7 @@ def process_fixtures(fixtures, country):
     ]
     return fixtures
 
+
 def main_fixtures():
     engine = db_connect.get_postgres_engine()
     fixtures_all = []

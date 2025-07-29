@@ -24,7 +24,7 @@ club_name_mapping = {
     "Brentford": "Brentford",
     "Tottenham": "Tottenham",
     "Brighton": "Brighton",
-    "Leeds":"Leeds United",
+    "Leeds": "Leeds United",
     "Burnley": "Burnley",
     "Sunderland": "Sunderland",
     # ESP
@@ -351,8 +351,8 @@ fixtures_config = {
 ## Simulation
 number_of_simulations = 10000
 home_advantage = 80
-#leagues_to_sim = list(fixtures_config.keys())
-leagues_to_sim = ['ENG','ESP','GER','ITA','FRA']
+# leagues_to_sim = list(fixtures_config.keys())
+leagues_to_sim = ["ENG", "ESP", "GER", "ITA", "FRA"]
 played_cutoff_date = None
 schedule_cutoff_date = None
 

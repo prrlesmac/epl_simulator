@@ -19,7 +19,9 @@ def get_postgres_engine():
     port = db_creds["DB_PORT"]
 
     if not all([user, password, host, port, dbname]):
-        raise ValueError(f"Missing one or more required DB environment variables. {db_creds}")
+        raise ValueError(
+            f"Missing one or more required DB environment variables. {db_creds}"
+        )
 
     conn_str = f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}"
     return create_engine(conn_str)

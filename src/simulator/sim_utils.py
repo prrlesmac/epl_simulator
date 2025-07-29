@@ -33,7 +33,7 @@ def calculate_win_probability(
     return we
 
 
-def simulate_match(proba, goal_adj = 1):
+def simulate_match(proba, goal_adj=1):
     """
     Simulates the outcome of a football match based on a win probability.
 
@@ -53,16 +53,22 @@ def simulate_match(proba, goal_adj = 1):
             - GA (int): Simulated number of goals scored by team 2 (away team).
     """
 
-    ExpGH = np.where(
-        proba < 0.5,
-        0.2 + 1.1 * math.sqrt(proba / 0.5),
-        1.69 / (1.12 * math.sqrt(2 - proba / 0.5) + 0.18),
-    ) * goal_adj
-    ExpGA = np.where(
-        (1 - proba) < 0.5,
-        0.2 + 1.1 * math.sqrt((1 - proba) / 0.5),
-        1.69 / (1.12 * math.sqrt(2 - (1 - proba) / 0.5) + 0.18),
-    ) * goal_adj
+    ExpGH = (
+        np.where(
+            proba < 0.5,
+            0.2 + 1.1 * math.sqrt(proba / 0.5),
+            1.69 / (1.12 * math.sqrt(2 - proba / 0.5) + 0.18),
+        )
+        * goal_adj
+    )
+    ExpGA = (
+        np.where(
+            (1 - proba) < 0.5,
+            0.2 + 1.1 * math.sqrt((1 - proba) / 0.5),
+            1.69 / (1.12 * math.sqrt(2 - (1 - proba) / 0.5) + 0.18),
+        )
+        * goal_adj
+    )
     Base = np.random.poisson(0.18 * min(ExpGA, ExpGH)) * goal_adj
     GH = np.random.poisson(ExpGH - 0.18 * min(ExpGA, ExpGH)) + Base
     GA = np.random.poisson(ExpGA - 0.18 * min(ExpGA, ExpGH)) + Base
@@ -86,7 +92,7 @@ def simulate_extra_time(proba):
         str: 1 if team 1 wins, 2 if team 2 wins
     """
 
-    GH, GA = simulate_match(proba, goal_adj=1/3)
+    GH, GA = simulate_match(proba, goal_adj=1 / 3)
 
     if GH > GA:
         result = 1
@@ -536,7 +542,9 @@ def _simulate_round(
     return winners
 
 
-def get_match_winner_from_playoff(team1, team2, round_format, elos_dict, playoff_schedule):
+def get_match_winner_from_playoff(
+    team1, team2, round_format, elos_dict, playoff_schedule
+):
     """
     Simulate a single playoff match between two teams.
 
@@ -844,4 +852,3 @@ def create_bracket_from_composition(df_with_draw, bracket_composition):
         pairs.append((team1, team2))
 
     return pd.DataFrame(pairs, columns=["team1", "team2"])
-

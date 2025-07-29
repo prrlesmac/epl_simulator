@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from retriever.elos import (
     get_elos,
     filter_elos,
-) 
+)
 
 
 class TestGetElos:
@@ -217,7 +217,6 @@ class TestIntegration:
     @patch("requests.get")
     def test_get_and_filter_elos_integration(self, mock_get, sample_csv_response):
         """Test the integration of get_elos and filter_elos functions."""
-
 
         mock_response = Mock()
         mock_response.status_code = 200

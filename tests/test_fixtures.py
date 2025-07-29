@@ -15,7 +15,7 @@ from retriever.fixtures import (
     extract_scores,
     get_fixtures,
     process_fixtures,
-) 
+)
 
 
 class TestExtractScores:
