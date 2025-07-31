@@ -447,6 +447,11 @@ league_rules = {
             "goal_difference",
             "goals_for",
             "away_goals_for",
+            "wins",
+            "away_wins",
+            "opponent_points",
+            "opponent_goal_difference",
+            "opponent_goals_for",
         ],
         # No relegation info for UCL, exclude or set None
         "qualification": {
@@ -504,6 +509,11 @@ league_rules = {
             "goal_difference",
             "goals_for",
             "away_goals_for",
+            "wins",
+            "away_wins",
+            "opponent_points",
+            "opponent_goal_difference",
+            "opponent_goals_for",
         ],
         # No relegation info for UCL, exclude or set None
         "qualification": {
@@ -561,6 +571,11 @@ league_rules = {
             "goal_difference",
             "goals_for",
             "away_goals_for",
+            "wins",
+            "away_wins",
+            "opponent_points",
+            "opponent_goal_difference",
+            "opponent_goals_for",
         ],
         # No relegation info for UCL, exclude or set None
         "qualification": {

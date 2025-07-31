@@ -270,13 +270,23 @@ def get_standings_metrics(matches_df):
         3,
         np.where(matches_df["home_goals"] == matches_df["away_goals"], 1, 0),
     )
+    matches_df["home_wins"] = np.where(
+        matches_df["home_goals"] > matches_df["away_goals"],
+        1,
+        0
+    )
+    matches_df["away_wins"] = np.where(
+        matches_df["away_goals"] > matches_df["home_goals"],
+        1,
+        0
+    )
     home_pts = (
-        matches_df.groupby(["home"])[["home_pts", "home_goals", "away_goals"]]
+        matches_df.groupby(["home"])[["home_pts", "home_goals", "away_goals","home_wins"]]
         .sum()
         .reset_index()
     )
     away_pts = (
-        matches_df.groupby(["away"])[["away_pts", "away_goals", "home_goals"]]
+        matches_df.groupby(["away"])[["away_pts", "away_goals", "home_goals","away_wins"]]
         .sum()
         .reset_index()
     )
@@ -303,6 +313,8 @@ def get_standings_metrics(matches_df):
         standings["home_goals_against"] + standings["away_goals_against"]
     )
     standings["goal_difference"] = standings["goals_for"] - standings["goals_against"]
+    standings["wins"] = standings["home_wins"] + standings["away_wins"]
+
     standings = standings[
         [
             "team",
@@ -311,6 +323,8 @@ def get_standings_metrics(matches_df):
             "goals_for",
             "goals_against",
             "away_goals_for",
+            "wins",
+            "away_wins"
         ]
     ].fillna(0)
 
@@ -349,14 +363,18 @@ def get_standings(matches_df, classif_rules):
         - 'pos': final ranking position based on the classification rules
 
     """
-
     standings = get_standings_metrics(matches_df)
     # Sort by classification rules
     for i, rule in enumerate(classif_rules):
         is_h2h_rule = rule.startswith("h2h")
         is_playoff = rule.startswith("playoff")
+        is_opponent_rule = rule.startswith("opponent")
 
-        if is_h2h_rule or is_playoff:
+        if (is_opponent_rule) & (rule not in standings.columns.tolist()):
+            opponent_stats = get_opponents_aggregate_stats(matches_df, standings)
+            standings = pd.merge(standings,opponent_stats,on='team')
+
+        elif is_h2h_rule or is_playoff:
             # tiebreakers previous to current h2h one
             tb_applied = classif_rules[:i]
             # apply rank function to see who is tied
@@ -413,6 +431,58 @@ def get_standings(matches_df, classif_rules):
     )
 
     return standings
+
+
+def get_opponents_aggregate_stats(matches_df, standings_df):
+    """
+    Calculates aggregate statistics (points, goal difference, and goals scored) 
+    of all opponents each team has played against.
+
+    For each team, this function identifies all opponents they've faced (as either 
+    home or away team) and computes the sum of the opponents' points, goal 
+    difference, and goals scored, based on the current standings.
+
+    Args:
+        matches_df (pd.DataFrame): DataFrame containing match results. 
+            Must include 'home' and 'away' columns.
+        standings_df (pd.DataFrame): DataFrame containing team standings.
+            Must include 'team', 'points', 'goals_for', and 'goal_difference' columns.
+
+    Returns:
+        pd.DataFrame: A DataFrame with one row per team and the following columns:
+            - 'team': The team name
+            - 'opponent_points': Sum of all opponents' points
+            - 'opponent_goal_difference': Sum of all opponents' goal difference
+            - 'opponent_goals_for': Sum of all opponents' goals for
+    """
+    # Get set of all opponents each team has played against
+    team_opponents = {}
+
+    for _, row in matches_df.iterrows():
+        team_opponents.setdefault(row['home'], set()).add(row['away'])
+        team_opponents.setdefault(row['away'], set()).add(row['home'])
+
+    # Create lookup dictionaries for points and goals_for
+    points_lookup = standings_df.set_index("team")["points"].to_dict()
+    goals_lookup = standings_df.set_index("team")["goals_for"].to_dict()
+    goal_difference_lookup = standings_df.set_index("team")["goal_difference"].to_dict()
+
+    # Build result
+    result = []
+    for team, opponents in team_opponents.items():
+        total_points = sum(points_lookup.get(opp, 0) for opp in opponents)
+        total_goal_difference = sum(goal_difference_lookup.get(opp, 0) for opp in opponents)
+        total_goals = sum(goals_lookup.get(opp, 0) for opp in opponents)
+
+        result.append({
+            "team": team,
+            "opponent_points": total_points,
+            "opponent_goal_difference": total_goal_difference,
+            "opponent_goals_for": total_goals
+
+        })
+
+    return pd.DataFrame(result)
 
 
 def validate_bracket(bracket_df, bracket_format):

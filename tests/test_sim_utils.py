@@ -14,6 +14,7 @@ from simulator.sim_utils import (
     apply_playoff_tiebreaker,
     get_standings_metrics,
     get_standings,
+    get_opponents_aggregate_stats,
     validate_bracket,
     simulate_playoff_bracket,
     _simulate_round,
@@ -470,11 +471,6 @@ class TestGetStandingsMetrics:
 
             assert result.empty
 
-
-import pandas as pd
-import numpy as np
-
-
 class TestGetStandings:
     def test_four_teams_with_tiebreakers(self):
         matches = pd.DataFrame(
@@ -615,6 +611,70 @@ class TestGetStandings:
         assert standings.loc[standings["team"] == "B", "pos"].iloc[0] == 3
         assert standings.loc[standings["team"] == "C", "pos"].iloc[0] == 2
         assert standings.loc[standings["team"] == "D", "pos"].iloc[0] == 4
+
+    def test_tie_broken_by_opponent_stats(self):
+        # Teams A and B tied on points and goal difference, h2h decides
+        matches = pd.DataFrame(
+            [
+                {"home": "A", "away": "B", "home_goals": 2, "away_goals": 1},
+                {"home": "C", "away": "D", "home_goals": 0, "away_goals": 2},
+                {"home": "B", "away": "C", "home_goals": 2, "away_goals": 1},
+                {"home": "D", "away": "A", "home_goals": 0, "away_goals": 1},
+                {"home": "A", "away": "C", "home_goals": 0, "away_goals": 1},
+                {"home": "B", "away": "D", "home_goals": 1, "away_goals": 0},
+            ]
+        )
+
+        standings = (
+            get_standings(
+                matches_df=matches,
+                classif_rules=["points", "goal_difference", "opponent_points","opponent_goal_difference","opponent_goals_for"],
+            )
+            .sort_values("team")
+            .reset_index(drop=True)
+        )
+        # A and B tied on points and GD, but A wins because of opponent goal diff
+        assert (
+            standings.loc[standings["team"] == "A", "pos"].iloc[0]
+            < standings.loc[standings["team"] == "B", "pos"].iloc[0]
+        )
+
+
+class TestGetOpponentsAggregateStats:
+    def test_opponent_stats(self):
+        matches = pd.DataFrame(
+            [
+                {"home": "A", "away": "B", "home_goals": 1, "away_goals": 1},
+                {"home": "A", "away": "C", "home_goals": 2, "away_goals": 0},
+                {"home": "B", "away": "D", "home_goals": 3, "away_goals": 1},
+                {"home": "C", "away": "D", "home_goals": 3, "away_goals": 2},
+            ]
+        )
+
+        standings = (
+            get_standings(
+                matches_df=matches,
+                classif_rules=["points", "goal_difference", "goals_for"],
+            )
+            .sort_values("team")
+            .reset_index(drop=True)
+        )
+        print(standings)
+
+        opponent_stats = get_opponents_aggregate_stats(matches, standings)
+        print(opponent_stats)
+
+        # Expected points and goal diff
+        expected_opponent_stats = pd.DataFrame(
+            [
+                {"team": "A", "opponent_points": 7.0, "opponent_goal_difference": 1.0, "opponent_goals_for": 7.0},
+                {"team": "B", "opponent_points": 4.0, "opponent_goal_difference": -1.0, "opponent_goals_for": 6.0},
+                {"team": "C", "opponent_points": 4.0, "opponent_goal_difference": -1.0, "opponent_goals_for": 6.0},
+                {"team": "D", "opponent_points": 7.0, "opponent_goal_difference": 1.0, "opponent_goals_for": 7.0},
+            ]
+        )
+
+        pd.testing.assert_frame_equal(opponent_stats, expected_opponent_stats)
 
 
 class TestValidateBracket:
