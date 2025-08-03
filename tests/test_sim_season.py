@@ -1,7 +1,6 @@
 import pytest
 import pandas as pd
 import numpy as np
-from pandas.testing import assert_frame_equal
 from .conftest import schedule_dtypes
 
 # Import the functions we want to test
@@ -949,7 +948,7 @@ class TestSplitAndMergeSchedule:
                 "elo_away": [1300],
             }
         )
-        assert_frame_equal(played.reset_index(drop=True), expected_played)
+        pd.testing.assert_frame_equal(played.reset_index(drop=True), expected_played)
 
         # Check pending schedule
         expected_pending = pd.DataFrame(
@@ -961,7 +960,7 @@ class TestSplitAndMergeSchedule:
                 "elo_away": [1400, 1200],
             }
         )
-        assert_frame_equal(pending.reset_index(drop=True), expected_pending)
+        pd.testing.assert_frame_equal(pending.reset_index(drop=True), expected_pending)
 
     def test_missing_elo(self):
         elos_missing = pd.DataFrame(
