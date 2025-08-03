@@ -64,10 +64,6 @@ def get_fixtures(url_list, table_id):
         if response.status_code == 200:
             # Parse the HTML content using BeautifulSoup
             soup = BeautifulSoup(response.text, "html.parser")
-            # Find the table containing the fixtures
-            file_name_html = "output.html"
-            with open(file_name_html, "w", encoding="utf-8") as file:
-                file.write(str(soup)) # Convert soup object to string
             for id in table_id:
                 table = soup.find("table", {"id": id})
 
