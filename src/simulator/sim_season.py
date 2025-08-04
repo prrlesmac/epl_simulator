@@ -10,8 +10,11 @@ from config import config
 from db import db_connect
 from datetime import datetime
 import time
+import os
 from multiprocessing import Pool, cpu_count
+from dotenv import load_dotenv
 
+load_dotenv()
 
 def split_and_merge_schedule(schedule, elos):
     """
@@ -243,11 +246,12 @@ def load_league_data(league):
     Returns:
         tuple: (schedule_df, elos_df) DataFrames containing schedule and Elo data.
     """
+    table_suffix = "uefa" if league in config.active_uefa_leagues else league
     is_continental_league = league in ["UCL", "UEL", "UECL"]
     engine = db_connect.get_postgres_engine()
 
     schedule = pd.read_sql(
-        f"SELECT * FROM {config.db_table_definitions['fixtures_table']['name']} WHERE country = '{league}'",
+        f"SELECT * FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix} WHERE country = '{league}'",
         engine,
     )
 
@@ -395,8 +399,10 @@ def run_all_simulations():
     start_time = time.time()
     sim_standings_wo_ko = []
     sim_standings_w_ko = []
+    league_name = os.getenv("LEAGUES_TO_SIM")
+    leagues_to_sim = config.active_uefa_leagues if league_name == "UEFA" else [league_name]
 
-    for league in config.leagues_to_sim:
+    for league in leagues_to_sim:
         schedule, elos = load_league_data(league)
         league_rules = config.league_rules[league]
         print("Simulating league: ", league)
