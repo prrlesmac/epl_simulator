@@ -606,7 +606,6 @@ class TestProcessFixtures:
         )
 
         result = process_fixtures(fixtures, "MLB").reset_index(drop=True)
-        print(result)
         pd.testing.assert_frame_equal(output, result, check_like=True, check_index_type=False)  # ignores column order
 
 class TestIntegration:
