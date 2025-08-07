@@ -6,8 +6,8 @@ import pandas as pd
 import random
 from simulator.sim_utils import (
     calculate_win_probability,
-    simulate_match,
-    simulate_playoff,
+    simulate_match_goals,
+    simulate_match_winner,
     simulate_extra_time,
     simulate_matches_data_frame,
     apply_h2h_tiebreaker,
@@ -123,7 +123,7 @@ class TestSimulateMatch:
 
     def test_return_type_and_structure(self):
         """Test that function returns a tuple of two integers"""
-        result = simulate_match(0.5)
+        result = simulate_match_goals(0.5)
         assert isinstance(result, tuple)
         assert len(result) == 2
         assert isinstance(result[0], (int, np.integer))
@@ -133,26 +133,26 @@ class TestSimulateMatch:
         """Test that goals are always non-negative"""
         for proba in [0.1, 0.3, 0.5, 0.7, 0.9]:
             for _ in range(100):
-                gh, ga = simulate_match(proba)
+                gh, ga = simulate_match_goals(proba)
                 assert gh >= 0, f"Home goals should be non-negative, got {gh}"
                 assert ga >= 0, f"Away goals should be non-negative, got {ga}"
 
     def test_boundary_probabilities(self):
         """Test edge cases with extreme probabilities"""
         # Test with very low probability
-        gh, ga = simulate_match(0.01)
+        gh, ga = simulate_match_goals(0.01)
         assert isinstance(gh, (int, np.integer))
         assert isinstance(ga, (int, np.integer))
         assert gh >= 0 and ga >= 0
 
         # Test with very high probability
-        gh, ga = simulate_match(0.99)
+        gh, ga = simulate_match_goals(0.99)
         assert isinstance(gh, (int, np.integer))
         assert isinstance(ga, (int, np.integer))
         assert gh >= 0 and ga >= 0
 
         # Test with exactly 0.5
-        gh, ga = simulate_match(0.5)
+        gh, ga = simulate_match_goals(0.5)
         assert isinstance(gh, (int, np.integer))
         assert isinstance(ga, (int, np.integer))
         assert gh >= 0 and ga >= 0
@@ -160,10 +160,10 @@ class TestSimulateMatch:
     def test_deterministic_with_fixed_seed(self):
         """Test that results are deterministic with fixed random seed"""
         np.random.seed(42)
-        result1 = simulate_match(0.6)
+        result1 = simulate_match_goals(0.6)
 
         np.random.seed(42)
-        result2 = simulate_match(0.6)
+        result2 = simulate_match_goals(0.6)
 
         assert result1 == result2, "Results should be identical with same seed"
 
@@ -173,7 +173,7 @@ class TestSimulateMatch:
         with patch("numpy.random.poisson") as mock_poisson:
             mock_poisson.side_effect = [1, 2, 1]  # Base, GH, GA
 
-            result = simulate_match(0.6)
+            result = simulate_match_goals(0.6)
 
             # Should call poisson 3 times
             assert mock_poisson.call_count == 3
@@ -186,28 +186,28 @@ class TestSimulatePlayoffs:
 
     def test_invalid_probability_low(self):
         with pytest.raises(ValueError):
-            simulate_playoff(-0.1)
+            simulate_match_winner(-0.1)
 
     def test_invalid_probability_high(self):
         with pytest.raises(ValueError):
-            simulate_playoff(1.5)
+            simulate_match_winner(1.5)
 
     def test_output_is_1_or_2_and_integer(self):
         # Run multiple simulations to ensure the result is always 1 or 2
         for _ in range(1000):
-            result = simulate_playoff(0.5)
+            result = simulate_match_winner(0.5)
             assert isinstance(result, int), f"Expected int but got {type(result)}"
             assert result in (1, 2), f"Unexpected result: {result}"
 
     def test_result_bias_extreme_prob_1(self):
         # With proba = 1, team 1 should always win
         for _ in range(100):
-            assert simulate_playoff(1.0) == 1
+            assert simulate_match_winner(1.0) == 1
 
     def test_result_bias_extreme_prob_0(self):
         # With proba = 0, team 2 should always win
         for _ in range(100):
-            assert simulate_playoff(0.0) == 2
+            assert simulate_match_winner(0.0) == 2
 
     def test_simulate_extra_time_returns_valid_output(self):
         """Ensure output is always 1 or 2."""
@@ -232,7 +232,7 @@ class TestSimulateMatchesDataFrame:
 
     def test_function_signature_and_return_type(self, sample_matches_df):
         """Test that function accepts correct parameters and returns DataFrame."""
-        result = simulate_matches_data_frame(sample_matches_df)
+        result = simulate_matches_data_frame(sample_matches_df, sim_type='goals')
 
         assert isinstance(result, pd.DataFrame)
         assert len(result) == len(sample_matches_df)
@@ -241,7 +241,7 @@ class TestSimulateMatchesDataFrame:
         """Test that original DataFrame columns are preserved."""
 
         original_columns = set(sample_matches_df.columns)
-        result = simulate_matches_data_frame(sample_matches_df)
+        result = simulate_matches_data_frame(sample_matches_df, sim_type='goals')
 
         # Check that all original columns are preserved
         for col in original_columns:
@@ -659,11 +659,7 @@ class TestGetOpponentsAggregateStats:
             .sort_values("team")
             .reset_index(drop=True)
         )
-        print(standings)
-
         opponent_stats = get_opponents_aggregate_stats(matches, standings)
-        print(opponent_stats)
-
         # Expected points and goal diff
         expected_opponent_stats = pd.DataFrame(
             [
@@ -687,14 +683,14 @@ class TestValidateBracket:
                 "team2": ["E", "F", "G", "H"],
             }
         )
-        bracket_format = {
+        knockout_format = {
             "po_r8": "single-leg",
             "po_r4": "two-legged",
             "po_final": "single-leg",
         }
 
         # Should not raise
-        validate_bracket(bracket, bracket_format)
+        validate_bracket(bracket, knockout_format)
 
     def test_empty_slots(self):
         bracket = pd.DataFrame(
@@ -703,10 +699,10 @@ class TestValidateBracket:
                 "team2": ["B", " "],
             }
         )
-        bracket_format = {"po_r4": "single-leg"}
+        knockout_format = {"po_r4": "single-leg"}
 
         with pytest.raises(ValueError, match="empty team slots"):
-            validate_bracket(bracket, bracket_format)
+            validate_bracket(bracket, knockout_format)
 
     def test_duplicate_teams(self):
         bracket = pd.DataFrame(
@@ -715,10 +711,10 @@ class TestValidateBracket:
                 "team2": ["A", "C"],
             }
         )
-        bracket_format = {"po_r4": "single-leg"}
+        knockout_format = {"po_r4": "single-leg"}
 
         with pytest.raises(ValueError, match="Duplicate teams"):
-            validate_bracket(bracket, bracket_format)
+            validate_bracket(bracket, knockout_format)
 
     def test_slots_not_power_of_two(self):
         bracket = pd.DataFrame(
@@ -727,10 +723,10 @@ class TestValidateBracket:
                 "team2": ["D", "E", "F"],
             }
         )
-        bracket_format = {"po_r8": "single-leg"}
+        knockout_format = {"po_r8": "single-leg"}
 
         with pytest.raises(ValueError, match="power of 2"):
-            validate_bracket(bracket, bracket_format)
+            validate_bracket(bracket, knockout_format)
 
     def test_less_than_two_teams(self):
         bracket = pd.DataFrame(
@@ -739,10 +735,10 @@ class TestValidateBracket:
                 "team2": ["Bye", "Bye"],
             }
         )
-        bracket_format = {"po_r4": "single-leg"}
+        knockout_format = {"po_r4": "single-leg"}
 
         with pytest.raises(ValueError, match="At least two teams"):
-            validate_bracket(bracket, bracket_format)
+            validate_bracket(bracket, knockout_format)
 
     def test_mismatched_rounds(self):
         bracket = pd.DataFrame(
@@ -752,10 +748,10 @@ class TestValidateBracket:
             }
         )
         # Only 2 rounds instead of expected 3 for 8 teams
-        bracket_format = {"po_r8": "single-leg", "po_r4": "two-legged"}
+        knockout_format = {"po_r8": "single-leg", "po_r4": "two-legged"}
 
         with pytest.raises(ValueError, match="does not match the number of rounds"):
-            validate_bracket(bracket, bracket_format)
+            validate_bracket(bracket, knockout_format)
 
     def test_bye_teams_allowed(self):
         bracket = pd.DataFrame(
@@ -764,14 +760,14 @@ class TestValidateBracket:
                 "team2": ["Bye", "B", "Bye", "H"],
             }
         )
-        bracket_format = {
+        knockout_format = {
             "po_r8": "single-leg",
             "po_r4": "two-legged",
             "po_final": "single-leg",
         }
 
         # Should not raise even though 'Bye's present
-        validate_bracket(bracket, bracket_format)
+        validate_bracket(bracket, knockout_format)
 
 
 import pandas as pd
@@ -807,7 +803,7 @@ class TestSimulatePlayoffBracket:
             }
         )
 
-        bracket_format = {
+        knockout_format = {
             "po_r16": "two-legged",
             "po_r8": "two-legged",
             "po_r4": "two-legged",
@@ -909,7 +905,7 @@ class TestSimulatePlayoffBracket:
         )
 
         result = simulate_playoff_bracket(
-            bracket_df, bracket_format, elos, playoff_schedule
+            bracket_df, knockout_format, elos, playoff_schedule
         )
         # Check result dataframe shape and columns
         assert isinstance(result, pd.DataFrame)

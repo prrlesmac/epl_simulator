@@ -33,7 +33,7 @@ def calculate_win_probability(
     return we
 
 
-def simulate_match(proba, goal_adj=1):
+def simulate_match_goals(proba, goal_adj=1):
     """
     Simulates the outcome of a football match based on a win probability.
 
@@ -92,7 +92,7 @@ def simulate_extra_time(proba):
         str: 1 if team 1 wins, 2 if team 2 wins
     """
 
-    GH, GA = simulate_match(proba, goal_adj=1 / 3)
+    GH, GA = simulate_match_goals(proba, goal_adj=1 / 3)
 
     if GH > GA:
         result = 1
@@ -106,7 +106,7 @@ def simulate_extra_time(proba):
     return result
 
 
-def simulate_playoff(proba):
+def simulate_match_winner(proba):
     """
     Simulates the outcome of a playoff football match based on a win probability.
 
@@ -128,7 +128,7 @@ def simulate_playoff(proba):
     return result
 
 
-def simulate_matches_data_frame(matches_df):
+def simulate_matches_data_frame(matches_df, sim_type):
     """
     Simulate matches and determine winners.
 
@@ -151,12 +151,22 @@ def simulate_matches_data_frame(matches_df):
         )
 
         # Simulate match
-        result = simulate_match(win_proba)
-        # Append result
-        matches_df.at[index, "home_goals"] = result[0]
-        matches_df.at[index, "away_goals"] = result[1]
-
+        if sim_type == "goals":
+            result = simulate_match_goals(win_proba)
+            # Append result
+            matches_df.at[index, "home_goals"] = result[0]
+            matches_df.at[index, "away_goals"] = result[1]
+        elif sim_type == "winner":
+            result = simulate_match_winner(win_proba)
+            # Append result
+            matches_df.at[index, "home_goals"] = 1 if result == 1 else 0
+            matches_df.at[index, "away_goals"] = 0 if result == 1 else 1
+        else:
+            raise(ValueError("Invalid sim type in simulate_matches_data_frame"))
+            
     return pd.DataFrame(matches_df)
+
+
 
 
 def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
@@ -217,7 +227,7 @@ def apply_playoff_tiebreaker(matches_df, tied_teams):
     we = calculate_win_probability(
         elo_home, elo_away, matchup_type="single_game_neutral"
     )
-    result = simulate_playoff(we)
+    result = simulate_match_winner(we)
 
     standings_playoff = pd.DataFrame(
         {
@@ -485,7 +495,7 @@ def get_opponents_aggregate_stats(matches_df, standings_df):
     return pd.DataFrame(result)
 
 
-def validate_bracket(bracket_df, bracket_format):
+def validate_bracket(bracket_df, knockout_format):
     """
     Validates a playoff bracket DataFrame.
 
@@ -497,7 +507,7 @@ def validate_bracket(bracket_df, bracket_format):
 
     Args:
         bracket_df (pd.DataFrame): A DataFrame with columns ['team1', 'team2'] representing matchups.
-        bracket_format (dict): Dictionary defining the format of each round in the knockout stage.
+        knockout_format (dict): Dictionary defining the format of each round in the knockout stage.
             Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
 
     Raises:
@@ -527,26 +537,26 @@ def validate_bracket(bracket_df, bracket_format):
         raise ValueError("At least two teams are required in the bracket.")
     # check that bracket format matches the number of rounds
     expected_rounds = int(math.log2(num_slots))
-    if len(bracket_format) != expected_rounds:
+    if len(knockout_format) != expected_rounds:
         raise ValueError(
-            f"Bracket format does not match the number of rounds. Expected {expected_rounds} rounds, got {len(bracket_format)}."
+            f"Bracket format does not match the number of rounds. Expected {expected_rounds} rounds, got {len(knockout_format)}."
         )
 
 
-def simulate_playoff_bracket(bracket_df, bracket_format, elos, playoff_schedule):
+def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule):
     """
     Simulates a knockout playoff bracket using ELO ratings.
 
     Args:
         bracket_df: Bracket structure with columns ['team1', 'team2']
-        bracket_format: Dictionary defining the format of each round
+        knockout_format: Dictionary defining the format of each round
         elos: DataFrame with columns ['team', 'elo'] representing team ELO ratings
         playoff_schedule: DataFrame with pending matches to simulate
 
     Returns:
         Wide-format DataFrame with one row per team and binary indicators for each round
     """
-    validate_bracket(bracket_df, bracket_format)
+    validate_bracket(bracket_df, knockout_format)
 
     elos_dict = dict(zip(elos["team"], elos["elo"]))
     teams_progression = {}
@@ -556,7 +566,7 @@ def simulate_playoff_bracket(bracket_df, bracket_format, elos, playoff_schedule)
 
     while len(current_round) > 0:
         round_label = f"po_r{2 * len(current_round)}"
-        round_format = bracket_format[round_label]
+        round_format = knockout_format[round_label]
         rounds.append(round_label)
 
         winners = _simulate_round(
@@ -642,7 +652,7 @@ def get_match_winner_from_playoff(
     tie_matches = _get_tie_matches(team1, team2, playoff_schedule)
 
     if tie_matches.empty:
-        result = simulate_playoff(win_proba)
+        result = simulate_match_winner(win_proba)
         return team1 if result == 1 else team2
 
     return _determine_winner_from_schedule(team1, team2, tie_matches, win_proba)
@@ -684,7 +694,7 @@ def _determine_winner_from_schedule(team1, team2, tie_matches, win_proba):
     elif any(tie_matches["played"] == "Y"):
         return _get_winner_from_partial_matches(team1, team2, tie_matches, win_proba)
     else:
-        result = simulate_playoff(win_proba)
+        result = simulate_match_winner(win_proba)
         return team1 if result == 1 else team2
 
 
@@ -894,13 +904,13 @@ def draw_from_pots(df, pot_size=2):
     )
 
 
-def create_bracket_from_composition(df_with_draw, bracket_composition):
+def create_bracket_from_composition(df_with_draw, knockout_bracket):
     """
     Creates a playoff bracket based on a predefined composition and a team draw.
 
     Args:
         df_with_draw (pd.DataFrame): DataFrame with columns ['draw_order', 'team'] from draw.
-        bracket_composition (list of tuple): List of (pos1, pos2) tuples representing matchups.
+        knockout_bracket (list of tuple): List of (pos1, pos2) tuples representing matchups.
             Values can be integers (draw positions) or 'Bye'.
 
     Returns:
@@ -912,7 +922,7 @@ def create_bracket_from_composition(df_with_draw, bracket_composition):
     pos_to_team = dict(zip(df_with_draw["draw_order"], df_with_draw["team"]))
     pairs = []
 
-    for pos1, pos2 in bracket_composition:
+    for pos1, pos2 in knockout_bracket:
         team1 = pos_to_team.get(pos1) if pos1 != "Bye" else "Bye"
         team2 = pos_to_team.get(pos2) if pos2 != "Bye" else "Bye"
 

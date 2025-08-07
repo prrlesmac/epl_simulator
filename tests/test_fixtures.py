@@ -215,7 +215,8 @@ class TestGetFixtures:
         """Helper to create mock HTML similar to Baseball Reference schedule page."""
         html = """
         <html><body>
-            <h3>Wednesday, March 20, 2024</h3>
+            <h2>MLB Regular Season</h2>
+           <h3>Wednesday, March 20, 2024</h3>
             <p class="game">
                 <a href="/teams/NYA/2024.shtml">Yankees</a> 
                 @ 
@@ -241,9 +242,11 @@ class TestGetFixtures:
         soup = BeautifulSoup(self.create_mock_html_text(), "html.parser")
         game_el = soup.find("p", class_="game")
         date = "Wednesday, March 20, 2024"
-        result = parse_game_element(game_el, date)
+        round = "MLB Season"
+        result = parse_game_element(game_el, date, round)
 
         expected = {
+            'round': round,
             'date': date,
             'away': 'Yankees',
             'home': 'Red Sox',
@@ -255,7 +258,7 @@ class TestGetFixtures:
     def test_parse_game_element_invalid_missing_scores(self):
         soup = BeautifulSoup(self.create_bad_score_html(), "html.parser")
         game_el = soup.find("p", class_="game")
-        result = parse_game_element(game_el, "Some Date")
+        result = parse_game_element(game_el, "Some Date", "MLB Season")
         assert result is None
 
     @patch("time.sleep")
@@ -270,7 +273,7 @@ class TestGetFixtures:
 
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 1
-        assert set(df.columns) == {'date', 'away', 'home', 'away_goals', 'home_goals'}
+        assert set(df.columns) == {'round','date', 'away', 'home', 'away_goals', 'home_goals'}
         assert df.iloc[0]["away"] == "Yankees"
         assert df.iloc[0]["home_goals"] == 5
         mock_sleep.assert_called_once()
@@ -490,42 +493,41 @@ class TestProcessFixtures:
 
 
     def test_process_fixtures_nba(self):
-        """Test processing fixtures for European competitions."""
+        """Test processing fixtures for NBA."""
         fixtures = pd.DataFrame(
             {
-                "Date": ["Tue, Oct 22, 2024", "Tue, Oct 22, 2024"],
-                "Start (ET)": ["7:30p", "10:00p"],
-                "Visitor/Neutral": ["New York Knicks", "Minnesota Timberwolves"],
-                "PTS": [109, 103],
-                "Home/Neutral": ["Boston Celtics", "Los Angeles Lakers"],
-                "PTS.1": [132, 110],  # to avoid duplicate keys in dict, pandas will auto rename if needed
-                "Attend.": ["19,156", "18,997"],
-                "LOG": ["2:04", "2:26"],
-                "Arena": ["TD Garden", "Crypto.com Arena"],
-                "Notes": ["Box Score", "Box Score"]
+                "Date": ["Mon, Oct 21, 2024", "Tue, Oct 22, 2024", "Wed, Oct 23, 2024", "Thu, Oct 24, 2024", "Fri, Oct 25, 2024"],
+                "Start (ET)": ["7:30p", "10:00p","7:30p", "10:00p", "6:00p"],
+                "Visitor/Neutral": ["New York Knicks", "Minnesota Timberwolves", "Boston Celtics", "Chicago Bulls", "Detroit Pistons"],
+                "PTS": [109, 103, 110, 100, pd.NA],
+                "Home/Neutral": ["Boston Celtics", "Los Angeles Lakers", "Utah Jazz", "San Antonio Spurs", "Houston Rockets"],
+                "PTS.1": [132, 110, 115, 95, pd.NA],
+                "Attend.": ["19,156", "18,997", "20,000", "30,000", "25,000"],
+                "LOG": ["2:04", "2:26", "2:04","2:11", "2:17"],
+                "Arena": ["TD Garden", "Crypto.com Arena", "TD Arena", "AA Arena", "AA Court"],
+                "Notes": ["", "NBA Cup","","Play-In Game",""]
             }
         )
 
         output = pd.DataFrame(
             {
-                "home": ["Boston Celtics", "Los Angeles Lakers"],
-                "away": ["New York Knicks", "Minnesota Timberwolves"],
-                "home_goals": pd.Series([132, 110], dtype="Int64"),
-                "away_goals": pd.Series([109, 103], dtype="Int64"),
-                "played": ["Y", "Y"],
-                "neutral": ["N", "N"],
-                "round": ["", ""],
-                "date": pd.to_datetime(["2024-10-22", "2024-10-22"]),
-                "notes": ["", ""]
+                "home": ["Boston Celtics", "Los Angeles Lakers", "Utah Jazz", "San Antonio Spurs", "Houston Rockets"],
+                "away": ["New York Knicks", "Minnesota Timberwolves", "Boston Celtics", "Chicago Bulls", "Detroit Pistons"],
+                "home_goals": pd.Series([132, 110, 115, 95, pd.NA], dtype="Int64"),
+                "away_goals": pd.Series([109, 103, 110, 100, pd.NA], dtype="Int64"),
+                "played": ["Y", "Y", "Y", "Y","N"],
+                "neutral": ["N", "N", "N", "N","N"],
+                "round": ["League","NBA Cup","League", "Play-in","Playoff"],
+                "date": pd.to_datetime(["2024-10-21", "2024-10-22","2024-10-23", "2024-10-24","2024-10-25"]),
+                "notes": ["", "NBA Cup","","Play-In Game",""]
             }
         )
 
         result = process_fixtures(fixtures, "NBA").reset_index(drop=True)
-
         pd.testing.assert_frame_equal(output, result, check_like=True, check_index_type=False)  # ignores column order
 
     def test_process_fixtures_nfl(self):
-        """Test processing fixtures for European competitions."""
+        """Test processing fixtures forNFL."""
 
         fixtures = pd.DataFrame(
             {
@@ -565,7 +567,7 @@ class TestProcessFixtures:
                 "away_goals": pd.Series([23, pd.NA], dtype="Int64"),
                 "played": ["Y", "N"],
                 "neutral": ["N", "N"],
-                "round": ["18", "18"],
+                "round": ["League", "League"],
                 "date": pd.to_datetime(["2026-01-04", "2026-01-04"]),
                 "notes": ["", ""]
             }
@@ -576,7 +578,7 @@ class TestProcessFixtures:
 
 
     def test_process_fixtures_mlb(self):
-        """Test processing fixtures for European competitions."""
+        """Test processing fixtures for MLB."""
 
         fixtures = pd.DataFrame(
             {
@@ -584,7 +586,8 @@ class TestProcessFixtures:
                 "away": ["Los Angeles Dodgers", "San Diego Padres"],
                 "home": ["San Diego Padres", "Los Angeles Dodgers"],
                 "away_goals": [5, 15],
-                "home_goals": [2, 11]
+                "home_goals": [2, 11],
+                "round": ["League","League"]
             }
         )
 
@@ -596,13 +599,14 @@ class TestProcessFixtures:
                 "away_goals": pd.Series([5, 15], dtype="Int64"),
                 "played": ["Y", "Y"],
                 "neutral": ["N", "N"],
-                "round": ["", ""],
+                "round": ["League", "League"],
                 "date": pd.to_datetime(["2024-03-20", "2024-03-21"]),
                 "notes": ["", ""]
             }
         )
 
         result = process_fixtures(fixtures, "MLB").reset_index(drop=True)
+        print(result)
         pd.testing.assert_frame_equal(output, result, check_like=True, check_index_type=False)  # ignores column order
 
 class TestIntegration:

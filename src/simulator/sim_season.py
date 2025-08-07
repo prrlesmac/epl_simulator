@@ -62,11 +62,7 @@ def split_and_merge_schedule(schedule, elos):
 def single_simulation(
     schedule_played,
     schedule_pending,
-    classif_rules,
-    has_knockout=False,
-    bracket_composition=None,
-    bracket_format=None,
-    bracket_draw=None,
+    league_rules,
 ):
     """
     Simulates the remaining matches and computes the final standings.
@@ -74,17 +70,20 @@ def single_simulation(
     Args:
         schedule_played (pd.DataFrame): DataFrame containing matches already played.
         schedule_pending (pd.DataFrame): DataFrame containing matches yet to be played.
-        classif_rules (callable or object): Rules or function used to compute standings/classification.
-        has_knockout (bool, optional): If True, includes knockout stage simulation.
-            Default is False, meaning only league standings are simulated.
-        bracket_composition (list, optional): List of tuples defining the knockout
-            bracket structure, e.g., [(1, 2), (3, 4)] for pairs of teams.
-            Required if `has_knockout` is True.
-        bracket_format (dict, optional): Dictionary defining the format of each round in the knockout stage.
-            Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
-        bracket_draw (list, optional): List of tuples defining the knockout
-            bracket structure, e.g., [(Team1, Team2), (Team3, Team4)] for pairs of teams.
-            Required if `has_knockout` is True.
+        league_rules (Dict): dictionary containing the following keys
+            classification (list): Rules used to compute standings/classification.
+            sim_type (str): either "goals" or "winner"
+                Used to specify 
+            has_knockout (bool, optional): If True, includes knockout stage simulation.
+                Default is False, meaning only league standings are simulated.
+            knockout_bracket (list, optional): List of tuples defining the knockout
+                bracket structure, e.g., [(1, 2), (3, 4)] for pairs of teams.
+                Required if `has_knockout` is True.
+            knockout_format (dict, optional): Dictionary defining the format of each round in the knockout stage.
+                Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
+            knockout_draw (list, optional): List of tuples defining the knockout
+                bracket structure, e.g., [(Team1, Team2), (Team3, Team4)] for pairs of teams.
+                Required if `has_knockout` is True.
 
     Returns:
         pd.DataFrame: The standings DataFrame after simulating the pending matches and combining with played matches.
@@ -95,34 +94,34 @@ def single_simulation(
     league_schedule_pending = schedule_pending[
         schedule_pending["round"] == "League"
     ].copy()
-    simulated_pending = simulate_matches_data_frame(league_schedule_pending)
+    simulated_pending = simulate_matches_data_frame(league_schedule_pending, league_rules["sim_type"])
     schedule_final = pd.concat(
         [league_schedule_played, simulated_pending], ignore_index=True
     )
-    standings_df = get_standings(schedule_final, classif_rules)
+    standings_df = get_standings(schedule_final, league_rules["classification"])
 
-    if has_knockout:
+    if league_rules["has_knockout"]:
         knockout_schedule_played = schedule_played[
             schedule_played["round"] != "League"
         ].copy()
         knockout_schedule_pending = schedule_pending[
             schedule_pending["round"] != "League"
         ].copy()
-        simulated_pending = simulate_matches_data_frame(knockout_schedule_pending)
+        simulated_pending = simulate_matches_data_frame(knockout_schedule_pending, league_rules["sim_type"])
         playoff_schedule = pd.concat(
             [knockout_schedule_played, simulated_pending], ignore_index=True
         )
-        if bracket_draw is None:
+        if league_rules["knockout_draw"] is None:
             draw = draw_from_pots(standings_df, pot_size=2)
-            bracket = create_bracket_from_composition(draw, bracket_composition)
+            bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
         else:
-            bracket = pd.DataFrame(bracket_draw, columns=["team1", "team2"])
+            bracket = pd.DataFrame(league_rules["knockout_draw"], columns=["team1", "team2"])
         # TODO think of better ways to pull elos
         elos = schedule_final.drop_duplicates(subset=["home"])[
             ["home", "elo_home"]
         ].rename(columns={"home": "team", "elo_home": "elo"})
         playoff_df = simulate_playoff_bracket(
-            bracket, bracket_format, elos, playoff_schedule
+            bracket, league_rules["knockout_format"], elos, playoff_schedule
         )
         standings_df = standings_df.merge(playoff_df, how="left", on="team")
 
@@ -132,11 +131,7 @@ def single_simulation(
 def run_simulation_parallel(
     schedule_played,
     schedule_pending,
-    classif_rules,
-    has_knockout=False,
-    bracket_composition=None,
-    bracket_format=None,
-    bracket_draw=None,
+    league_rules,
     num_simulations=1000,
 ):
     """
@@ -146,17 +141,20 @@ def run_simulation_parallel(
     Args:
         schedule_played (pd.DataFrame): DataFrame of matches already played.
         schedule_pending (pd.DataFrame): DataFrame of matches yet to be played.
-        classif_rules (callable or object): Rules or function to compute standings/classification.
-        has_knockout (bool, optional): If True, includes knockout stage simulation.
-            Default is False, meaning only league standings are simulated.
-        bracket_composition (list, optional): List of tuples defining the knockout
-            bracket structure, e.g., [(1, 2), (3, 4)] for pairs of teams.
-            Required if `has_knockout` is True.
-        bracket_format (dict, optional): Dictionary defining the format of each round in the knockout stage.
-            Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
-        bracket_draw (list, optional): List of tuples defining the knockout
-            bracket structure, e.g., [(Team1, Team2), (Team3, Team4)] for pairs of teams.
-            Required if `has_knockout` is True.
+        league_rules (Dict): dictionary containing the following keys
+            classification (list): Rules used to compute standings/classification.
+            sim_type (str): either "goals" or "winner"
+                Used to specify 
+            has_knockout (bool, optional): If True, includes knockout stage simulation.
+                Default is False, meaning only league standings are simulated.
+            knockout_bracket (list, optional): List of tuples defining the knockout
+                bracket structure, e.g., [(1, 2), (3, 4)] for pairs of teams.
+                Required if `has_knockout` is True.
+            knockout_format (dict, optional): Dictionary defining the format of each round in the knockout stage.
+                Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
+            knockout_draw (list, optional): List of tuples defining the knockout
+                bracket structure, e.g., [(Team1, Team2), (Team3, Team4)] for pairs of teams.
+                Required if `has_knockout` is True.
         num_simulations (int, optional): Number of simulations to run in parallel. Defaults to 1000.
 
     Returns:
@@ -171,15 +169,11 @@ def run_simulation_parallel(
             (
                 schedule_played,
                 schedule_pending,
-                classif_rules,
-                has_knockout,
-                bracket_composition,
-                bracket_format,
-                bracket_draw,
+                league_rules
             )
         ] * num_simulations
         standings_list = pool.starmap(single_simulation, args)
-        # standings_list = [single_simulation(schedule_played, schedule_pending, classif_rules, has_knockout, bracket_composition)]
+        # standings_list = [single_simulation(schedule_played, schedule_pending, classif_rules, has_knockout, knockout_bracket)]
     # Aggregate position frequencies
     standings_all = (
         pd.concat(standings_list)
@@ -197,7 +191,7 @@ def run_simulation_parallel(
     )
     standings_all.columns = standings_all.columns.astype(str)
 
-    if has_knockout:
+    if league_rules["has_knockout"]:
         # Add knockout stage results if applicable
         standings_po = pd.concat(standings_list)
         knockout_cols = standings_po.columns[standings_po.columns.str.startswith("po_")]
@@ -290,22 +284,22 @@ def validate_league_configuration(schedule, league_rules):
     Raises:
         ValueError: If the configuration is inconsistent.
     """
-    bracket_draw = league_rules.get("knockout_draw")
+    knockout_draw = league_rules.get("knockout_draw")
 
     has_knockout_matches = not schedule[schedule["round"] != "League"].empty
     has_pending_league_matches = not schedule[
         (schedule["round"] == "League") & (schedule["played"] == "N")
     ].empty
 
-    if league_rules["has_knockout"] and bracket_draw is None and has_knockout_matches:
+    if league_rules["has_knockout"] and knockout_draw is None and has_knockout_matches:
         raise ValueError(
             f"League has knockout matches but no bracket draw defined. "
-            "Please provide a bracket_draw in the league rules."
+            "Please provide a knockout_draw in the league rules."
         )
 
     if (
         league_rules["has_knockout"]
-        and bracket_draw is not None
+        and knockout_draw is not None
         and has_pending_league_matches
     ):
         raise ValueError(
@@ -328,15 +322,6 @@ def simulate_league(league_rules, schedule, elos, num_simulations=1000):
     Returns:
         pd.DataFrame: The simulation results for the league.
     """
-
-    # Get league configuration
-    has_knockout = league_rules.get("has_knockout")
-    bracket_composition = league_rules.get("knockout_bracket")
-    bracket_format = league_rules.get("knockout_format")
-    bracket_draw = league_rules.get("knockout_draw")
-    classif_rules = league_rules["classification"]
-    qualif_rules = league_rules["qualification"]
-
     # Validate configuration
     validate_league_configuration(schedule, league_rules)
 
@@ -347,16 +332,12 @@ def simulate_league(league_rules, schedule, elos, num_simulations=1000):
     sim_standings = run_simulation_parallel(
         schedule_played,
         schedule_pending,
-        classif_rules,
-        has_knockout=has_knockout,
-        bracket_composition=bracket_composition,
-        bracket_format=bracket_format,
-        bracket_draw=bracket_draw,
+        league_rules,
         num_simulations=num_simulations,
     )
 
     # Aggregate results
-    sim_standings = aggregate_standings_outcomes(sim_standings, qualif_rules)
+    sim_standings = aggregate_standings_outcomes(sim_standings, league_rules["qualification"])
     sim_standings["updated_at"] = datetime.now()
 
     return sim_standings
@@ -415,7 +396,6 @@ def run_all_simulations():
             sim_standings_w_ko.append(sim_standings)
         else:
             sim_standings_wo_ko.append(sim_standings)
-
     end_time = time.time()
     print(f"Simulation took {end_time - start_time:.2f} seconds")
 

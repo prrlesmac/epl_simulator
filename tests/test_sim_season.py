@@ -88,6 +88,7 @@ def csv_elos_data_continental():
 @pytest.fixture
 def continental_league_rules_group_stage():
     return {
+        "sim_type": "goals",
         "has_knockout": True,
         "classification": [
             "points",
@@ -132,6 +133,7 @@ def continental_league_rules_group_stage():
 @pytest.fixture
 def continental_league_rules_knockout_stage():
     return {
+        "sim_type": "goals",
         "has_knockout": True,
         "classification": [
             "points",
@@ -192,6 +194,7 @@ def continental_league_rules_knockout_stage():
 @pytest.fixture
 def domestic_league_rules():
     return {
+        "sim_type": "goals",
         "has_knockout": False,
         "classification": [
             "points",
@@ -204,7 +207,7 @@ def domestic_league_rules():
             "champion": [1],
             "top_4": [1, 2, 3, 4],
             "relegation_direct": [18, 19, 20],
-        },
+        }
     }
 
 
@@ -260,7 +263,7 @@ def final_ucl_results():
 class TestValidateLeagueConfiguration:
     """Test cases for validate_league_configuration function."""
 
-    def test_validate_continental_league_missing_bracket_draw(self):
+    def test_validate_continental_league_missing_knockout_draw(self):
         """Test validation fails when continental league has knockout matches but no bracket draw."""
         schedule = pd.DataFrame({"round": ["League", "R16"], "played": ["Y", "N"]})
         league_rules = {
@@ -273,7 +276,7 @@ class TestValidateLeagueConfiguration:
         ):
             validate_league_configuration(schedule, league_rules)
 
-    def test_validate_continental_league_bracket_draw_with_pending_league(self):
+    def test_validate_continental_league_knockout_draw_with_pending_league(self):
         """Test validation fails when continental league has bracket draw but league phase unfinished."""
         schedule = pd.DataFrame({"round": ["League", "League"], "played": ["Y", "N"]})
         league_rules = {
@@ -1001,13 +1004,6 @@ class TestSingleSimulation:
         domestic_league_rules,
     ):
         """Test simulating a domestic league."""
-        # Setup
-        has_knockout = domestic_league_rules.get("has_knockout")
-        bracket_composition = domestic_league_rules.get("knockout_bracket")
-        bracket_format = domestic_league_rules.get("knockout_format")
-        bracket_draw = domestic_league_rules.get("knockout_draw")
-        classif_rules = domestic_league_rules["classification"]
-
         # Prepare data for simulation
         schedule_played, schedule_pending = split_and_merge_schedule(
             csv_schedule_data_domestic_case_2, csv_elos_data_domestic_case_1
@@ -1015,11 +1011,7 @@ class TestSingleSimulation:
         result = single_simulation(
             schedule_played,
             schedule_pending,
-            classif_rules,
-            has_knockout,
-            bracket_composition,
-            bracket_format,
-            bracket_draw,
+            domestic_league_rules,
         )
 
         assert isinstance(result, pd.DataFrame)
@@ -1041,15 +1033,6 @@ class TestSingleSimulation:
         continental_league_rules_group_stage,
     ):
         """Test simulating a domestic league."""
-        # Setup
-        has_knockout = continental_league_rules_group_stage.get("has_knockout")
-        bracket_composition = continental_league_rules_group_stage.get(
-            "knockout_bracket"
-        )
-        bracket_format = continental_league_rules_group_stage.get("knockout_format")
-        bracket_draw = continental_league_rules_group_stage.get("knockout_draw")
-        classif_rules = continental_league_rules_group_stage["classification"]
-
         # Prepare data for simulation
         schedule_played, schedule_pending = split_and_merge_schedule(
             csv_schedule_data_continental_case_2, csv_elos_data_continental
@@ -1057,11 +1040,7 @@ class TestSingleSimulation:
         result = single_simulation(
             schedule_played,
             schedule_pending,
-            classif_rules,
-            has_knockout,
-            bracket_composition,
-            bracket_format,
-            bracket_draw,
+            continental_league_rules_group_stage
         )
 
         assert isinstance(result, pd.DataFrame)

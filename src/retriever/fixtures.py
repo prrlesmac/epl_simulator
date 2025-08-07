@@ -120,16 +120,18 @@ def get_fixtures_text(url_list):
     
             games_data = []
             current_date = None
-            
             # Find all h3 elements (dates) and game elements
-            for element in soup.find_all(['h3', 'p']):
+            for element in soup.find_all(['h2','h3', 'p']):
+                if element.name == 'h2':
+                    schedule = element.get_text(strip=True)
+                    current_stage = "League" if schedule == "MLB Schedule" else "Playoff" if schedule == "Postseason Schedule" else ""
                 if element.name == 'h3':
                     # Extract date from h3 element
                     current_date = element.get_text(strip=True)
                 elif element.name == 'p' and 'game' in element.get('class', []):
                     # Parse game data
                     if current_date:
-                        game_data = parse_game_element(element, current_date)
+                        game_data = parse_game_element(element, current_date, current_stage)
                         if game_data:
                             games_data.append(game_data)
             df = pd.DataFrame(games_data)
@@ -143,13 +145,14 @@ def get_fixtures_text(url_list):
     return df_all
 
 
-def parse_game_element(game_element, date):
+def parse_game_element(game_element, date, round):
     """
     Parse individual game element to extract team names and scores.
     
     Args:
         game_element: BeautifulSoup element containing game data
         date (str): Date of the game
+        round (str): stage of the game
     
     Returns:
         dict: Game data dictionary or None if parsing fails
@@ -183,6 +186,7 @@ def parse_game_element(game_element, date):
         home_goals = int(scores[1])
         
         return {
+            'round': round,
             'date': date,
             'away': away_team,
             'home': home_team,
@@ -274,6 +278,12 @@ def process_nfl_table(fixtures):
     fixtures["home_goals"] = pd.to_numeric(fixtures["home_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
     fixtures["away_goals"] = pd.to_numeric(fixtures["away_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
 
+    fixtures["round"] = np.where(
+        fixtures["round"].isin(["WildCard","Division","ConfChamp","SuperBowl"]),
+        fixtures["round"],
+        "League"
+    )
+
     fixtures["played"] = np.where(
         (fixtures["home_goals"].isnull()) | (fixtures["away_goals"].isnull()),
         "N",
@@ -316,14 +326,28 @@ def process_nba_table(fixtures):
     fixtures["home_goals"] = pd.to_numeric(fixtures["home_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
     fixtures["away_goals"] = pd.to_numeric(fixtures["away_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
 
+    play_in_date_start = fixtures[fixtures["notes"]=="Play-In Game"]["date"].min()
+    play_in_date_end = fixtures[fixtures["notes"]=="Play-In Game"]["date"].max()
+    fixtures["round"] = np.where(
+        fixtures["date"] < play_in_date_start,
+        np.where(
+            fixtures["notes"] == "NBA Cup",
+            "NBA Cup",
+            "League"
+        ),
+        np.where(
+            fixtures["date"] > play_in_date_end,
+            "Playoff",
+            "Play-in"
+        )
+    )
+
     fixtures["played"] = np.where(
         (fixtures["home_goals"].isnull()) | (fixtures["away_goals"].isnull()),
         "N",
         "Y",
     )
     fixtures["neutral"] = "N"
-    fixtures["round"] = ""
-    fixtures["notes"] = ""
 
     return fixtures
 
@@ -353,7 +377,6 @@ def process_mlb_table(fixtures):
         "Y",
     )
     fixtures["neutral"] = "N"
-    fixtures["round"] = ""
     fixtures["notes"] = ""
 
     return fixtures

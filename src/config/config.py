@@ -379,6 +379,7 @@ schedule_cutoff_date = None
 
 league_rules = {
     "ENG": {
+        "sim_type": "goals",
         "has_knockout": False,
         "classification": [
             "points",
@@ -394,6 +395,7 @@ league_rules = {
         },
     },
     "ESP": {
+        "sim_type": "goals",
         "has_knockout": False,
         "classification": [
             "points",
@@ -409,6 +411,7 @@ league_rules = {
         },
     },
     "ITA": {
+        "sim_type": "goals",
         "has_knockout": False,
         "classification": [
             "points",
@@ -425,6 +428,7 @@ league_rules = {
         },
     },
     "GER": {
+        "sim_type": "goals",
         "has_knockout": False,
         "classification": [
             "points",
@@ -443,6 +447,7 @@ league_rules = {
         },
     },
     "FRA": {
+        "sim_type": "goals",
         "has_knockout": False,
         "classification": [
             "points",
@@ -462,6 +467,7 @@ league_rules = {
         },
     },
     "UCL": {
+        "sim_type": "goals",
         "has_knockout": True,
         "classification": [
             "points",
@@ -524,6 +530,7 @@ league_rules = {
         ],
     },
     "UEL": {
+        "sim_type": "goals",
         "has_knockout": True,
         "classification": [
             "points",
@@ -586,6 +593,7 @@ league_rules = {
         ],
     },
     "UECL": {
+        "sim_type": "goals",
         "has_knockout": True,
         "classification": [
             "points",
@@ -646,5 +654,17 @@ league_rules = {
             ("Chelsea", "Bye"),
             ("FC Copenhagen", "Heidenheim"),
         ],
+    },
+    "NFL": {
+        "sim_type": "winner",
+        "has_knockout": False,
+        "classification": [
+            "wins"
+        ],
+        "qualification": {
+            "champion": [1],
+            "top_4": [1, 2, 3, 4],
+            "relegation_direct": [18, 19, 20],
+        },
     },
 }
