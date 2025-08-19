@@ -341,6 +341,94 @@ def get_standings_metrics(matches_df):
     return standings
 
 
+def get_standings_metrics_nfl(matches_df):
+
+    win_loss_league = get_win_loss_pct(matches_df)
+    matches_df_conf = matches_df[matches_df["home_conference"]==matches_df["away_conference"]].copy()
+    win_loss_conf = get_win_loss_pct(matches_df_conf)
+    matches_df_div = matches_df[matches_df["home_division"]==matches_df["away_division"]].copy()
+    win_loss_div = get_win_loss_pct(matches_df_div)
+
+    win_loss_conf = (
+        win_loss_conf[["team","win_loss_pct"]]
+        .rename(columns= {"win_loss_pct": "win_loss_pct_conf"})
+    )
+    win_loss_div = (
+        win_loss_div[["team","win_loss_pct"]]
+        .rename(columns= {"win_loss_pct": "win_loss_pct_div"})
+    )
+    standings = (
+        win_loss_league
+        .merge(win_loss_conf, how="left", on="team")
+        .merge(win_loss_div, how="left", on="team")
+    )
+
+    return standings
+
+
+def get_win_loss_pct(matches_df):
+    matches_df["home_wins"] = np.where(
+        matches_df["home_goals"] > matches_df["away_goals"],
+        1,
+        0
+    )
+    matches_df["away_wins"] = np.where(
+        matches_df["away_goals"] > matches_df["home_goals"],
+        1,
+        0
+    )
+    matches_df["home_ties"] = np.where(
+        matches_df["home_goals"] == matches_df["away_goals"],
+        1,
+        0
+    )
+    matches_df["away_ties"] = np.where(
+        matches_df["away_goals"] == matches_df["home_goals"],
+        1,
+        0
+    )
+    home_pts = (
+        matches_df.groupby(["home"])[["home_wins","home_ties"]]
+        .sum()
+        .assign(home_played=matches_df.groupby("home").size())
+        .reset_index()
+    )
+    away_pts = (
+        matches_df.groupby(["away"])[["away_wins","away_ties"]]
+        .sum()
+        .assign(away_played=matches_df.groupby("away").size())
+        .reset_index()
+    )
+    home_pts = home_pts.rename(
+        columns={
+            "home": "team",
+        }
+    )
+    away_pts = away_pts.rename(
+        columns={
+            "away": "team",
+        }
+    )
+    # Combine wins and losses into a single DataFrame
+    standings = pd.merge(home_pts, away_pts, how="outer", on="team").fillna(0)
+    standings["wins"] = standings["home_wins"] + standings["away_wins"]
+    standings["ties"] = standings["home_ties"] + standings["away_ties"]
+    standings["played"] = standings["home_played"] + standings["away_played"]
+    standings["win_loss_pct"] = round((standings["wins"] + standings["ties"] * 0.5) / (standings["played"]), 3)
+
+    standings = standings[
+        [
+            "team",
+            "win_loss_pct",
+            "wins",
+            "ties",
+            "played",
+        ]
+    ].fillna(0)
+
+    return standings
+
+
 def get_standings(matches_df, classif_rules):
     """
     Computes league standings metrics for each team and applies classification rules,
@@ -489,6 +577,85 @@ def get_opponents_aggregate_stats(matches_df, standings_df):
             "opponent_points": total_points,
             "opponent_goal_difference": total_goal_difference,
             "opponent_goals_for": total_goals
+
+        })
+
+    return pd.DataFrame(result)
+
+
+def get_opponents_strength(matches_df, standings_df, strength_of):
+    """
+    Calculate a team's strength of schedule or strength of victory based on their opponents' records.
+
+    Parameters
+    ----------
+    matches_df : pandas.DataFrame
+        DataFrame containing match results with at least the following columns:
+        - 'home': home team name
+        - 'away': away team name
+        - 'home_goals': goals scored by the home team
+        - 'away_goals': goals scored by the away team
+
+    standings_df : pandas.DataFrame
+        DataFrame containing current standings with at least the following columns:
+        - 'team': team name
+        - 'wins': number of wins
+        - 'ties': number of ties
+        - 'played': total games played
+
+    strength_of : str
+        Determines the type of calculation:
+        - 'schedule': use all opponents from games played (regardless of result).
+        - 'victory': use only opponents from games the team has won.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with two columns:
+        - 'team': team name
+        - 'strength_of_<strength_of>': winning percentage of the relevant opponents,
+          calculated as (total_wins + total_ties / 2) / total_played. If total_played is 0, returns 0.
+
+    Notes
+    -----
+    - In 'schedule' mode, all opponents are included, regardless of match result.
+    - In 'victory' mode, only opponents from matches the team has won are included.
+    - The winning percentage formula counts ties as half a win.
+    """
+    # Get set of all opponents each team has played against
+    team_opponents = {}
+
+    if strength_of == 'schedule':
+        for _, row in matches_df.iterrows():
+            team_opponents.setdefault(row['home'],[]).add(row['away'])
+            team_opponents.setdefault(row['away'],[]).add(row['home'])
+
+    elif strength_of == 'victory':
+        for _, row in matches_df.iterrows():
+            # Home team wins
+            if row['home_goals'] > row['away_goals']:
+                team_opponents.setdefault(row['home'], []).append(row['away'])
+            # Away team wins
+            elif row['away_goals'] > row['home_goals']:
+                team_opponents.setdefault(row['away'], []).append(row['home'])
+
+    else:
+        raise(ValueError("Must be strength of schedule or victory"))
+
+    wins_lookup = standings_df.set_index("team")["wins"].to_dict()
+    ties_lookup = standings_df.set_index("team")["ties"].to_dict()
+    played_lookup = standings_df.set_index("team")["played"].to_dict()
+
+    # Build result
+    result = []
+    for team, opponents in team_opponents.items():
+        total_wins = sum(wins_lookup.get(opp, 0) for opp in opponents)
+        total_ties = sum(ties_lookup.get(opp, 0) for opp in opponents)
+        total_played = sum(played_lookup.get(opp, 0) for opp in opponents)
+
+        result.append({
+            "team": team,
+            f"strength_of_{strength_of}": (total_wins + total_ties / 2) / total_played if total_played > 0 else 0
 
         })
 

@@ -659,7 +659,7 @@ league_rules = {
         "sim_type": "winner",
         "has_knockout": False,
         "classification": [
-            "wins"
+            "win_loss_pct"
         ],
         "qualification": {
             "champion": [1],
