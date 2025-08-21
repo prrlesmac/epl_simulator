@@ -307,6 +307,14 @@ db_table_definitions = {
             "updated_at": TIMESTAMP(),
         },
     },
+    "divisions_table": {
+        "name": "teams",
+        "dtype": {
+            "team": VARCHAR(50),
+            "division": VARCHAR(50),
+            "conference": VARCHAR(50),
+        },
+    },
 }
 
 # Data scraping
@@ -658,9 +666,11 @@ league_rules = {
     "NFL": {
         "sim_type": "winner",
         "has_knockout": False,
-        "classification": [
-            "win_loss_pct"
-        ],
+        "classification": {
+            "division": ["win_loss_pct"],
+            "conference": ["win_loss_pct"],
+            "league": ["win_loss_pct"],
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],

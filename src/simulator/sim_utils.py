@@ -429,7 +429,23 @@ def get_win_loss_pct(matches_df):
     return standings
 
 
-def get_standings(matches_df, classif_rules):
+def get_division_standings(matches_df, classif_rules, standings_metrics, divisions):
+
+    div_to_iterate = divisions["division"].unique().tolist()
+    all_division_standings = []
+    for div in div_to_iterate:
+        division_teams = divisions[divisions["division"]==div]
+        division_standings_metrics = standings_metrics[standings_metrics["team"].isin(division_teams["team"])].copy()
+        division_standings = get_standings(matches_df, classif_rules, division_standings_metrics)
+        division_standings = division_standings.rename(columns={"pos": "div_pos"})
+        division_standings["division"] = div
+        all_division_standings.append(division_standings)
+    all_division_standings = pd.concat(all_division_standings)
+
+    return all_division_standings
+
+
+def get_standings(matches_df, classif_rules, divisions):
     """
     Computes league standings metrics for each team and applies classification rules,
     including optional head-to-head (H2H) tiebreakers.
@@ -461,7 +477,34 @@ def get_standings(matches_df, classif_rules):
         - 'pos': final ranking position based on the classification rules
 
     """
-    standings = get_standings_metrics(matches_df)
+    standings = get_standings_metrics_nfl(matches_df)
+    for classif, rules in classif_rules.items():
+        if classif=="league":
+            league_standings = apply_classification_rules(matches_df, rules, standings)
+            league_standings = league_standings[["team", "pos"]]
+            league_standings = league_standings.rename(columns={"pos": f"{classif}_pos"})
+            print(league_standings)
+            standings = standings.merge(league_standings, how="left",on="team")
+        else:
+            div_to_iterate = divisions[classif].unique().tolist()
+            all_division_standings = []
+            for div in div_to_iterate:
+                division_teams = divisions[divisions[classif]==div]
+                division_standings_metrics = standings[standings["team"].isin(division_teams["team"])].copy()
+                division_standings = apply_classification_rules(matches_df, rules, division_standings_metrics)
+                division_standings = division_standings[["team", "pos"]]
+                division_standings = division_standings.rename(columns={"pos": f"{classif}_pos"})
+                division_standings[classif] = div
+                all_division_standings.append(division_standings)
+            all_division_standings = pd.concat(all_division_standings)
+            print(all_division_standings)
+            standings = standings.merge(all_division_standings, how="left",on="team")
+
+    return standings
+
+
+def apply_classification_rules(matches_df, classif_rules, standings):
+
     # Sort by classification rules
     for i, rule in enumerate(classif_rules):
         is_h2h_rule = rule.startswith("h2h")

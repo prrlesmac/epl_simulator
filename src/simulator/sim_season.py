@@ -62,6 +62,8 @@ def split_and_merge_schedule(schedule, elos):
 def single_simulation(
     schedule_played,
     schedule_pending,
+    elos,
+    divisions,
     league_rules,
 ):
     """
@@ -98,7 +100,9 @@ def single_simulation(
     schedule_final = pd.concat(
         [league_schedule_played, simulated_pending], ignore_index=True
     )
-    standings_df = get_standings(schedule_final, league_rules["classification"])
+    standings_df = get_standings(schedule_final, league_rules["classification"], divisions)
+    print(standings_df)
+    breakpoint()
 
     if league_rules["has_knockout"]:
         knockout_schedule_played = schedule_played[
@@ -131,6 +135,8 @@ def single_simulation(
 def run_simulation_parallel(
     schedule_played,
     schedule_pending,
+    elos,
+    divisions,
     league_rules,
     num_simulations=1000,
 ):
@@ -169,6 +175,8 @@ def run_simulation_parallel(
             (
                 schedule_played,
                 schedule_pending,
+                elos,
+                divisions,
                 league_rules
             )
         ] * num_simulations
@@ -249,6 +257,29 @@ def load_league_data(league):
         engine,
     )
 
+    elos_query = f"SELECT * FROM {config.db_table_definitions['elo_table']['name']}" + (
+        f" WHERE country = '{league}'" if not is_continental_league else ""
+    )
+    elos = pd.read_sql(elos_query, engine)
+
+    if league in ["NFL", "MLB", "NBA"]:
+        divisions = pd.read_sql(
+            f"SELECT * FROM {config.db_table_definitions['divisions_table']['name']}_{table_suffix}",
+            engine,
+        )
+        schedule = (
+            schedule
+            .merge(divisions, how="left", left_on="home",right_on="team")
+            .merge(divisions, how="left", left_on="away",right_on="team")
+        )
+        schedule = schedule.rename(columns={
+            'division_x': 'home_division',
+            'division_y': 'away_division',
+            'conference_x': 'home_conference',
+            'conference_y': 'away_conference',
+        })
+        schedule = schedule.drop(columns=['team_x','team_y'])
+
     # Apply cutoff dates if configured
     if config.played_cutoff_date:
         schedule["date"] = pd.to_datetime(schedule["date"], errors="coerce")
@@ -265,12 +296,7 @@ def load_league_data(league):
             )
         ].copy()
 
-    elos_query = f"SELECT * FROM {config.db_table_definitions['elo_table']['name']}" + (
-        f" WHERE country = '{league}'" if not is_continental_league else ""
-    )
-    elos = pd.read_sql(elos_query, engine)
-
-    return schedule, elos
+    return schedule, elos, divisions
 
 
 def validate_league_configuration(schedule, league_rules):
@@ -308,7 +334,7 @@ def validate_league_configuration(schedule, league_rules):
         )
 
 
-def simulate_league(league_rules, schedule, elos, num_simulations=1000):
+def simulate_league(league_rules, schedule, elos, divisions, num_simulations=1000):
     """
     Simulate a single league and return the results.
 
@@ -332,6 +358,8 @@ def simulate_league(league_rules, schedule, elos, num_simulations=1000):
     sim_standings = run_simulation_parallel(
         schedule_played,
         schedule_pending,
+        elos,
+        divisions,
         league_rules,
         num_simulations=num_simulations,
     )
@@ -384,11 +412,11 @@ def run_all_simulations():
     leagues_to_sim = config.active_uefa_leagues if league_name == "UEFA" else [league_name]
 
     for league in leagues_to_sim:
-        schedule, elos = load_league_data(league)
+        schedule, elos, divisions = load_league_data(league)
         league_rules = config.league_rules[league]
         print("Simulating league: ", league)
         sim_standings = simulate_league(
-            league_rules, schedule, elos, num_simulations=config.number_of_simulations
+            league_rules, schedule, elos, divisions, num_simulations=config.number_of_simulations
         )
         sim_standings["league"] = league
 
