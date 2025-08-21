@@ -14,6 +14,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from retriever.fixtures import (
     extract_scores,
     get_fixtures,
+    get_fixtures_selenium,
+    parse_fixtures_html,
     process_fixtures,
 )
 
@@ -410,6 +412,146 @@ class TestProcessFixtures:
         # Test UECL
         result_uecl = process_fixtures(fixtures.copy(), "UECL")
         assert result_uecl.iloc[0]["home"] == "Barcelona"
+
+
+class TestGetFixturesSelenium:
+    @pytest.fixture(autouse=True)
+    def setup_method(self):
+        # Sample HTML with a fake table
+        self.sample_html = """
+        <html>
+        <body>
+            <table id="test_table">
+                <thead>
+                    <tr><th>Date</th><th>Home</th><th>Away</th><th>xG</th></tr>
+                </thead>
+                <tbody>
+                    <tr><th>1</th><td>Team A</td><td>Team B</td><td>1.2</td></tr>
+                    <tr><th>2</th><td></td><td></td><td></td></tr>
+                </tbody>
+            </table>
+        </body>
+        </html>
+        """
+        self.table_ids = ["test_table"]
+
+    @patch("src.retriever.fixtures.webdriver.Chrome")
+    def test_fixtures_parsing(self, mock_chrome):
+        # Mock Selenium driver
+        mock_driver = MagicMock()
+        mock_driver.page_source = self.sample_html
+        mock_chrome.return_value = mock_driver
+
+        df = get_fixtures_selenium("http://fake.url", self.table_ids)
+
+        # Assertions
+        assert isinstance(df, pd.DataFrame)
+        assert not df.empty
+        assert list(df.columns) == ["Date", "Home", "Away"]  # "xG" should be dropped
+        assert "Team A" in df["Home"].values
+
+    @patch("src.retriever.fixtures.webdriver.Chrome")
+    def test_empty_table(self, mock_chrome):
+        # Modify HTML to have no rows
+        empty_html = self.sample_html.replace(
+            '<tr><th>1</th><td>Team A</td><td>Team B</td><td>1.2</td></tr>', ""
+        )
+        mock_driver = MagicMock()
+        mock_driver.page_source = empty_html
+        mock_chrome.return_value = mock_driver
+
+        df = get_fixtures_selenium("http://fake.url", self.table_ids)
+
+        assert df.empty
+
+
+class TestParseFixturesHtml:
+    @pytest.fixture
+    def sample_html(self):
+        return """
+        <html>
+        <body>
+            <table id="test_table">
+                <thead>
+                    <tr><th>Date</th><th>Home</th><th>Away</th><th>xG</th></tr>
+                </thead>
+                <tbody>
+                    <tr><th>1</th><td>Team A</td><td>Team B</td><td>1.2</td></tr>
+                    <tr><th>2</th><td></td><td></td><td></td></tr>
+                </tbody>
+            </table>
+        </body>
+        </html>
+        """
+
+    def test_parse_valid_table(self, sample_html):
+        df = parse_fixtures_html(sample_html, table_id=["test_table"])
+        expected = pd.DataFrame({
+            "Date": ["1"],
+            "Home": ["Team A"],
+            "Away": ["Team B"]
+        })
+        pd.testing.assert_frame_equal(df.reset_index(drop=True), expected)
+
+    def test_missing_table_id(self, sample_html):
+        with pytest.raises(ValueError, match="No valid tables found"):
+            parse_fixtures_html(sample_html, table_id=["wrong_id"])
+
+    def test_missing_thead_or_tbody(self):
+        html = """
+        <html><body>
+            <table id="test_table">
+                <tbody>
+                    <tr><td>Some</td><td>Data</td></tr>
+                </tbody>
+            </table>
+        </body></html>
+        """
+        with pytest.raises(ValueError, match="No valid tables found"):
+            parse_fixtures_html(html, table_id=["test_table"])
+
+    def test_no_data_rows(self):
+        html = """
+        <html><body>
+            <table id="test_table">
+                <thead>
+                    <tr><th>Date</th><th>Home</th><th>Away</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </body></html>
+        """
+        with pytest.raises(ValueError, match="No valid tables found"):
+            parse_fixtures_html(html, table_id=["test_table"])
+
+    def test_multiple_tables(self):
+        html = """
+        <html><body>
+            <table id="table1">
+                <thead>
+                    <tr><th>Date</th><th>Home</th><th>Away</th><th>xG</th></tr>
+                </thead>
+                <tbody>
+                    <tr><th>1</th><td>Team A</td><td>Team B</td><td>1.0</td></tr>
+                </tbody>
+            </table>
+            <table id="table2">
+                <thead>
+                    <tr><th>Date</th><th>Home</th><th>Away</th><th>xG</th></tr>
+                </thead>
+                <tbody>
+                    <tr><th>2</th><td>Team C</td><td>Team D</td><td>1.1</td></tr>
+                </tbody>
+            </table>
+        </body></html>
+        """
+        df = parse_fixtures_html(html, table_id=["table1", "table2"])
+        expected = pd.DataFrame({
+            "Date": ["1", "2"],
+            "Home": ["Team A", "Team C"],
+            "Away": ["Team B", "Team D"]
+        })
+        pd.testing.assert_frame_equal(df.reset_index(drop=True), expected)
 
 
 class TestIntegration:

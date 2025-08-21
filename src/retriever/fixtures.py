@@ -1,3 +1,10 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -57,40 +64,157 @@ def get_fixtures(url, table_id):
     response = requests.get(url)
     # Check if the request was successful
     if response.status_code == 200:
-        # Parse the HTML content using BeautifulSoup
-        soup = BeautifulSoup(response.text, "html.parser")
-        # Find the table containing the fixtures
-        df_all = []
-        for id in table_id:
-            table = soup.find("table", {"id": id})
-
-            # Extract table headers
-            headers = [th.text.strip() for th in table.find("thead").find_all("th")]
-
-            # Extract table rows
-            rows = []
-            for tr in table.find("tbody").find_all("tr"):
-                row_th = [tr.find("th").text.strip()] if tr.find("th") else [""]
-                row_td = [td.text.strip() for td in tr.find_all("td")]
-                row = row_th + row_td
-                rows.append(row)
-            # Convert to a Pandas DataFrame
-            df = pd.DataFrame(
-                rows, columns=headers
-            )  # Exclude the first header if it's a placeholder
-            # exclude rows where Home and Away are empty
-            df = df[(df["Home"] != "") | (df["Away"] != "")]
-            df = df.drop(columns=["xG"])
-
-            df_all.append(df)
-        df_all = pd.concat(df_all)
-        # Display the DataFrame
+        df_all = parse_fixtures_html(response.text, table_id)
         print("Fetching fixtures data...")
         return df_all
     else:
         print(f"Failed to fetch the page. Status code: {response.status_code}")
 
     return None
+
+
+def get_fixtures_selenium(url, table_id):
+    """
+    Fetch fixtures tables from a webpage using Selenium and parse them into a Pandas DataFrame.
+
+    This function launches a headless Chrome browser using Selenium, loads the specified URL,
+    extracts HTML tables identified by their IDs, and converts them into a concatenated
+    Pandas DataFrame. Rows with empty "Home" and "Away" columns are removed, and the "xG" 
+    column is dropped if present.
+
+    Args:
+        url (str): The URL of the webpage containing the fixtures tables.
+        table_id (list[str]): A list of table IDs to locate and extract from the page.
+        driver (selenium.webdriver.Chrome, optional): Existing WebDriver to reuse.
+    Returns:
+        pandas.DataFrame: A concatenated DataFrame containing all extracted fixtures data.
+
+    Raises:
+        selenium.common.exceptions.WebDriverException: If the browser driver cannot be started.
+        AttributeError: If the expected table structure (thead/tbody) is not found.
+    """
+    options = Options()
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--disable-extensions')
+    options.add_argument('--window-size=1920,1080')
+    
+    #driver = None
+    try:
+        # Use webdriver-manager to handle ChromeDriver installation
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+
+        # Set timeouts
+        driver.set_page_load_timeout(30)
+        driver.implicitly_wait(10)
+
+        print(f"Loading URL: {url}")
+        driver.get(url)
+        
+        # Wait for the page to load properly instead of fixed sleep
+        wait = WebDriverWait(driver, 20)
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "table")))
+        
+        # Additional wait for Cloudflare if needed
+        time.sleep(5)
+        
+        print("Getting page source...")
+        html = driver.page_source
+        
+    except Exception as e:
+        print(f"Error during web scraping: {e}")
+        if driver:
+            driver.quit()
+        raise
+    finally:
+        # Ensure driver is always closed
+        if driver:
+            driver.quit()
+
+    df_all = parse_fixtures_html(html, table_id)
+
+    return df_all
+
+
+def parse_fixtures_html(html, table_id):
+    """
+    Parse HTML content to extract fixtures data from specified tables and return as a DataFrame.
+
+    This function takes raw HTML content and extracts data from tables identified by their IDs.
+    It processes each table by parsing headers and rows, combines them into individual DataFrames,
+    and concatenates all tables into a single DataFrame. Rows with empty "Home" and "Away" 
+    columns are filtered out, and the "xG" column is dropped if present.
+
+    Args:
+        html (str): Raw HTML content containing the tables to be parsed.
+        table_id (list[str]): A list of table IDs to locate and extract from the HTML.
+
+    Returns:
+        pandas.DataFrame: A concatenated DataFrame containing all extracted fixtures data 
+                         with empty Home/Away rows removed and xG column dropped.
+
+    Raises:
+        ValueError: If no valid tables are found with the specified IDs.
+        AttributeError: If the expected table structure (thead/tbody) is not found.
+    """
+    # Parse the HTML content using BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    
+    # Find the tables containing the fixtures
+    df_all = []
+    for id in table_id:
+        print(f"Processing table with ID: {id}")
+        table = soup.find("table", {"id": id})
+        
+        if not table:
+            print(f"Warning: Table with ID '{id}' not found")
+            continue
+            
+        # Check if table has the expected structure
+        thead = table.find("thead")
+        tbody = table.find("tbody")
+        
+        if not thead or not tbody:
+            print(f"Warning: Table '{id}' missing thead or tbody")
+            continue
+
+        # Extract table headers
+        headers = [th.text.strip() for th in thead.find_all("th")]
+
+        # Extract table rows
+        rows = []
+        for tr in tbody.find_all("tr"):
+            row_th = [tr.find("th").text.strip()] if tr.find("th") else [""]
+            row_td = [td.text.strip() for td in tr.find_all("td")]
+            row = row_th + row_td
+            rows.append(row)
+            
+        if not rows:
+            print(f"Warning: No data rows found in table '{id}'")
+            continue
+            
+        # Convert to a Pandas DataFrame
+        df = pd.DataFrame(rows, columns=headers)
+        
+        # Exclude rows where Home and Away are empty
+        df = df[(df["Home"] != "") | (df["Away"] != "")]
+        
+        # Drop xG column if it exists
+        if "xG" in df.columns:
+            df = df.drop(columns=["xG"])
+
+        df_all.append(df)
+        print(f"Successfully processed table '{id}' with {len(df)} rows")
+    
+    if not df_all:
+        raise ValueError("No valid tables found with the specified IDs")
+        
+    df_all = pd.concat(df_all, ignore_index=True)
+    print(f"Fetching fixtures data complete. Total rows: {len(df_all)}")
+
+    return df_all
 
 
 def process_fixtures(fixtures, country):
@@ -159,7 +283,8 @@ def main_fixtures():
     fixtures_all = []
     for k, v in config.fixtures_config.items():
         print("Getting fixtures for: ", k)
-        fixtures = get_fixtures(v["fixtures_url"], v["table_id"])
+        time.sleep(3)
+        fixtures = get_fixtures_selenium(v["fixtures_url"], v["table_id"])
         fixtures = process_fixtures(fixtures, country=k)
         fixtures["country"] = k
         fixtures["updated_at"] = datetime.now()
