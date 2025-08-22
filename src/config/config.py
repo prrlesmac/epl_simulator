@@ -310,40 +310,49 @@ db_table_definitions = {
 }
 
 # Data scraping
+parsing_method = "local_file" # must be local_file, http_request, or selenium
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 #elo_date = "2025-06-01"  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
 fixtures_config = {
     "ENG": {
         "fixtures_url": "https://fbref.com/en/comps/9/2025-2026/schedule/2025-2026-Premier-League-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/Premier League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_9_1"],
     },
     "ESP": {
         "fixtures_url": "https://fbref.com/en/comps/12/2025-2026/schedule/2025-2026-La-Liga-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/La Liga Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_12_1"],
     },
     "ITA": {
         "fixtures_url": "https://fbref.com/en/comps/11/2025-2026/schedule/2025-2026-Serie-A-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/Serie A Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_11_1"],
     },
     "GER": {
         "fixtures_url": "https://fbref.com/en/comps/20/2025-2026/schedule/2025-2026-Bundesliga-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/Bundesliga Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_20_1"],
     },
     "FRA": {
         "fixtures_url": "https://fbref.com/en/comps/13/2025-2026/schedule/2025-2026-Ligue-1-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/Ligue 1 Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_13_1"],
     },
     "UCL": {
         "fixtures_url": "https://fbref.com/en/comps/8/2024-2025/schedule/2024-2025-Champions-League-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/2024-2025 Champions League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2024-2025_8_2", "sched_2024-2025_8_3"],
     },
     "UEL": {
         "fixtures_url": "https://fbref.com/en/comps/19/2024-2025/schedule/2024-2025-Europa-League-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/2024-2025 Europa League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2024-2025_19_2", "sched_2024-2025_19_3"],
     },
     "UECL": {
         "fixtures_url": "https://fbref.com/en/comps/882/2024-2025/schedule/2024-2025-Conference-League-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/2024-2025 Conference League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2024-2025_882_2", "sched_2024-2025_882_3"],
     },
 }

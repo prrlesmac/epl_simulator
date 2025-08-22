@@ -73,6 +73,35 @@ def get_fixtures(url, table_id):
     return None
 
 
+def get_fixtures_local_file(filepath, table_id):
+    """
+    Fetches and parses a fixture table from a given local HTML file.
+
+    Reads a local HTML file, parses the HTML to extract
+    a table of fixtures using BeautifulSoup, and converts the table into a
+    Pandas DataFrame. The function assumes the table has a specific ID
+    (`sched_2024-2025_9_1`) and that the table structure includes a thead and tbody.
+
+    Args:
+        filepath (str): The path of the file containing the fixtures table.
+        table_id (list): list table IDs for geting the fixtures using beautiful soup
+
+    Returns:
+        pandas.DataFrame: A DataFrame containing the fixture information,
+        with column headers extracted from the table. If the request fails,
+        the function prints an error message and may return an undefined variable.
+    """
+
+    with open(filepath, "r", encoding="utf-8") as html_file:
+        html_content = html_file.read()
+
+    df_all = parse_fixtures_html(html_content, table_id)
+    print("Fetching fixtures data...")
+    
+    return df_all
+
+
+
 def get_fixtures_selenium(url, table_id):
     """
     Fetch fixtures tables from a webpage using Selenium and parse them into a Pandas DataFrame.
@@ -283,8 +312,14 @@ def main_fixtures():
     fixtures_all = []
     for k, v in config.fixtures_config.items():
         print("Getting fixtures for: ", k)
-        time.sleep(3)
-        fixtures = get_fixtures_selenium(v["fixtures_url"], v["table_id"])
+        if config.parsing_method == "http_request":
+            fixtures = get_fixtures(v["fixtures_url"], v["table_id"])
+        elif config.parsing_method == "local_file":
+            fixtures = get_fixtures_local_file(v["local_file_path"], v["table_id"])
+        elif config.parsing_method == "selenium":
+            fixtures = get_fixtures_selenium(v["fixtures_url"], v["table_id"])
+        else:
+            raise(ValueError, "Invalid fixture parsing method")
         fixtures = process_fixtures(fixtures, country=k)
         fixtures["country"] = k
         fixtures["updated_at"] = datetime.now()
