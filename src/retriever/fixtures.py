@@ -1,10 +1,4 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
+from playwright.sync_api import sync_playwright
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -60,8 +54,18 @@ def get_fixtures(url, table_id):
     """
 
     time.sleep(10)
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Referer": "https://www.google.com/"
+    }
     # Send a GET request to fetch the HTML content
-    response = requests.get(url)
+    response = requests.get(url, headers=headers)
     # Check if the request was successful
     if response.status_code == 200:
         df_all = parse_fixtures_html(response.text, table_id)
@@ -69,8 +73,58 @@ def get_fixtures(url, table_id):
         return df_all
     else:
         print(f"Failed to fetch the page. Status code: {response.status_code}")
+        print("Response headers:", response.headers)
+        return None
 
-    return None
+
+
+def get_fixtures_playwright(url, table_id):
+    """
+    Fetch and parse a fixture table from a webpage using Playwright
+
+    Sends an HTTP GET request to the specified URL, parses the HTML to extract
+    a table of fixtures using BeautifulSoup, and converts the table into a
+    Pandas DataFrame. The function assumes the table has a specific ID
+    (`sched_2024-2025_9_1`) and that the table structure includes a thead and tbody.
+
+    Args:
+        url (str): The URL of the webpage containing the fixture table.
+        table_id (list): list table IDs for geting the fixtures using beautiful soup
+
+    Returns:
+        pandas.DataFrame: A DataFrame containing the fixture information,
+        with column headers extracted from the table. If the request fails,
+        the function prints an error message and may return an undefined variable.
+
+    Raises:
+        requests.exceptions.RequestException: If the HTTP request fails.
+        AttributeError: If the expected table or structure is not found in the HTML.
+    """
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)  # or headless=False to watch
+        page = browser.new_page()
+
+        # Mimic a real browser
+        page.set_extra_http_headers({
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            ),
+            "Referer": "https://www.google.com/",
+            "Accept-Language": "en-US,en;q=0.9"
+        })
+
+        page.goto(url, wait_until="domcontentloaded")
+        time.sleep(10)  # Wait for Cloudflare challenge or dynamic content
+
+        html = page.content()
+        browser.close()
+
+    # Now parse the table with BeautifulSoup or your existing parser
+    df_all = parse_fixtures_html(html, table_id)
+    print("Fixtures fetched via Playwright")
+    return df_all
 
 
 def get_fixtures_local_file(filepath, table_id):
@@ -98,72 +152,6 @@ def get_fixtures_local_file(filepath, table_id):
     df_all = parse_fixtures_html(html_content, table_id)
     print("Fetching fixtures data...")
     
-    return df_all
-
-
-
-def get_fixtures_selenium(url, table_id):
-    """
-    Fetch fixtures tables from a webpage using Selenium and parse them into a Pandas DataFrame.
-
-    This function launches a headless Chrome browser using Selenium, loads the specified URL,
-    extracts HTML tables identified by their IDs, and converts them into a concatenated
-    Pandas DataFrame. Rows with empty "Home" and "Away" columns are removed, and the "xG" 
-    column is dropped if present.
-
-    Args:
-        url (str): The URL of the webpage containing the fixtures tables.
-        table_id (list[str]): A list of table IDs to locate and extract from the page.
-        driver (selenium.webdriver.Chrome, optional): Existing WebDriver to reuse.
-    Returns:
-        pandas.DataFrame: A concatenated DataFrame containing all extracted fixtures data.
-
-    Raises:
-        selenium.common.exceptions.WebDriverException: If the browser driver cannot be started.
-        AttributeError: If the expected table structure (thead/tbody) is not found.
-    """
-    options = Options()
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--disable-gpu')
-    options.add_argument('--disable-extensions')
-    options.add_argument('--window-size=1920,1080')
-    
-    #driver = None
-    try:
-        # Use webdriver-manager to handle ChromeDriver installation
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=options)
-
-        # Set timeouts
-        driver.set_page_load_timeout(30)
-        driver.implicitly_wait(10)
-
-        print(f"Loading URL: {url}")
-        driver.get(url)
-        
-        # Wait for the page to load properly instead of fixed sleep
-        wait = WebDriverWait(driver, 20)
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "table")))
-        
-        # Additional wait for Cloudflare if needed
-        time.sleep(5)
-        
-        print("Getting page source...")
-        html = driver.page_source
-        
-    except Exception as e:
-        print(f"Error during web scraping: {e}")
-        if driver:
-            driver.quit()
-        raise
-    finally:
-        # Ensure driver is always closed
-        if driver:
-            driver.quit()
-
-    df_all = parse_fixtures_html(html, table_id)
-
     return df_all
 
 
@@ -316,8 +304,8 @@ def main_fixtures():
             fixtures = get_fixtures(v["fixtures_url"], v["table_id"])
         elif config.parsing_method == "local_file":
             fixtures = get_fixtures_local_file(v["local_file_path"], v["table_id"])
-        elif config.parsing_method == "selenium":
-            fixtures = get_fixtures_selenium(v["fixtures_url"], v["table_id"])
+        elif config.parsing_method == "playwright":
+            fixtures = get_fixtures_playwright(v["fixtures_url"], v["table_id"])
         else:
             raise(ValueError, "Invalid fixture parsing method")
         fixtures = process_fixtures(fixtures, country=k)

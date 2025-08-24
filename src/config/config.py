@@ -310,7 +310,7 @@ db_table_definitions = {
 }
 
 # Data scraping
-parsing_method = "local_file" # must be local_file, http_request, or selenium
+parsing_method = "playwright" # must be local_file, http_request, or playwright
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 #elo_date = "2025-06-01"  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
