@@ -14,7 +14,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from retriever.fixtures import (
     extract_scores,
     get_fixtures,
-    get_fixtures_selenium,
     parse_fixtures_html,
     process_fixtures,
 )
@@ -412,57 +411,6 @@ class TestProcessFixtures:
         # Test UECL
         result_uecl = process_fixtures(fixtures.copy(), "UECL")
         assert result_uecl.iloc[0]["home"] == "Barcelona"
-
-
-class TestGetFixturesSelenium:
-    @pytest.fixture(autouse=True)
-    def setup_method(self):
-        # Sample HTML with a fake table
-        self.sample_html = """
-        <html>
-        <body>
-            <table id="test_table">
-                <thead>
-                    <tr><th>Date</th><th>Home</th><th>Away</th><th>xG</th></tr>
-                </thead>
-                <tbody>
-                    <tr><th>1</th><td>Team A</td><td>Team B</td><td>1.2</td></tr>
-                    <tr><th>2</th><td></td><td></td><td></td></tr>
-                </tbody>
-            </table>
-        </body>
-        </html>
-        """
-        self.table_ids = ["test_table"]
-
-    @patch("src.retriever.fixtures.webdriver.Chrome")
-    def test_fixtures_parsing(self, mock_chrome):
-        # Mock Selenium driver
-        mock_driver = MagicMock()
-        mock_driver.page_source = self.sample_html
-        mock_chrome.return_value = mock_driver
-
-        df = get_fixtures_selenium("http://fake.url", self.table_ids)
-
-        # Assertions
-        assert isinstance(df, pd.DataFrame)
-        assert not df.empty
-        assert list(df.columns) == ["Date", "Home", "Away"]  # "xG" should be dropped
-        assert "Team A" in df["Home"].values
-
-    @patch("src.retriever.fixtures.webdriver.Chrome")
-    def test_empty_table(self, mock_chrome):
-        # Modify HTML to have no rows
-        empty_html = self.sample_html.replace(
-            '<tr><th>1</th><td>Team A</td><td>Team B</td><td>1.2</td></tr>', ""
-        )
-        mock_driver = MagicMock()
-        mock_driver.page_source = empty_html
-        mock_chrome.return_value = mock_driver
-
-        df = get_fixtures_selenium("http://fake.url", self.table_ids)
-
-        assert df.empty
 
 
 class TestParseFixturesHtml:

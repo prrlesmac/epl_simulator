@@ -73,10 +73,7 @@ def get_fixtures(url, table_id):
         return df_all
     else:
         print(f"Failed to fetch the page. Status code: {response.status_code}")
-        print("Response headers:", response.headers)
         return None
-
-
 
 def get_fixtures_playwright(url, table_id):
     """
