@@ -214,7 +214,8 @@ def parse_fixtures_html(html, table_id):
         
         # Exclude rows where Home and Away are empty
         df = df[(df["Home"] != "") | (df["Away"] != "")]
-        
+        df = df[(~df["Home"].isnull()) | (~df["Away"].isnull())]
+
         # Drop xG column if it exists
         if "xG" in df.columns:
             df = df.drop(columns=["xG"])
