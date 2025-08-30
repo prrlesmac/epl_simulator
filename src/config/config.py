@@ -667,8 +667,23 @@ league_rules = {
         "sim_type": "winner",
         "has_knockout": False,
         "classification": {
-            "division": ["win_loss_pct"],
-            "conference": ["win_loss_pct"],
+            "division": ["win_loss_pct",
+                         "h2h_win_loss_pct",
+                         "win_loss_pct_div",
+                         "win_loss_pct_conf",
+                         "strength_of_victory",
+                         "strength_of_schedule"
+                         ],
+            "conference": [
+                         "division_winner",
+                         "win_loss_pct",
+                         "h2h_break_division_ties",
+                         "h2h_sweep",
+                         "win_loss_pct_conf",
+                         "h2h_win_loss_pct_common_games",
+                         "strength_of_victory",
+                         "strength_of_schedule"
+                         ],
             "league": ["win_loss_pct"],
         },
         "qualification": {

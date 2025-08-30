@@ -167,8 +167,6 @@ def simulate_matches_data_frame(matches_df, sim_type):
     return pd.DataFrame(matches_df)
 
 
-
-
 def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
     """
     Applies a head-to-head (H2H) tiebreaker rule to a group of tied teams based on their matches against each other.
@@ -195,7 +193,7 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
         (matches_df["home"].isin(tied_teams)) & (matches_df["away"].isin(tied_teams))
     ]
 
-    standings_tied = get_standings_metrics(tied_matches_df)
+    standings_tied = get_standings_metrics_nfl(tied_matches_df)
     # add h2h prefix to metrics
     standings_tied.columns = [
         f"h2h_{col}" if col != "team" else col for col in standings_tied.columns
@@ -203,6 +201,133 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
     standings_tied = standings_tied[["team", rule]]
     return standings_tied
 
+
+def apply_h2h_sweep_tiebreaker(matches_df, tied_teams, rule):
+    """
+    Applies a head-to-head sweep tiebreaker rule to a group of tied teams based on their matches against each other.
+
+    Parameters:
+    matches_df (pd.DataFrame):
+        A DataFrame containing match results with at least the following columns: 'home', 'away', and any metrics
+        used in calculating standings (e.g., goals, points).
+
+    tied_teams (list of str):
+        A list of team names that are currently tied in the standings.
+
+    rule (str):
+        The name of the H2H metric column (e.g., 'h2h_points', 'h2h_goal_diff') to use for ranking the tied teams.
+        This must match one of the metrics returned by `get_standings_metrics`.
+
+    Returns:
+    pd.DataFrame:
+        A DataFrame with two columns: 'team' and the h2h sweep tiebreaker result
+    """
+    tied_matches_df = matches_df.copy()
+    tied_matches_df = tied_matches_df[
+        (matches_df["home"].isin(tied_teams)) & (matches_df["away"].isin(tied_teams))
+    ]
+    for sel_team in tied_teams:
+        home_wins = matches_df[(matches_df['home'] == sel_team) & (matches_df['home_wins']==1)]["away"].tolist()
+        home_losses = matches_df[(matches_df['home'] == sel_team) & (matches_df['home_wins']==0)]["away"].tolist()
+        away_wins = matches_df[(matches_df['away'] == sel_team) & (matches_df['away_wins']==1)]["home"].tolist()
+        away_losses = matches_df[(matches_df['away'] == sel_team) & (matches_df['away_wins']==0)]["home"].tolist()
+        wins = list(set(home_wins+away_wins))
+        losses = list(set(home_losses+away_losses))
+
+        h2h_sweep = (len(wins) == (len(tied_teams) - 1)) & (len(losses)==0)
+        if h2h_sweep:
+            h2h_sweep_team=sel_team
+            break
+    
+    if h2h_sweep:
+        standings_tied = pd.DataFrame({
+            "team": tied_teams,
+        })
+        standings_tied["h2h_sweep"] = np.where(
+            standings_tied["team"] == h2h_sweep_team,
+            1,
+            0
+        )
+
+    else:
+        standings_tied = pd.DataFrame({
+            "team": tied_teams,
+            "h2h_sweep": [0] * len(tied_teams)  # creates a list of zeros with same length as teams
+        })
+    return standings_tied
+
+
+def apply_common_games_tiebreaker(matches_df, tied_teams):
+    """
+    Applies a head-to-head (H2H) tiebreaker rule to a group of tied teams based on their matches against each other.
+
+    Parameters:
+    matches_df (pd.DataFrame):
+        A DataFrame containing match results with at least the following columns: 'home', 'away', and any metrics
+        used in calculating standings (e.g., goals, points).
+
+    tied_teams (list of str):
+        A list of team names that are currently tied in the standings.
+
+    Returns:
+    pd.DataFrame:
+        A DataFrame with two columns: 'team' and the common games win pct 'common_games_win_pct'
+        It reflects the standings of tied teams based on the win loss pct of the games played 
+        against common opponents
+    """
+    tied_matches_df = matches_df.copy()
+    #find common opponents
+    opponents_by_team = {}
+    for sel_team in tied_teams:
+        home_opponents = tied_matches_df[tied_matches_df["home"] == sel_team]["away"].tolist()
+        away_opponents = tied_matches_df[tied_matches_df["home"] == sel_team]["away"].tolist()
+        all_opponents = list(set(home_opponents + away_opponents))
+        opponents_by_team[sel_team] = all_opponents
+
+    common_opponents = set.intersection(*(set(opp) for opp in opponents_by_team.values()))
+    if len(common_opponents)>=4:
+        common_matches_df = matches_df[
+            (matches_df["home"].isin(tied_teams) & matches_df["away"].isin(common_opponents))
+            | (matches_df["home"].isin(common_opponents) & matches_df["away"].isin(tied_teams))
+        ]
+
+        standings_tied = get_standings_metrics_nfl(common_matches_df)
+        standings_tied = standings_tied.rename(columns={"win_loss_pct": "h2h_win_loss_pct_common_games"})
+        standings_tied = standings_tied[["team", "h2h_win_loss_pct_common_games"]]
+        standings_tied = standings_tied[standings_tied["team"].isin(tied_teams)]
+    else:
+        standings_tied = pd.DataFrame({
+            "team": tied_teams,
+            "h2h_win_loss_pct_common_games": [0] * len(tied_teams)  # creates a list of zeros with same length as teams
+        })
+    return standings_tied
+
+
+
+def apply_break_division_tiebreaker(standings):
+    """
+    Applies a head-to-head (H2H) tiebreaker rule to a group of tied teams based on their matches against each other.
+
+    Parameters:
+    standings (pd.DataFrame):
+        A DataFrame containing league standings, including team name and division position
+
+    tied_teams (list of str):
+        A list of team names that are currently tied in the standings.
+
+    Returns:
+    pd.DataFrame:
+        A DataFrame with two columns: 'team' and the division tiebreaker position 'h2h_break_division_ties'
+    """
+    standings_tied = standings.copy()
+    standings_tied['rank'] = standings_tied.groupby('division')['division_pos'].rank(method='dense', ascending=True)
+    standings_tied['h2h_break_division_ties'] = np.where(
+        standings_tied['rank'] == 1,
+        1,
+        0
+    )
+
+    return standings_tied
 
 def apply_playoff_tiebreaker(matches_df, tied_teams):
 
@@ -348,7 +473,9 @@ def get_standings_metrics_nfl(matches_df):
     win_loss_conf = get_win_loss_pct(matches_df_conf)
     matches_df_div = matches_df[matches_df["home_division"]==matches_df["away_division"]].copy()
     win_loss_div = get_win_loss_pct(matches_df_div)
-
+    strength_of_victory = get_opponents_strength(matches_df, win_loss_league, strength_of="schedule")
+    strength_of_schedule = get_opponents_strength(matches_df, win_loss_league, strength_of="victory")
+    
     win_loss_conf = (
         win_loss_conf[["team","win_loss_pct"]]
         .rename(columns= {"win_loss_pct": "win_loss_pct_conf"})
@@ -361,6 +488,8 @@ def get_standings_metrics_nfl(matches_df):
         win_loss_league
         .merge(win_loss_conf, how="left", on="team")
         .merge(win_loss_div, how="left", on="team")
+        .merge(strength_of_victory, how="left", on="team")
+        .merge(strength_of_schedule, how="left", on="team")
     )
 
     return standings
@@ -483,7 +612,6 @@ def get_standings(matches_df, classif_rules, divisions):
             league_standings = apply_classification_rules(matches_df, rules, standings)
             league_standings = league_standings[["team", "pos"]]
             league_standings = league_standings.rename(columns={"pos": f"{classif}_pos"})
-            print(league_standings)
             standings = standings.merge(league_standings, how="left",on="team")
         else:
             div_to_iterate = divisions[classif].unique().tolist()
@@ -497,7 +625,6 @@ def get_standings(matches_df, classif_rules, divisions):
                 division_standings[classif] = div
                 all_division_standings.append(division_standings)
             all_division_standings = pd.concat(all_division_standings)
-            print(all_division_standings)
             standings = standings.merge(all_division_standings, how="left",on="team")
 
     return standings
@@ -514,6 +641,9 @@ def apply_classification_rules(matches_df, classif_rules, standings):
         if (is_opponent_rule) & (rule not in standings.columns.tolist()):
             opponent_stats = get_opponents_aggregate_stats(matches_df, standings)
             standings = pd.merge(standings,opponent_stats,on='team')
+
+        elif rule == "division_winner":
+            standings[rule] = np.where(standings["division_pos"] == 1, 1, 0)
 
         elif is_h2h_rule or is_playoff:
             # tiebreakers previous to current h2h one
@@ -539,9 +669,22 @@ def apply_classification_rules(matches_df, classif_rules, standings):
                     tied_teams = subset_of_tied["team"].tolist()
 
                     if is_h2h_rule:
-                        substed_tied_standings = apply_h2h_tiebreaker(
-                            matches_df, tied_teams, rule
-                        )
+                        if rule=="h2h_sweep":
+                            substed_tied_standings = apply_h2h_sweep_tiebreaker(
+                                matches_df, tied_teams, "h2h_win_loss_pct"
+                            )
+                        elif rule=="h2h_win_loss_pct_common_games":
+                            substed_tied_standings = apply_common_games_tiebreaker(
+                                matches_df, tied_teams
+                            )
+                        elif rule=="h2h_break_division_ties":
+                            substed_tied_standings = apply_break_division_tiebreaker(
+                                subset_of_tied
+                            )
+                        else:
+                            substed_tied_standings = apply_h2h_tiebreaker(
+                                matches_df, tied_teams, rule
+                            )
                     elif is_playoff:
                         substed_tied_standings = apply_playoff_tiebreaker(
                             matches_df, tied_teams
@@ -570,7 +713,6 @@ def apply_classification_rules(matches_df, classif_rules, standings):
         .rank(method="min", ascending=False)
         .astype(int)
     )
-
     return standings
 
 
@@ -670,8 +812,8 @@ def get_opponents_strength(matches_df, standings_df, strength_of):
 
     if strength_of == 'schedule':
         for _, row in matches_df.iterrows():
-            team_opponents.setdefault(row['home'],[]).add(row['away'])
-            team_opponents.setdefault(row['away'],[]).add(row['home'])
+            team_opponents.setdefault(row['home'],[]).append(row['away'])
+            team_opponents.setdefault(row['away'],[]).append(row['home'])
 
     elif strength_of == 'victory':
         for _, row in matches_df.iterrows():

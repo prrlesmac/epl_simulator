@@ -102,7 +102,6 @@ def single_simulation(
     )
     standings_df = get_standings(schedule_final, league_rules["classification"], divisions)
     print(standings_df)
-    breakpoint()
 
     if league_rules["has_knockout"]:
         knockout_schedule_played = schedule_played[
@@ -426,7 +425,7 @@ def run_all_simulations():
             sim_standings_wo_ko.append(sim_standings)
     end_time = time.time()
     print(f"Simulation took {end_time - start_time:.2f} seconds")
-
+    breakpoint()
     # Save results to database
     save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko)
     print("Simulations saved to db")
