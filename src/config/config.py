@@ -389,13 +389,15 @@ league_rules = {
     "ENG": {
         "sim_type": "goals",
         "has_knockout": False,
-        "classification": [
-            "points",
-            "goal_difference",
-            "goals_for",
-            "h2h_points",
-            "h2h_away_goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "goal_difference",
+                "goals_for",
+                "h2h_points",
+                "h2h_away_goals_for",
+            ]
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
@@ -405,13 +407,15 @@ league_rules = {
     "ESP": {
         "sim_type": "goals",
         "has_knockout": False,
-        "classification": [
-            "points",
-            "h2h_points",
-            "h2h_goal_difference",
-            "goal_difference",
-            "goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "h2h_points",
+                "h2h_goal_difference",
+                "goal_difference",
+                "goals_for",
+            ],
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
@@ -421,14 +425,16 @@ league_rules = {
     "ITA": {
         "sim_type": "goals",
         "has_knockout": False,
-        "classification": [
-            "points",
-            "playoff",
-            "h2h_points",
-            "h2h_goal_difference",
-            "goal_difference",
-            "goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "playoff",
+                "h2h_points",
+                "h2h_goal_difference",
+                "goal_difference",
+                "goals_for",
+            ],
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
@@ -438,15 +444,17 @@ league_rules = {
     "GER": {
         "sim_type": "goals",
         "has_knockout": False,
-        "classification": [
-            "points",
-            "goal_difference",
-            "goals_for",
-            "h2h_points",
-            "h2h_goal_difference",
-            "h2h_away_goals_for",
-            "away_goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "goal_difference",
+                "goals_for",
+                "h2h_points",
+                "h2h_goal_difference",
+                "h2h_away_goals_for",
+                "away_goals_for",
+            ],
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
@@ -457,7 +465,8 @@ league_rules = {
     "FRA": {
         "sim_type": "goals",
         "has_knockout": False,
-        "classification": [
+        "classification": {
+            "league": [
             "points",
             "goal_difference",
             "h2h_points",
@@ -466,7 +475,8 @@ league_rules = {
             "h2h_away_goals_for",
             "goals_for",
             "away_goals_for",
-        ],
+            ],
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
@@ -477,17 +487,19 @@ league_rules = {
     "UCL": {
         "sim_type": "goals",
         "has_knockout": True,
-        "classification": [
-            "points",
-            "goal_difference",
-            "goals_for",
-            "away_goals_for",
-            "wins",
-            "away_wins",
-            "opponent_points",
-            "opponent_goal_difference",
-            "opponent_goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "goal_difference",
+                "goals_for",
+                "away_goals_for",
+                "wins",
+                "away_wins",
+                "opponent_points",
+                "opponent_goal_difference",
+                "opponent_goals_for",
+            ],
+        },
         # No relegation info for UCL, exclude or set None
         "qualification": {
             "direct_to_round_of_16": list(range(1, 9)),
@@ -540,17 +552,19 @@ league_rules = {
     "UEL": {
         "sim_type": "goals",
         "has_knockout": True,
-        "classification": [
-            "points",
-            "goal_difference",
-            "goals_for",
-            "away_goals_for",
-            "wins",
-            "away_wins",
-            "opponent_points",
-            "opponent_goal_difference",
-            "opponent_goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "goal_difference",
+                "goals_for",
+                "away_goals_for",
+                "wins",
+                "away_wins",
+                "opponent_points",
+                "opponent_goal_difference",
+                "opponent_goals_for",
+            ],
+        },
         # No relegation info for UCL, exclude or set None
         "qualification": {
             "direct_to_round_of_16": list(range(1, 17)),
@@ -603,17 +617,19 @@ league_rules = {
     "UECL": {
         "sim_type": "goals",
         "has_knockout": True,
-        "classification": [
-            "points",
-            "goal_difference",
-            "goals_for",
-            "away_goals_for",
-            "wins",
-            "away_wins",
-            "opponent_points",
-            "opponent_goal_difference",
-            "opponent_goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "goal_difference",
+                "goals_for",
+                "away_goals_for",
+                "wins",
+                "away_wins",
+                "opponent_points",
+                "opponent_goal_difference",
+                "opponent_goals_for",
+            ],
+        },
         # No relegation info for UCL, exclude or set None
         "qualification": {
             "direct_to_round_of_16": list(range(1, 17)),

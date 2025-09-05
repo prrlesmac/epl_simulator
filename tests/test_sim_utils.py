@@ -514,7 +514,7 @@ class TestGetStandings:
         expected_positions = {"C": 1, "A": 2, "B": 3, "D": 4}
         for _, row in standings.iterrows():
             assert (
-                row["pos"] == expected_positions[row["team"]]
+                row["league_pos"] == expected_positions[row["team"]]
             ), f"{row['team']} position mismatch"
 
     def test_tie_broken_by_goal_difference(self):
@@ -548,8 +548,8 @@ class TestGetStandings:
 
         # B should rank higher (pos smaller)
         assert (
-            standings.loc[standings["team"] == "A", "pos"].iloc[0]
-            < standings.loc[standings["team"] == "B", "pos"].iloc[0]
+            standings.loc[standings["team"] == "A", "league_pos"].iloc[0]
+            < standings.loc[standings["team"] == "B", "league_pos"].iloc[0]
         )
 
     def test_tie_broken_by_head_to_head(self):
@@ -576,8 +576,8 @@ class TestGetStandings:
 
         # A and B tied on points and GD, but A won both h2h matches, so A ranks higher
         assert (
-            standings.loc[standings["team"] == "A", "pos"].iloc[0]
-            < standings.loc[standings["team"] == "B", "pos"].iloc[0]
+            standings.loc[standings["team"] == "A", "league_pos"].iloc[0]
+            < standings.loc[standings["team"] == "B", "league_pos"].iloc[0]
         )
 
     def test_three_way_tie_with_h2h(self):
@@ -607,10 +607,10 @@ class TestGetStandings:
             .reset_index(drop=True)
         )
 
-        assert standings.loc[standings["team"] == "A", "pos"].iloc[0] == 1
-        assert standings.loc[standings["team"] == "B", "pos"].iloc[0] == 3
-        assert standings.loc[standings["team"] == "C", "pos"].iloc[0] == 2
-        assert standings.loc[standings["team"] == "D", "pos"].iloc[0] == 4
+        assert standings.loc[standings["team"] == "A", "league_pos"].iloc[0] == 1
+        assert standings.loc[standings["team"] == "B", "league_pos"].iloc[0] == 3
+        assert standings.loc[standings["team"] == "C", "league_pos"].iloc[0] == 2
+        assert standings.loc[standings["team"] == "D", "league_pos"].iloc[0] == 4
 
     def test_tie_broken_by_opponent_stats(self):
         # Teams A and B tied on points and goal difference, h2h decides
@@ -635,8 +635,8 @@ class TestGetStandings:
         )
         # A and B tied on points and GD, but A wins because of opponent goal diff
         assert (
-            standings.loc[standings["team"] == "A", "pos"].iloc[0]
-            < standings.loc[standings["team"] == "B", "pos"].iloc[0]
+            standings.loc[standings["team"] == "A", "league_pos"].iloc[0]
+            < standings.loc[standings["team"] == "B", "league_pos"].iloc[0]
         )
 
 
@@ -1157,7 +1157,7 @@ class TestDrawFromPots:
         self.df = pd.DataFrame(
             {
                 "team": ["Team A", "Team B", "Team C", "Team D", "Team E", "Team F"],
-                "pos": [1, 2, 3, 4, 5, 6],
+                "league_pos": [1, 2, 3, 4, 5, 6],
             }
         )
 
@@ -1193,7 +1193,7 @@ class TestDrawFromPots:
         assert any(pot_differences)
 
     def test_handles_uneven_pots(self):
-        df = pd.DataFrame({"team": ["A", "B", "C", "D", "E"], "pos": [1, 2, 3, 4, 5]})
+        df = pd.DataFrame({"team": ["A", "B", "C", "D", "E"], "league_pos": [1, 2, 3, 4, 5]})
         result = draw_from_pots(df, pot_size=2)
         assert len(result) == 5
         assert set(result["team"]) == set(df["team"])
@@ -1201,7 +1201,7 @@ class TestDrawFromPots:
         assert result["draw_order"].max() == 5
 
     def test_single_pot(self):
-        df = pd.DataFrame({"team": ["X", "Y"], "pos": [1, 2]})
+        df = pd.DataFrame({"team": ["X", "Y"], "league_pos": [1, 2]})
         result = draw_from_pots(df, pot_size=2)
         assert set(result["team"]) == {"X", "Y"}
         assert len(result) == 2

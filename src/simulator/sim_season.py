@@ -100,8 +100,7 @@ def single_simulation(
     schedule_final = pd.concat(
         [league_schedule_played, simulated_pending], ignore_index=True
     )
-    standings_df = get_standings(schedule_final, league_rules["classification"], divisions)
-    print(standings_df)
+    standings_df = get_standings(schedule_final, league_rules["classification"], league_rules["league_type"], divisions)
 
     if league_rules["has_knockout"]:
         knockout_schedule_played = schedule_played[
@@ -180,11 +179,11 @@ def run_simulation_parallel(
             )
         ] * num_simulations
         standings_list = pool.starmap(single_simulation, args)
-        # standings_list = [single_simulation(schedule_played, schedule_pending, classif_rules, has_knockout, knockout_bracket)]
+        #standings_list = [single_simulation(schedule_played, schedule_pending, elos, divisions, league_rules)]
     # Aggregate position frequencies
     standings_all = (
         pd.concat(standings_list)
-        .groupby(["team", "pos"])
+        .groupby(["team", "league_pos"])
         .size()
         .reset_index(name="count")
     )
@@ -192,7 +191,7 @@ def run_simulation_parallel(
 
     # Pivot to final probability table
     standings_all = (
-        standings_all.pivot(index="team", columns="pos", values="count")
+        standings_all.pivot(index="team", columns="league_pos", values="count")
         .reset_index()
         .fillna(0)
     )
@@ -245,7 +244,7 @@ def load_league_data(league):
         league (str): The league identifier to load data for.
 
     Returns:
-        tuple: (schedule_df, elos_df) DataFrames containing schedule and Elo data.
+        tuple: (schedule_df, elos_df, divisions) DataFrames containing schedule, Elo and divisional data
     """
     table_suffix = "uefa" if league in config.active_uefa_leagues else league
     is_continental_league = league in ["UCL", "UEL", "UECL"]
@@ -278,6 +277,8 @@ def load_league_data(league):
             'conference_y': 'away_conference',
         })
         schedule = schedule.drop(columns=['team_x','team_y'])
+    else:
+        divisions = None
 
     # Apply cutoff dates if configured
     if config.played_cutoff_date:
@@ -407,12 +408,13 @@ def run_all_simulations():
     start_time = time.time()
     sim_standings_wo_ko = []
     sim_standings_w_ko = []
-    league_name = os.getenv("LEAGUES_TO_SIM")
-    leagues_to_sim = config.active_uefa_leagues if league_name == "UEFA" else [league_name]
+    league_type = os.getenv("LEAGUES_TO_SIM")
+    leagues_to_sim = config.active_uefa_leagues if league_type == "UEFA" else [league_type]
 
     for league in leagues_to_sim:
         schedule, elos, divisions = load_league_data(league)
         league_rules = config.league_rules[league]
+        league_rules["league_type"] = league_type
         print("Simulating league: ", league)
         sim_standings = simulate_league(
             league_rules, schedule, elos, divisions, num_simulations=config.number_of_simulations

@@ -1015,7 +1015,7 @@ class TestSingleSimulation:
         )
 
         assert isinstance(result, pd.DataFrame)
-        assert set(["pos", "team", "points"]).issubset(result.columns)
+        assert set(["league_pos", "team", "points"]).issubset(result.columns)
         # For set equality (teams in 'team' col match unique 'home' and 'away' teams)
         assert set(result["team"].unique()) == set(
             csv_schedule_data_domestic_case_2["home"].unique()
@@ -1024,7 +1024,7 @@ class TestSingleSimulation:
             csv_schedule_data_domestic_case_2["away"].unique()
         )
         # For checking 'pos' column values go from 1 to n rows
-        assert sorted(result["pos"].tolist()) == list(range(1, len(result) + 1))
+        assert sorted(result["league_pos"].tolist()) == list(range(1, len(result) + 1))
 
     def test_single_simulation_continental_case_2(
         self,
@@ -1044,14 +1044,14 @@ class TestSingleSimulation:
         )
 
         assert isinstance(result, pd.DataFrame)
-        assert set(["pos", "team", "points"]).issubset(result.columns)
+        assert set(["league_pos", "team", "points"]).issubset(result.columns)
         assert set(result["team"].unique()) == set(
             csv_schedule_data_continental_case_2["home"].unique()
         )
         assert set(result["team"].unique()) == set(
             csv_schedule_data_continental_case_2["away"].unique()
         )
-        assert sorted(result["pos"].tolist()) == list(range(1, len(result) + 1))
+        assert sorted(result["league_pos"].tolist()) == list(range(1, len(result) + 1))
         assert result["po_r32"].sum() == 24
         assert result["po_r16"].sum() == 16
         assert result["po_r8"].sum() == 8

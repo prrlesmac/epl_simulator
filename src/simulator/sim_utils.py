@@ -192,8 +192,10 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
     tied_matches_df = tied_matches_df[
         (matches_df["home"].isin(tied_teams)) & (matches_df["away"].isin(tied_teams))
     ]
-
-    standings_tied = get_standings_metrics_nfl(tied_matches_df)
+    if rule=="h2h_win_loss_pct":
+        standings_tied = get_standings_metrics_us(tied_matches_df)
+    else:
+        standings_tied = get_standings_metrics_footy(tied_matches_df)
     # add h2h prefix to metrics
     standings_tied.columns = [
         f"h2h_{col}" if col != "team" else col for col in standings_tied.columns
@@ -291,7 +293,7 @@ def apply_common_games_tiebreaker(matches_df, tied_teams):
             | (matches_df["home"].isin(common_opponents) & matches_df["away"].isin(tied_teams))
         ]
 
-        standings_tied = get_standings_metrics_nfl(common_matches_df)
+        standings_tied = get_standings_metrics_us(common_matches_df)
         standings_tied = standings_tied.rename(columns={"win_loss_pct": "h2h_win_loss_pct_common_games"})
         standings_tied = standings_tied[["team", "h2h_win_loss_pct_common_games"]]
         standings_tied = standings_tied[standings_tied["team"].isin(tied_teams)]
@@ -333,7 +335,7 @@ def apply_playoff_tiebreaker(matches_df, tied_teams):
 
     if len(tied_teams) > 2:
         standings_untied = get_standings(
-            matches_df, classif_rules=["points", "h2h_points", "h2h_goal_difference"]
+            matches_df, classif_rules={"league": ["points", "h2h_points", "h2h_goal_difference"]}, league_type="UEFA"
         )
         playoff_teams = standings_untied["team"].head(2).tolist()
         matches_df = matches_df[
@@ -368,7 +370,7 @@ def apply_playoff_tiebreaker(matches_df, tied_teams):
     return standings_tied
 
 
-def get_standings_metrics(matches_df):
+def get_standings_metrics_footy(matches_df):
     """
     Calculates basic league standings metrics for each team based on match results.
 
@@ -466,7 +468,7 @@ def get_standings_metrics(matches_df):
     return standings
 
 
-def get_standings_metrics_nfl(matches_df):
+def get_standings_metrics_us(matches_df):
 
     win_loss_league = get_win_loss_pct(matches_df)
     matches_df_conf = matches_df[matches_df["home_conference"]==matches_df["away_conference"]].copy()
@@ -574,7 +576,7 @@ def get_division_standings(matches_df, classif_rules, standings_metrics, divisio
     return all_division_standings
 
 
-def get_standings(matches_df, classif_rules, divisions):
+def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
     """
     Computes league standings metrics for each team and applies classification rules,
     including optional head-to-head (H2H) tiebreakers.
@@ -606,10 +608,15 @@ def get_standings(matches_df, classif_rules, divisions):
         - 'pos': final ranking position based on the classification rules
 
     """
-    standings = get_standings_metrics_nfl(matches_df)
+    if league_type == "UEFA":
+        standings = get_standings_metrics_footy(matches_df)
+    elif league_type in ["NBA","MLB","NFL"]:
+        standings = get_standings_metrics_us(matches_df)
+    else:
+        raise(ValueError("Invalid league type for getting standings"))
     for classif, rules in classif_rules.items():
         if classif=="league":
-            league_standings = apply_classification_rules(matches_df, rules, standings)
+            league_standings = apply_classification_rules(matches_df, rules, standings.copy())
             league_standings = league_standings[["team", "pos"]]
             league_standings = league_standings.rename(columns={"pos": f"{classif}_pos"})
             standings = standings.merge(league_standings, how="left",on="team")
@@ -1235,7 +1242,7 @@ def draw_from_pots(df, pot_size=2):
     df = df.sort_values("pos").reset_index(drop=True)
 
     # Map position → team
-    pos_to_team = dict(zip(df["pos"], df["team"]))
+    pos_to_team = dict(zip(df["league_pos"], df["team"]))
 
     # Sort positions and group into pots
     sorted_positions = sorted(pos_to_team.keys())
