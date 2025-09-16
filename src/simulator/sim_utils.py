@@ -204,7 +204,7 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
     return standings_tied
 
 
-def apply_h2h_sweep_tiebreaker(matches_df, tied_teams, rule):
+def apply_h2h_sweep_tiebreaker(matches_df, tied_teams, sweep_type='full'):
     """
     Applies a head-to-head sweep tiebreaker rule to a group of tied teams based on their matches against each other.
 
@@ -216,9 +216,9 @@ def apply_h2h_sweep_tiebreaker(matches_df, tied_teams, rule):
     tied_teams (list of str):
         A list of team names that are currently tied in the standings.
 
-    rule (str):
-        The name of the H2H metric column (e.g., 'h2h_points', 'h2h_goal_diff') to use for ranking the tied teams.
-        This must match one of the metrics returned by `get_standings_metrics`.
+    sweep_type (str):
+        Either "full": the team needs to have won all their games against all others
+        or "win_loss_pct": the team needs to have a better win loss pct against all others
 
     Returns:
     pd.DataFrame:
@@ -229,23 +229,39 @@ def apply_h2h_sweep_tiebreaker(matches_df, tied_teams, rule):
         (matches_df["home"].isin(tied_teams)) & (matches_df["away"].isin(tied_teams))
     ]
     for sel_team in tied_teams:
-        home_wins = matches_df[(matches_df['home'] == sel_team) & (matches_df['home_wins']==1)]["away"].tolist()
-        home_losses = matches_df[(matches_df['home'] == sel_team) & (matches_df['home_wins']==0)]["away"].tolist()
-        away_wins = matches_df[(matches_df['away'] == sel_team) & (matches_df['away_wins']==1)]["home"].tolist()
-        away_losses = matches_df[(matches_df['away'] == sel_team) & (matches_df['away_wins']==0)]["home"].tolist()
-        wins = list(set(home_wins+away_wins))
-        losses = list(set(home_losses+away_losses))
+        if sweep_type=="full":
+            home_wins = tied_matches_df[(tied_matches_df['home'] == sel_team) & (tied_matches_df['home_wins']==1)]["away"].tolist()
+            home_losses = tied_matches_df[(tied_matches_df['home'] == sel_team) & (tied_matches_df['home_wins']==0)]["away"].tolist()
+            away_wins = tied_matches_df[(tied_matches_df['away'] == sel_team) & (tied_matches_df['away_wins']==1)]["home"].tolist()
+            away_losses = tied_matches_df[(tied_matches_df['away'] == sel_team) & (tied_matches_df['away_wins']==0)]["home"].tolist()
+            wins = list(set(home_wins+away_wins))
+            losses = list(set(home_losses+away_losses))
+            h2h_sweep = (len(wins) == (len(tied_teams) - 1)) & (len(losses)==0)
 
-        h2h_sweep = (len(wins) == (len(tied_teams) - 1)) & (len(losses)==0)
+        elif sweep_type=="win_loss_pct":
+            rival_teams = [x for x in tied_teams if x!=sel_team]
+            win_loss_pct_list = []
+            for sel_rival in rival_teams:
+                h2h_tied_matches_df = tied_matches_df.copy()
+                h2h_tied_matches_df = h2h_tied_matches_df[
+                    (h2h_tied_matches_df["home"].isin([sel_team,sel_rival])) & (h2h_tied_matches_df["away"].isin([sel_team,sel_rival]))
+                ]
+                win_loss_pct_df = get_win_loss_pct(h2h_tied_matches_df)
+                win_loss_pct = win_loss_pct_df[win_loss_pct_df['team']==sel_team]["win_loss_pct"].values[0]
+                win_loss_pct_list.append(win_loss_pct)
+            h2h_sweep = all(x > 0.50001 for x in win_loss_pct_list)
+
+        else:
+            raise(ValueError("Invalid sweep type"))
         if h2h_sweep:
-            h2h_sweep_team=sel_team
+            h2h_sweep_team = sel_team
             break
     
     if h2h_sweep:
         standings_tied = pd.DataFrame({
             "team": tied_teams,
         })
-        standings_tied["h2h_sweep"] = np.where(
+        standings_tied[f"h2h_sweep_{sweep_type}"] = np.where(
             standings_tied["team"] == h2h_sweep_team,
             1,
             0
@@ -254,7 +270,7 @@ def apply_h2h_sweep_tiebreaker(matches_df, tied_teams, rule):
     else:
         standings_tied = pd.DataFrame({
             "team": tied_teams,
-            "h2h_sweep": [0] * len(tied_teams)  # creates a list of zeros with same length as teams
+            f"h2h_sweep_{sweep_type}": [0] * len(tied_teams)  # creates a list of zeros with same length as teams
         })
     return standings_tied
 
@@ -475,6 +491,7 @@ def get_standings_metrics_us(matches_df):
     win_loss_conf = get_win_loss_pct(matches_df_conf)
     matches_df_div = matches_df[matches_df["home_division"]==matches_df["away_division"]].copy()
     win_loss_div = get_win_loss_pct(matches_df_div)
+    win_loss_last_half_conf = get_win_loss_pct_last_half(matches_df_conf)
     strength_of_victory = get_opponents_strength(matches_df, win_loss_league, strength_of="schedule")
     strength_of_schedule = get_opponents_strength(matches_df, win_loss_league, strength_of="victory")
     
@@ -490,6 +507,7 @@ def get_standings_metrics_us(matches_df):
         win_loss_league
         .merge(win_loss_conf, how="left", on="team")
         .merge(win_loss_div, how="left", on="team")
+        .merge(win_loss_last_half_conf, how="left", on="team")
         .merge(strength_of_victory, how="left", on="team")
         .merge(strength_of_schedule, how="left", on="team")
     )
@@ -559,6 +577,44 @@ def get_win_loss_pct(matches_df):
 
     return standings
 
+def get_win_loss_pct_last_half(matches_df):
+
+    list_of_teams = set(matches_df["home"].tolist() + matches_df["away"].tolist())
+    standings = []
+    for sel_team in list_of_teams:
+
+        matches_last_half = matches_df.copy()
+        matches_last_half = matches_last_half[(
+            (matches_last_half["home"] == sel_team)
+            | (matches_last_half["away"] == sel_team)
+        )]
+        matches_last_half["match_number"] = range(1, len(matches_last_half) + 1)
+        matches_last_half = matches_last_half[(matches_last_half["match_number"] + 0.01) >= (len(matches_last_half)/2)]
+        matches_last_half["home_wins"] = np.where(
+            (matches_last_half["home_goals"] > matches_last_half["away_goals"])
+            & (matches_last_half["home"]==sel_team),
+            1,
+            0
+        )
+        matches_last_half["away_wins"] = np.where(
+            (matches_last_half["away_goals"] > matches_last_half["home_goals"])
+            & (matches_last_half["away"]==sel_team),
+            1,
+            0
+        )
+        matches_last_half["away_wins"] = np.where(
+            matches_last_half["away_goals"] > matches_last_half["home_goals"],
+            1,
+            0
+        )
+        wins = matches_last_half["home_wins"].sum() + matches_last_half["away_wins"].sum()
+        played = len(matches_last_half)
+        win_loss_pct = round(wins / played, 3)
+        standings.append({"team": sel_team, "win_loss_pct_conference_last_half": win_loss_pct})
+
+    standings = pd.DataFrame(standings)
+
+    return standings
 
 def get_division_standings(matches_df, classif_rules, standings_metrics, divisions):
 
@@ -676,9 +732,13 @@ def apply_classification_rules(matches_df, classif_rules, standings):
                     tied_teams = subset_of_tied["team"].tolist()
 
                     if is_h2h_rule:
-                        if rule=="h2h_sweep":
+                        if rule=="h2h_sweep_full":
                             substed_tied_standings = apply_h2h_sweep_tiebreaker(
-                                matches_df, tied_teams, "h2h_win_loss_pct"
+                                matches_df, tied_teams, "full"
+                            )
+                        elif rule=="h2h_sweep_win_loss_pct":
+                            substed_tied_standings = apply_h2h_sweep_tiebreaker(
+                                matches_df, tied_teams, "win_loss_pct"
                             )
                         elif rule=="h2h_win_loss_pct_common_games":
                             substed_tied_standings = apply_common_games_tiebreaker(

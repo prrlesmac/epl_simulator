@@ -379,7 +379,7 @@ fixtures_config = {
 }
 
 ## Simulation
-number_of_simulations = 10000
+number_of_simulations = 10
 home_advantage = 80
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
 played_cutoff_date = None
@@ -694,11 +694,11 @@ league_rules = {
                          "division_winner",
                          "win_loss_pct",
                          "h2h_break_division_ties",
-                         "h2h_sweep",
+                         "h2h_sweep_full",
                          "win_loss_pct_conf",
                          "h2h_win_loss_pct_common_games",
                          "strength_of_victory",
-                         "strength_of_schedule"
+                         "strength_of_schedule",
                          ],
             "league": ["win_loss_pct"],
         },

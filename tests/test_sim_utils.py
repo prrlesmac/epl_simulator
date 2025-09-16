@@ -11,8 +11,9 @@ from simulator.sim_utils import (
     simulate_extra_time,
     simulate_matches_data_frame,
     apply_h2h_tiebreaker,
+    apply_h2h_sweep_tiebreaker,
     apply_playoff_tiebreaker,
-    get_standings_metrics,
+    get_standings_metrics_footy,
     get_standings,
     get_opponents_aggregate_stats,
     validate_bracket,
@@ -343,6 +344,80 @@ class TestApplyH2HTiebreaker:
         with pytest.raises(KeyError):
             apply_h2h_tiebreaker(matches, tied_teams, "h2h_unexpected_metric")
 
+
+class TestApplyH2HSweepTiebreaker:
+
+    def test_h2h_points_ranking_case_1(self):
+        matches = pd.DataFrame(
+            {
+                "home": ["A", "B", "C", "A", "B", "C"],
+                "away": ["B", "C", "A", "B", "C", "A"],
+                "home_goals": [2, 0, 1, 0, 2, 0],
+                "away_goals": [0, 2, 2, 2, 1, 1],
+            }
+        )
+        tied_teams = ["A", "B", "C"]
+        matches["home_wins"] = np.where(
+            matches["home_goals"] > matches["away_goals"],
+            1,
+            0
+        )
+        matches["away_wins"] = np.where(
+            matches["away_goals"] > matches["home_goals"],
+            1,
+            0
+        )
+        result_full = apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="full")
+        result_h2h = apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="win_loss_pct")
+
+        assert set(result_full.columns) == {"team", "h2h_sweep"}
+        assert result_full.shape[0] == 3
+        assert result_full.loc[result_full["team"] == "A", "h2h_sweep"].values[0] == 0
+        assert result_full.loc[result_full["team"] == "B", "h2h_sweep"].values[0] == 0
+        assert result_full.loc[result_full["team"] == "C", "h2h_sweep"].values[0] == 0
+
+        assert set(result_h2h.columns) == {"team", "h2h_sweep"}
+        assert result_h2h.shape[0] == 3
+        assert result_h2h.loc[result_h2h["team"] == "A", "h2h_sweep"].values[0] == 0
+        assert result_h2h.loc[result_h2h["team"] == "B", "h2h_sweep"].values[0] == 0
+        assert result_h2h.loc[result_h2h["team"] == "C", "h2h_sweep"].values[0] == 0
+
+    def test_h2h_points_ranking_case_2(self):
+        matches = pd.DataFrame(
+            {
+                "home": ["A", "B", "C", "A", "B", "C"],
+                "away": ["B", "C", "A", "B", "C", "A"],
+                "home_goals": [2, 0, 1, 4, 2, 0],
+                "away_goals": [0, 2, 2, 2, 1, 1],
+            }
+        )
+        tied_teams = ["A", "B", "C"]
+        matches["home_wins"] = np.where(
+            matches["home_goals"] > matches["away_goals"],
+            1,
+            0
+        )
+        matches["away_wins"] = np.where(
+            matches["away_goals"] > matches["home_goals"],
+            1,
+            0
+        )
+        result_full = apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="full")
+        result_h2h = apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="win_loss_pct")
+
+        assert set(result_full.columns) == {"team", "h2h_sweep"}
+        assert result_full.shape[0] == 3
+        assert result_full.loc[result_full["team"] == "A", "h2h_sweep"].values[0] == 1
+        assert result_full.loc[result_full["team"] == "B", "h2h_sweep"].values[0] == 0
+        assert result_full.loc[result_full["team"] == "C", "h2h_sweep"].values[0] == 0
+
+        assert set(result_h2h.columns) == {"team", "h2h_sweep"}
+        assert result_h2h.shape[0] == 3
+        assert result_h2h.loc[result_h2h["team"] == "A", "h2h_sweep"].values[0] == 1
+        assert result_h2h.loc[result_h2h["team"] == "B", "h2h_sweep"].values[0] == 0
+        assert result_h2h.loc[result_h2h["team"] == "C", "h2h_sweep"].values[0] == 0
+
+        # TODO add a case where a team doesn have full sweep but they have h2h positivve against all
 
 class TestApplyPlayoffTiebreaker:
 
