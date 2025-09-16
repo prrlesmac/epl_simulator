@@ -326,7 +326,7 @@ db_table_definitions = {
 }
 
 # Data scraping
-parsing_method = "playwright" # must be local_file, http_request, or playwright
+parsing_method = "local_file" # must be local_file, http_request, or playwright
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 #elo_date = "2025-06-01"  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
@@ -358,17 +358,17 @@ fixtures_config = {
     },
     "UCL": {
         "fixtures_url": "https://fbref.com/en/comps/8/schedule/Champions-League-Scores-and-Fixtures",
-        "local_file_path": "data/uefa/2024-2025 Champions League Scores & Fixtures _ FBref.com.html",
+        "local_file_path": "data/uefa/Champions League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_8_2", "sched_2025-2026_8_3"],
     },
     "UEL": {
         "fixtures_url": "https://fbref.com/en/comps/19/schedule/Europa-League-Scores-and-Fixtures",
-        "local_file_path": "data/uefa/2024-2025 Europa League Scores & Fixtures _ FBref.com.html",
+        "local_file_path": "data/uefa/Europa League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_19_2", "sched_2025-2026_19_3"],
     },
     "UECL": {
         "fixtures_url": "https://fbref.com/en/comps/882/schedule/Conference-League-Scores-and-Fixtures",
-        "local_file_path": "data/uefa/2024-2025 Conference League Scores & Fixtures _ FBref.com.html",
+        "local_file_path": "data/uefa/Conference League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_882_2", "sched_2025-2026_882_3"],
     },
 }
