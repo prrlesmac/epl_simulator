@@ -330,9 +330,6 @@ def apply_break_division_tiebreaker(standings):
     standings (pd.DataFrame):
         A DataFrame containing league standings, including team name and division position
 
-    tied_teams (list of str):
-        A list of team names that are currently tied in the standings.
-
     Returns:
     pd.DataFrame:
         A DataFrame with two columns: 'team' and the division tiebreaker position 'h2h_break_division_ties'
@@ -485,7 +482,42 @@ def get_standings_metrics_footy(matches_df):
 
 
 def get_standings_metrics_us(matches_df):
+    """
+    Calculate team standings metrics for a U.S.-style sports league.
 
+    This function computes win/loss percentages at the league, conference, and 
+    division levels, as well as additional tie-breaking metrics such as 
+    last-half conference win percentage, strength of victory, and strength of 
+    schedule. These metrics are typically used in standings tables for playoff 
+    qualification and tie-breaking.
+
+    Args:
+        matches_df (pd.DataFrame): A DataFrame of match results containing at least:
+            - "home", "away": team identifiers for home and away teams
+            - "home_goals", "away_goals": scores for each match
+            - "home_conference", "away_conference": conference identifiers
+            - "home_division", "away_division": division identifiers
+
+    Returns:
+        pd.DataFrame: A DataFrame of team standings with the following columns:
+            - "team": Team identifier
+            - "win_loss_pct": Overall win-loss-tie percentage
+            - "wins": Total wins
+            - "ties": Total ties
+            - "played": Total games played
+            - "win_loss_pct_conf": Win-loss percentage within the conference
+            - "win_loss_pct_div": Win-loss percentage within the division
+            - Columns from `get_win_loss_pct_last_half` (e.g., last-half conf record)
+            - Columns from `get_opponents_strength` for strength of victory/schedule
+
+    Notes:
+        - The function relies on helper functions:
+            * `get_win_loss_pct`: Computes win-loss-tie percentage.
+            * `get_win_loss_pct_last_half`: Computes last-half conference win-loss pct.
+            * `get_opponents_strength`: Computes opponent-based strength metrics.
+        - The "strength_of_victory" and "strength_of_schedule" metrics depend on 
+          interpreting opponents' aggregated win-loss records.
+    """
     win_loss_league = get_win_loss_pct(matches_df)
     matches_df_conf = matches_df[matches_df["home_conference"]==matches_df["away_conference"]].copy()
     win_loss_conf = get_win_loss_pct(matches_df_conf)
@@ -516,6 +548,35 @@ def get_standings_metrics_us(matches_df):
 
 
 def get_win_loss_pct(matches_df):
+    """
+    Calculate win/loss percentage and basic record statistics for each team.
+
+    This function computes wins, ties, games played, and overall win-loss-tie 
+    percentage for each team across all matches. The win-loss percentage is 
+    calculated as:
+
+        win_loss_pct = (wins + 0.5 * ties) / played
+
+    Args:
+        matches_df (pd.DataFrame): A DataFrame of match results containing:
+            - "home", "away": team identifiers
+            - "home_goals", "away_goals": final scores for each match
+
+    Returns:
+        pd.DataFrame: A DataFrame containing team-level results with columns:
+            - "team": Team identifier
+            - "win_loss_pct": Overall win-loss-tie percentage (0–1, rounded to 3 decimals)
+            - "wins": Total number of wins
+            - "ties": Total number of ties
+            - "played": Total number of games played
+
+    Notes:
+        - Home and away performances are aggregated into a single record per team.
+        - Losses are implied as `played - wins - ties`.
+        - Missing teams (e.g., teams that only played home or away) are handled 
+          by filling missing values with 0.
+    """
+    
     matches_df["home_wins"] = np.where(
         matches_df["home_goals"] > matches_df["away_goals"],
         1,
@@ -578,7 +639,34 @@ def get_win_loss_pct(matches_df):
     return standings
 
 def get_win_loss_pct_last_half(matches_df):
+    """
+    Calculate win-loss percentage for each team in the second half of their season.
 
+    This function computes each team's win-loss percentage based only on games
+    played in the last half of their schedule. The calculation is done by:
+      1. Identifying each team's games.
+      2. Splitting the schedule in half (by game order per team).
+      3. Calculating the number of wins and games played in the last half.
+
+    Args:
+        matches_df (pd.DataFrame): A DataFrame of match results containing:
+            - "home", "away": team identifiers
+            - "home_goals", "away_goals": match scores
+
+    Returns:
+        pd.DataFrame: A DataFrame with one row per team and columns:
+            - "team": Team identifier
+            - "win_loss_pct_conference_last_half": Win-loss percentage 
+              for the second half of the season (0–1, rounded to 3 decimals)
+
+    Notes:
+        - The "second half" is defined per team, based on the order of games
+          they played (not by calendar date).
+        - Ties are not explicitly considered; the metric is calculated as
+          wins / games played.
+        - Uses a simple range assignment for match numbers, so ensure the
+          input DataFrame is chronologically ordered.
+    """
     list_of_teams = set(matches_df["home"].tolist() + matches_df["away"].tolist())
     standings = []
     for sel_team in list_of_teams:
@@ -616,8 +704,37 @@ def get_win_loss_pct_last_half(matches_df):
 
     return standings
 
-def get_division_standings(matches_df, classif_rules, standings_metrics, divisions):
 
+def get_division_standings(matches_df, classif_rules, standings_metrics, divisions):
+    """
+    Generate standings for each division based on classification rules.
+
+    This function applies league classification rules to compute standings
+    for all teams within each division. It uses precomputed team metrics
+    (e.g., win-loss percentage, tie-breakers) and merges them with match
+    results to produce ranked division standings.
+
+    Args:
+        matches_df (pd.DataFrame): A DataFrame of match results.
+        classif_rules (dict): A dictionary of classification rules that define 
+            how teams are ranked (e.g., by win percentage, head-to-head, etc.).
+        standings_metrics (pd.DataFrame): A DataFrame of precomputed team metrics,
+            typically produced by `get_standings_metrics_us`.
+        divisions (pd.DataFrame): A mapping of teams to their divisions, with at least:
+            - "team": Team identifier
+            - "division": Division identifier
+
+    Returns:
+        pd.DataFrame: A DataFrame containing division standings with columns:
+            - All columns returned by `get_standings` (e.g., ranking, record, metrics)
+            - "div_pos": Team’s position within the division
+            - "division": Division identifier
+
+    Notes:
+        - Relies on `get_standings` to apply classification rules.
+        - Concatenates all division standings into a single DataFrame.
+        - Teams are ranked only against others in the same division.
+    """
     div_to_iterate = divisions["division"].unique().tolist()
     all_division_standings = []
     for div in div_to_iterate:
@@ -634,35 +751,64 @@ def get_division_standings(matches_df, classif_rules, standings_metrics, divisio
 
 def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
     """
-    Computes league standings metrics for each team and applies classification rules,
-    including optional head-to-head (H2H) tiebreakers.
+    Generate team standings and apply classification rules for league and subgroup rankings.
 
-    This function calculates standard league standings such as total points, goal difference, and goals scored,
-    and then ranks the teams using a list of classification rules. If any of the rules start with 'h2h',
-    it applies a head-to-head tiebreaker among teams tied on all previous rules.
+    This function computes team performance metrics (points, win/loss percentages, 
+    goal difference, etc.) using either European-style ("UEFA") or U.S.-style 
+    ("NBA", "MLB", "NFL") rules. It then applies a hierarchy of classification 
+    rules to rank teams, including optional subgroup rankings (e.g., divisions, 
+    conferences). Head-to-head (H2H) rules can also be applied to break ties 
+    among teams tied on previous criteria.
 
-    Parameters:
-    matches_df (pd.DataFrame):
-        A DataFrame containing match-level data. Must include the following columns:
-        - 'home': name of the home team
-        - 'away': name of the away team
-        - 'home_goals': number of goals scored by the home team
-        - 'away_goals': number of goals scored by the away team
+    Args:
+        matches_df (pd.DataFrame): Match-level data with at least:
+            - "home": Home team identifier
+            - "away": Away team identifier
+            - "home_goals": Goals scored by the home team
+            - "away_goals": Goals scored by the away team
 
-    classif_rules (list of str):
-        A list of column names used to rank teams. These can include:
-        - Basic metrics such as 'points', 'goal_difference', 'goals_for', etc.
-        - Optional head-to-head metrics prefixed with 'h2h_', such as 'h2h_points', 'h2h_goal_difference', etc.
-          If an 'h2h_' rule is encountered, it is used to break ties between teams tied on all prior rules.
+        classif_rules (dict): Dictionary mapping classification levels to rules.
+            Example:
+                {
+                    "league": ["points", "goal_difference", "goals_for"],
+                    "division": ["points", "h2h_points"]
+                }
+            - Keys represent classification levels (e.g., "league", "division").
+            - Values are ordered lists of rules for ranking.
+            - Rules may include:
+                * Aggregate metrics (e.g., "points", "goal_difference")
+                * Head-to-head rules prefixed with "h2h_" 
+                  (e.g., "h2h_points", "h2h_goal_difference")
+
+        league_type (str, optional): Determines which metric function to use.
+            - "UEFA": Uses `get_standings_metrics_footy` (soccer/football style).
+            - "NBA", "MLB", "NFL": Uses `get_standings_metrics_us` (U.S. sports style).
+            Defaults to None.
+
+        divisions (pd.DataFrame, optional): Mapping of teams to subgroup identifiers.
+            Required if classification rules include subgroups (e.g., "division", "conference").
+            Must include:
+            - "team": Team identifier
+            - Columns for each subgroup level (e.g., "division", "conference")
 
     Returns:
-    pd.DataFrame
-        A DataFrame where each row corresponds to a team, with the following columns:
-        - 'team': team name
-        - standard performance metrics (e.g., 'points', 'goal_difference', etc.)
-        - any head-to-head metrics added during tie-breaking
-        - 'pos': final ranking position based on the classification rules
+        pd.DataFrame: Standings for all teams with:
+            - "team": Team identifier
+            - Standard performance metrics (depends on league_type)
+            - Columns for each classification level position:
+                * "{classif}_pos": Ranking position within that level
+            - Subgroup identifiers (if applicable)
 
+    Raises:
+        ValueError: If `league_type` is not one of ["UEFA", "NBA", "MLB", "NFL"].
+
+    Notes:
+        - Classification rules are applied hierarchically:
+            1. Metrics are computed for all teams.
+            2. Teams are ranked using rules defined in `classif_rules`.
+            3. For non-league levels (e.g., divisions), standings are recomputed 
+               within each subgroup.
+        - Head-to-head rules ("h2h_*") are applied only among tied teams.
     """
     if league_type == "UEFA":
         standings = get_standings_metrics_footy(matches_df)
@@ -694,7 +840,53 @@ def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
 
 
 def apply_classification_rules(matches_df, classif_rules, standings):
+    """
+    Apply classification and tie-breaking rules to rank teams in a standings table.
 
+    This function ranks teams based on a list of classification rules. It supports:
+      - Standard aggregate metrics (e.g., points, goal difference).
+      - Opponent-based metrics (e.g., opponent win percentage).
+      - Division winner bonuses.
+      - Head-to-head (H2H) tie-breakers among tied teams.
+      - Playoff tie-breakers (for leagues like Serie A).
+
+    For each rule, the function augments the standings with additional metrics if needed,
+    then applies ranking logic. At the end, it assigns each team a final position (`pos`)
+    after resolving ties with a fallback random tie-breaker.
+
+    Args:
+        matches_df (pd.DataFrame): Match-level data used to calculate tiebreakers.
+            Must include at least:
+            - "home", "away": Team identifiers
+            - "home_goals", "away_goals": Match scores
+        classif_rules (list of str): Ordered list of rules to rank teams.
+            Supported rule types:
+              - Aggregate stats already in `standings` (e.g., "points", "goal_difference").
+              - "opponent_*": Adds opponent-based metrics via `get_opponents_aggregate_stats`.
+              - "division_winner": Awards division leaders an extra ranking advantage.
+              - "h2h_*": Applies a head-to-head tie-breaker (e.g., "h2h_points").
+              - "playoff_*": Applies playoff tie-breaking rules for specific tied positions.
+        standings (pd.DataFrame): Team standings with precomputed metrics.
+            Must contain at least a "team" column, plus the metrics referenced in `classif_rules`.
+
+    Returns:
+        pd.DataFrame: Updated standings with:
+            - All original columns
+            - New columns for each applied classification rule
+            - "__tiebreaker__": Random fallback column for tie resolution
+            - "pos": Final team position after applying all rules
+
+    Notes:
+        - H2H rules are applied only among teams tied after previous rules.
+        - Playoff rules apply to specific tied positions (e.g., 1st or relegation spots).
+        - If ties remain after all rules, a deterministic fallback (`__tiebreaker__`)
+          ensures all teams get a unique ranking.
+        - Helper functions are used for specialized tie-breaking:
+            * `apply_h2h_tiebreaker`, `apply_h2h_sweep_tiebreaker`
+            * `apply_common_games_tiebreaker`
+            * `apply_break_division_tiebreaker`
+            * `apply_playoff_tiebreaker`
+    """
     # Sort by classification rules
     for i, rule in enumerate(classif_rules):
         is_h2h_rule = rule.startswith("h2h")

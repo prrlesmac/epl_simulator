@@ -72,6 +72,8 @@ def single_simulation(
     Args:
         schedule_played (pd.DataFrame): DataFrame containing matches already played.
         schedule_pending (pd.DataFrame): DataFrame containing matches yet to be played.
+        elos (pd.DataFrame): DataFrame containing elo ratings for each team
+        divisions (pd.DataFrame): DataFrame containing the divisions for each team in the league.
         league_rules (Dict): dictionary containing the following keys
             classification (list): Rules used to compute standings/classification.
             sim_type (str): either "goals" or "winner"
@@ -145,6 +147,8 @@ def run_simulation_parallel(
     Args:
         schedule_played (pd.DataFrame): DataFrame of matches already played.
         schedule_pending (pd.DataFrame): DataFrame of matches yet to be played.
+        elos (pd.DataFrame): DataFrame containing elo ratings for each team
+        divisions (pd.DataFrame): DataFrame containing the divisions for each team in the league.
         league_rules (Dict): dictionary containing the following keys
             classification (list): Rules used to compute standings/classification.
             sim_type (str): either "goals" or "winner"
@@ -344,6 +348,7 @@ def simulate_league(league_rules, schedule, elos, divisions, num_simulations=100
             kncokout draw, classification and qualification
         schedule (pd.DataFrame): DataFrame containing schedule of matches played and to be played
         elos (pd.DataFrame): DataFrame containing the elo rating for each team
+        divisions (pd.DataFrame): DataFrame containing the divisions for each team in the league.
         num_simulations (int, optional): Number of simulations to run in parallel. Defaults to 1000.
     Returns:
         pd.DataFrame: The simulation results for the league.
@@ -427,7 +432,6 @@ def run_all_simulations():
             sim_standings_wo_ko.append(sim_standings)
     end_time = time.time()
     print(f"Simulation took {end_time - start_time:.2f} seconds")
-    breakpoint()
     # Save results to database
     save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko)
     print("Simulations saved to db")
