@@ -1484,14 +1484,14 @@ def draw_from_pots(df, pot_size=2):
     Randomly draws teams from position-based pots.
 
     Args:
-        df (pd.DataFrame): DataFrame with columns ['team', 'pos'] where 'pos' determines pot grouping.
+        df (pd.DataFrame): DataFrame with columns ['team', 'league_pos'] where 'league_pos' determines pot grouping.
         pot_size (int): Number of positions per pot (default is 2).
 
     Returns:
         pd.DataFrame: A DataFrame with columns ['draw_order', 'team'] indicating the randomized draw result.
     """
     df = df.copy()
-    df = df.sort_values("pos").reset_index(drop=True)
+    df = df.sort_values("league_pos").reset_index(drop=True)
 
     # Map position → team
     pos_to_team = dict(zip(df["league_pos"], df["team"]))

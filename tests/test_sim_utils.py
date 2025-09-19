@@ -347,7 +347,7 @@ class TestApplyH2HTiebreaker:
 
 class TestApplyH2HSweepTiebreaker:
 
-    def test_h2h_points_ranking_case_1(self):
+    def test_h2h_sweep_case_1(self):
         matches = pd.DataFrame(
             {
                 "home": ["A", "B", "C", "A", "B", "C"],
@@ -370,19 +370,19 @@ class TestApplyH2HSweepTiebreaker:
         result_full = apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="full")
         result_h2h = apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="win_loss_pct")
 
-        assert set(result_full.columns) == {"team", "h2h_sweep"}
+        assert set(result_full.columns) == {"team", "h2h_sweep_full"}
         assert result_full.shape[0] == 3
-        assert result_full.loc[result_full["team"] == "A", "h2h_sweep"].values[0] == 0
-        assert result_full.loc[result_full["team"] == "B", "h2h_sweep"].values[0] == 0
-        assert result_full.loc[result_full["team"] == "C", "h2h_sweep"].values[0] == 0
+        assert result_full.loc[result_full["team"] == "A", "h2h_sweep_full"].values[0] == 0
+        assert result_full.loc[result_full["team"] == "B", "h2h_sweep_full"].values[0] == 0
+        assert result_full.loc[result_full["team"] == "C", "h2h_sweep_full"].values[0] == 0
 
-        assert set(result_h2h.columns) == {"team", "h2h_sweep"}
+        assert set(result_h2h.columns) == {"team", "h2h_sweep_win_loss_pct"}
         assert result_h2h.shape[0] == 3
-        assert result_h2h.loc[result_h2h["team"] == "A", "h2h_sweep"].values[0] == 0
-        assert result_h2h.loc[result_h2h["team"] == "B", "h2h_sweep"].values[0] == 0
-        assert result_h2h.loc[result_h2h["team"] == "C", "h2h_sweep"].values[0] == 0
+        assert result_h2h.loc[result_h2h["team"] == "A", "h2h_sweep_win_loss_pct"].values[0] == 0
+        assert result_h2h.loc[result_h2h["team"] == "B", "h2h_sweep_win_loss_pct"].values[0] == 0
+        assert result_h2h.loc[result_h2h["team"] == "C", "h2h_sweep_win_loss_pct"].values[0] == 0
 
-    def test_h2h_points_ranking_case_2(self):
+    def test_h2h_sweep_case_2(self):
         matches = pd.DataFrame(
             {
                 "home": ["A", "B", "C", "A", "B", "C"],
@@ -405,17 +405,17 @@ class TestApplyH2HSweepTiebreaker:
         result_full = apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="full")
         result_h2h = apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="win_loss_pct")
 
-        assert set(result_full.columns) == {"team", "h2h_sweep"}
+        assert set(result_full.columns) == {"team", "h2h_sweep_full"}
         assert result_full.shape[0] == 3
-        assert result_full.loc[result_full["team"] == "A", "h2h_sweep"].values[0] == 1
-        assert result_full.loc[result_full["team"] == "B", "h2h_sweep"].values[0] == 0
-        assert result_full.loc[result_full["team"] == "C", "h2h_sweep"].values[0] == 0
+        assert result_full.loc[result_full["team"] == "A", "h2h_sweep_full"].values[0] == 1
+        assert result_full.loc[result_full["team"] == "B", "h2h_sweep_full"].values[0] == 0
+        assert result_full.loc[result_full["team"] == "C", "h2h_sweep_full"].values[0] == 0
 
-        assert set(result_h2h.columns) == {"team", "h2h_sweep"}
+        assert set(result_h2h.columns) == {"team", "h2h_sweep_win_loss_pct"}
         assert result_h2h.shape[0] == 3
-        assert result_h2h.loc[result_h2h["team"] == "A", "h2h_sweep"].values[0] == 1
-        assert result_h2h.loc[result_h2h["team"] == "B", "h2h_sweep"].values[0] == 0
-        assert result_h2h.loc[result_h2h["team"] == "C", "h2h_sweep"].values[0] == 0
+        assert result_h2h.loc[result_h2h["team"] == "A", "h2h_sweep_win_loss_pct"].values[0] == 1
+        assert result_h2h.loc[result_h2h["team"] == "B", "h2h_sweep_win_loss_pct"].values[0] == 0
+        assert result_h2h.loc[result_h2h["team"] == "C", "h2h_sweep_win_loss_pct"].values[0] == 0
 
         # TODO add a case where a team doesn have full sweep but they have h2h positivve against all
 
@@ -488,7 +488,7 @@ class TestGetStandingsMetrics:
             )
 
             result = (
-                get_standings_metrics(matches)
+                get_standings_metrics_footy(matches)
                 .sort_values("team")
                 .reset_index(drop=True)
             )
@@ -542,7 +542,7 @@ class TestGetStandingsMetrics:
         def test_no_matches(self):
             df = pd.DataFrame(columns=["home", "away", "home_goals", "away_goals"])
 
-            result = get_standings_metrics(df)
+            result = get_standings_metrics_footy(df)
 
             assert result.empty
 
@@ -562,7 +562,9 @@ class TestGetStandings:
         standings = (
             get_standings(
                 matches_df=matches,
-                classif_rules=["points", "goal_difference", "h2h_points"],
+                classif_rules={"league": ["points", "goal_difference", "h2h_points"]},
+                league_type="UEFA",
+                divisions=None
             )
             .sort_values("team")
             .reset_index(drop=True)
@@ -607,7 +609,10 @@ class TestGetStandings:
 
         standings = (
             get_standings(
-                matches_df=matches, classif_rules=["points", "goal_difference"]
+                matches_df=matches,
+                classif_rules={"league": ["points", "goal_difference"]},
+                league_type="UEFA",
+                divisions=None
             )
             .sort_values("team")
             .reset_index(drop=True)
@@ -643,7 +648,9 @@ class TestGetStandings:
         standings = (
             get_standings(
                 matches_df=matches,
-                classif_rules=["points", "goal_difference", "h2h_points"],
+                classif_rules={"league": ["points", "goal_difference", "h2h_points"]},
+                league_type="UEFA",
+                divisions=None
             )
             .sort_values("team")
             .reset_index(drop=True)
@@ -671,12 +678,14 @@ class TestGetStandings:
         standings = (
             get_standings(
                 matches_df=matches,
-                classif_rules=[
+                classif_rules={"league": [
                     "points",
                     "goal_difference",
                     "h2h_points",
                     "h2h_goal_difference",
-                ],
+                ]},
+                league_type="UEFA",
+                divisions=None
             )
             .sort_values("team")
             .reset_index(drop=True)
@@ -703,7 +712,9 @@ class TestGetStandings:
         standings = (
             get_standings(
                 matches_df=matches,
-                classif_rules=["points", "goal_difference", "opponent_points","opponent_goal_difference","opponent_goals_for"],
+                classif_rules={"league": ["points", "goal_difference", "opponent_points","opponent_goal_difference","opponent_goals_for"]},
+                league_type="UEFA",
+                divisions=None
             )
             .sort_values("team")
             .reset_index(drop=True)
@@ -729,7 +740,9 @@ class TestGetOpponentsAggregateStats:
         standings = (
             get_standings(
                 matches_df=matches,
-                classif_rules=["points", "goal_difference", "goals_for"],
+                classif_rules={"league": ["points", "goal_difference", "goals_for"]},
+                league_type="UEFA",
+                divisions=None
             )
             .sort_values("team")
             .reset_index(drop=True)

@@ -90,12 +90,14 @@ def continental_league_rules_group_stage():
     return {
         "sim_type": "goals",
         "has_knockout": True,
-        "classification": [
+        "classification": {
+            "league": [
             "points",
             "goal_difference",
             "goals_for",
-            "away_goals_for",
-        ],
+            "away_goals_for"
+            ]
+        },
         "qualification": {
             "direct_to_round_of_16": list(range(1, 9)),
             "playoff": list(range(9, 25)),
@@ -126,6 +128,7 @@ def continental_league_rules_group_stage():
             "po_r2": "single_game_neutral",
         },
         "knockout_draw": None,
+        "league_type": "UEFA"
     }
 
 
@@ -135,12 +138,14 @@ def continental_league_rules_knockout_stage():
     return {
         "sim_type": "goals",
         "has_knockout": True,
-        "classification": [
+        "classification": {
+            "league": [
             "points",
             "goal_difference",
             "goals_for",
-            "away_goals_for",
-        ],
+            "away_goals_for"
+            ]
+        },
         "qualification": {
             "direct_to_round_of_16": list(range(1, 9)),
             "playoff": list(range(9, 25)),
@@ -188,6 +193,7 @@ def continental_league_rules_knockout_stage():
             ("Leverkusen", "Bye"),
             ("Bayern Munich", "Celtic"),
         ],
+        "league_type": "UEFA",
     }
 
 
@@ -196,18 +202,21 @@ def domestic_league_rules():
     return {
         "sim_type": "goals",
         "has_knockout": False,
-        "classification": [
+        "classification": {
+            "league": [
             "points",
             "goal_difference",
             "goals_for",
             "h2h_points",
             "h2h_away_goals_for",
-        ],
+            ]
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
             "relegation_direct": [18, 19, 20],
-        }
+        },
+        "league_type": "UEFA"
     }
 
 
@@ -505,7 +514,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_domestic_case_1
         mock_elos = csv_elos_data_domestic_case_1
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_domestic_league_summary(result, mock_schedule)
@@ -522,7 +531,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_domestic_case_2
         mock_elos = csv_elos_data_domestic_case_1
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_domestic_league_summary(result, mock_schedule)
@@ -539,7 +548,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_domestic_case_3
         mock_elos = csv_elos_data_domestic_case_1
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_domestic_league_summary(result, mock_schedule)
@@ -575,7 +584,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_1
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -592,7 +601,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_2
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -642,7 +651,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_3_4
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -695,7 +704,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_3_4
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -748,7 +757,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_5
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -799,7 +808,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_6
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -850,7 +859,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_7
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -1011,7 +1020,9 @@ class TestSingleSimulation:
         result = single_simulation(
             schedule_played,
             schedule_pending,
-            domestic_league_rules,
+            csv_elos_data_domestic_case_1,
+            divisions=None,
+            league_rules=domestic_league_rules,
         )
 
         assert isinstance(result, pd.DataFrame)
@@ -1040,9 +1051,10 @@ class TestSingleSimulation:
         result = single_simulation(
             schedule_played,
             schedule_pending,
-            continental_league_rules_group_stage
+            csv_elos_data_continental,
+            divisions=None,
+            league_rules=continental_league_rules_group_stage,
         )
-
         assert isinstance(result, pd.DataFrame)
         assert set(["league_pos", "team", "points"]).issubset(result.columns)
         assert set(result["team"].unique()) == set(
