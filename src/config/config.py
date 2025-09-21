@@ -530,6 +530,7 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        "knockout_draw_status": "pending",
         "knockout_draw": [  # None
             ("Liverpool", "Bye"),
             ("Paris S-G", "Brest"),
@@ -548,6 +549,7 @@ league_rules = {
             ("Leverkusen", "Bye"),
             ("Bayern Munich", "Celtic"),
         ],
+        "knockout_reseeding": False,
     },
     "UEL": {
         "sim_type": "goals",
@@ -595,6 +597,7 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        "knockout_draw_status": "pending",
         "knockout_draw": [  # None
             ("Tottenham", "Bye"),
             ("Galatasaray", "AZ Alkmaar"),
@@ -613,6 +616,7 @@ league_rules = {
             ("Manchester Utd", "Bye"),
             ("Real Sociedad", "Midtjylland"),
         ],
+        "knockout_reseeding": False,
     },
     "UECL": {
         "sim_type": "goals",
@@ -660,6 +664,7 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        "knockout_draw_status": "pending",
         "knockout_draw": [  # None
             ("Vitória", "Bye"),
             ("Betis", "Gent"),
@@ -678,10 +683,12 @@ league_rules = {
             ("Chelsea", "Bye"),
             ("FC Copenhagen", "Heidenheim"),
         ],
+        "knockout_reseeding": False,
+
     },
     "NFL": {
         "sim_type": "winner",
-        "has_knockout": False,
+        "has_knockout": True,
         "classification": {
             "division": ["win_loss_pct",
                          "h2h_win_loss_pct",
@@ -703,9 +710,27 @@ league_rules = {
             "league": ["win_loss_pct"],
         },
         "qualification": {
-            "champion": [1],
-            "top_4": [1, 2, 3, 4],
-            "relegation_direct": [18, 19, 20],
+            "playoff": list(range(1, 15)),
+            "first_round_bye": list(range(1,3))
         },
+        "knockout_bracket": [
+            ("NFC 1", "Bye"),
+            ("NFC 2", "NFC 7"),
+            ("NFC 3", "NFC 6"),
+            ("NFC 4", "NFC 5"),
+            ("AFC 1", "Bye"),
+            ("AFC 2", "AFC 7"),
+            ("AFC 3", "AFC 6"),
+            ("AFC 4", "AFC 5"),
+        ],
+        "knockout_format": {
+            "po_r16": "single_game_neutral",
+            "po_r8": "single_game_neutral",
+            "po_r4": "single_game_neutral",
+            "po_r2": "single_game_neutral",
+        },
+        "knockout_draw_status": "no_draw",
+        "knockout_draw": None,
+        "knockout_reseeding": True
     },
 }

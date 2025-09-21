@@ -85,8 +85,14 @@ def single_simulation(
                 Required if `has_knockout` is True.
             knockout_format (dict, optional): Dictionary defining the format of each round in the knockout stage.
                 Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
+            knockout_draw_status (string, optional): Defines if there is a draw and if it has taken place
+                Either "pending_draw", "completed_draw" or "no_draw"
+                Required if `has_knockout` is True.
             knockout_draw (list, optional): List of tuples defining the knockout
                 bracket structure, e.g., [(Team1, Team2), (Team3, Team4)] for pairs of teams.
+                Required if `has_knockout` is True.
+            knockout_reseeding (boolean): True if re-seeding is done after each ko round,
+                False if not
                 Required if `has_knockout` is True.
 
     Returns:
@@ -115,17 +121,26 @@ def single_simulation(
         playoff_schedule = pd.concat(
             [knockout_schedule_played, simulated_pending], ignore_index=True
         )
-        if league_rules["knockout_draw"] is None:
+        if league_rules["knockout_draw_status"] == "pending_draw":
             draw = draw_from_pots(standings_df, pot_size=2)
             bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
-        else:
+        elif league_rules["knockout_draw_status"] == "completed_draw":
             bracket = pd.DataFrame(league_rules["knockout_draw"], columns=["team1", "team2"])
+        elif league_rules["knockout_draw_status"] == "no_draw":
+            # TODO make sure draw is correct for next func
+            draw = standings_df.copy()
+            draw["draw_order"] = draw["playoff_pos"]
+            draw = draw[["team", "draw_order"]]
+            bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
+        else:
+            raise ValueError("Invalid knockout draw status selected")
         # TODO think of better ways to pull elos
         elos = schedule_final.drop_duplicates(subset=["home"])[
             ["home", "elo_home"]
         ].rename(columns={"home": "team", "elo_home": "elo"})
+        # TODO allow for re-seeding in NFL
         playoff_df = simulate_playoff_bracket(
-            bracket, league_rules["knockout_format"], elos, playoff_schedule
+            bracket, league_rules["knockout_format"], elos, playoff_schedule, league_rules["knockout_reseeding"]
         )
         standings_df = standings_df.merge(playoff_df, how="left", on="team")
 
@@ -161,8 +176,14 @@ def run_simulation_parallel(
                 Required if `has_knockout` is True.
             knockout_format (dict, optional): Dictionary defining the format of each round in the knockout stage.
                 Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
+            knockout_draw_status (string, optional): Defines if there is a draw and if it has taken place
+                Either "pending_draw", "completed_draw" or "no_draw"
+                Required if `has_knockout` is True.
             knockout_draw (list, optional): List of tuples defining the knockout
                 bracket structure, e.g., [(Team1, Team2), (Team3, Team4)] for pairs of teams.
+                Required if `has_knockout` is True.
+            knockout_reseeding (boolean): True if re-seeding is done after each ko round,
+                False if not
                 Required if `has_knockout` is True.
         num_simulations (int, optional): Number of simulations to run in parallel. Defaults to 1000.
 

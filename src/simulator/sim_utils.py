@@ -836,6 +836,13 @@ def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
             all_division_standings = pd.concat(all_division_standings)
             standings = standings.merge(all_division_standings, how="left",on="team")
 
+    if league_type == "UEFA":
+        standings["playoff_pos"] = standings["league_pos"]
+    elif league_type in ["NBA","MLB","NFL"]:
+        standings["playoff_pos"] = standings["conference"] + " " + standings["conference_pos"].astype(str)
+    else:
+        raise(ValueError("Invalid league type for getting standings"))
+
     return standings
 
 
@@ -1154,15 +1161,17 @@ def validate_bracket(bracket_df, knockout_format):
         )
 
 
-def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule):
+def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule, has_reseeding):
     """
     Simulates a knockout playoff bracket using ELO ratings.
 
     Args:
-        bracket_df: Bracket structure with columns ['team1', 'team2']
+        bracket_df: Bracket structure with columns ['team1', 'team2'],
+            and additional columns ['seed1','seed2'] in case the bracket has re-seeding
         knockout_format: Dictionary defining the format of each round
         elos: DataFrame with columns ['team', 'elo'] representing team ELO ratings
         playoff_schedule: DataFrame with pending matches to simulate
+        has_reseeding: boolean specifying if playoff has re-seeding after each round
 
     Returns:
         Wide-format DataFrame with one row per team and binary indicators for each round
@@ -1175,6 +1184,7 @@ def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule
 
     current_round = bracket_df.copy()
 
+    # TODO allow re-seeding
     while len(current_round) > 0:
         round_label = f"po_r{2 * len(current_round)}"
         round_format = knockout_format[round_label]
