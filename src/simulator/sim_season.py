@@ -77,7 +77,7 @@ def single_simulation(
         league_rules (Dict): dictionary containing the following keys
             classification (list): Rules used to compute standings/classification.
             sim_type (str): either "goals" or "winner"
-                Used to specify 
+                Used to specify whether the sinulation returns goal or simply the winner
             has_knockout (bool, optional): If True, includes knockout stage simulation.
                 Default is False, meaning only league standings are simulated.
             knockout_bracket (list, optional): List of tuples defining the knockout
@@ -150,9 +150,10 @@ def run_simulation_parallel(
         elos (pd.DataFrame): DataFrame containing elo ratings for each team
         divisions (pd.DataFrame): DataFrame containing the divisions for each team in the league.
         league_rules (Dict): dictionary containing the following keys
-            classification (list): Rules used to compute standings/classification.
+            classification (Dict): Dictionary of lists containing
+                rules used to compute standings/classification.
             sim_type (str): either "goals" or "winner"
-                Used to specify 
+                Used to specify whether the sinulation returns goal or simply the winner
             has_knockout (bool, optional): If True, includes knockout stage simulation.
                 Default is False, meaning only league standings are simulated.
             knockout_bracket (list, optional): List of tuples defining the knockout
