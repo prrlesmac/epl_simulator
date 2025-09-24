@@ -724,9 +724,9 @@ league_rules = {
             ("AFC 4", "AFC 5"),
         ],
         "knockout_format": {
-            "po_r16": "single_game_neutral",
-            "po_r8": "single_game_neutral",
-            "po_r4": "single_game_neutral",
+            "po_r16": "single_game",
+            "po_r8": "single_game",
+            "po_r4": "single_game",
             "po_r2": "single_game_neutral",
         },
         "knockout_draw_status": "no_draw",

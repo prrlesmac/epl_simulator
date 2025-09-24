@@ -127,7 +127,6 @@ def single_simulation(
         elif league_rules["knockout_draw_status"] == "completed_draw":
             bracket = pd.DataFrame(league_rules["knockout_draw"], columns=["team1", "team2"])
         elif league_rules["knockout_draw_status"] == "no_draw":
-            # TODO make sure draw is correct for next func
             draw = standings_df.copy()
             draw["draw_order"] = draw["playoff_pos"]
             draw = draw[["team", "draw_order"]]
@@ -138,7 +137,6 @@ def single_simulation(
         elos = schedule_final.drop_duplicates(subset=["home"])[
             ["home", "elo_home"]
         ].rename(columns={"home": "team", "elo_home": "elo"})
-        # TODO allow for re-seeding in NFL
         playoff_df = simulate_playoff_bracket(
             bracket, league_rules["knockout_format"], elos, playoff_schedule, league_rules["knockout_reseeding"]
         )
@@ -205,7 +203,7 @@ def run_simulation_parallel(
             )
         ] * num_simulations
         standings_list = pool.starmap(single_simulation, args)
-        #standings_list = [single_simulation(schedule_played, schedule_pending, elos, divisions, league_rules)]
+    #standings_list = [single_simulation(schedule_played, schedule_pending, elos, divisions, league_rules)]
     # Aggregate position frequencies
     standings_all = (
         pd.concat(standings_list)

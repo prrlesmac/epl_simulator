@@ -1171,20 +1171,18 @@ def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule
         knockout_format: Dictionary defining the format of each round
         elos: DataFrame with columns ['team', 'elo'] representing team ELO ratings
         playoff_schedule: DataFrame with pending matches to simulate
-        has_reseeding: boolean specifying if playoff has re-seeding after each round
+        has_reseeding (boolean): True/False if playoff has re-seeding after each round
 
     Returns:
         Wide-format DataFrame with one row per team and binary indicators for each round
     """
     validate_bracket(bracket_df, knockout_format)
-
     elos_dict = dict(zip(elos["team"], elos["elo"]))
     teams_progression = {}
     rounds = []
 
     current_round = bracket_df.copy()
 
-    # TODO allow re-seeding
     while len(current_round) > 0:
         round_label = f"po_r{2 * len(current_round)}"
         round_format = knockout_format[round_label]
@@ -1199,7 +1197,7 @@ def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule
             round_label,
         )
 
-        current_round = _prepare_next_round(winners)
+        current_round = _prepare_next_round(winners, bracket_df, has_reseeding)
 
     return _build_results_dataframe(teams_progression, rounds)
 
@@ -1447,12 +1445,15 @@ def _track_team_progression(
             teams_progression[team]["po_champion"] = 1
 
 
-def _prepare_next_round(winners):
+def _prepare_next_round(winners, bracket_df, has_reseeding):
     """
     Pair up winners to create matchups for the next round.
 
     Args:
         winners (list): List of team names who won their previous matches.
+        bracket_df( pd.DataFrame): Optional: original bracket for playoffs
+            Used when has_reseeding is True for re-seeding purposes
+        has_reseeding (boolean): True/False if playoff has re-seeding after each round
 
     Returns:
         pd.DataFrame: DataFrame with columns 'team1' and 'team2' for next round matchups.
@@ -1460,11 +1461,59 @@ def _prepare_next_round(winners):
     if len(winners) < 2:
         return pd.DataFrame()
 
-    it = iter(winners)
-    next_round_pairs = list(zip(it, it))
+    if has_reseeding and len(winners) > 2:
+        next_round_pairs = _playoff_round_reseeding(winners, bracket_df)
+        next_round_pairs = next_round_pairs[["team1", "team2"]]
+    else:
+        it = iter(winners)
+        next_round_pairs = list(zip(it, it))
+        next_round_pairs = pd.DataFrame(next_round_pairs, columns=["team1", "team2"])
 
-    return pd.DataFrame(next_round_pairs, columns=["team1", "team2"])
+    return next_round_pairs
 
+
+def _playoff_round_reseeding(winners, bracket_df):
+    """
+    Reseed all teams that have advanced to the next playoff rpund
+    Create the matchups for the following round.
+
+    Args:
+        winners (list): List of team names who won their previous matches.
+        bracket_df( pd.DataFrame): Optional: original bracket for playoffs
+            Used when has_reseeding is True for re-seeding purposes
+
+    Returns:
+        pd.DataFrame: DataFrame with columns 'team1' and 'team2' for next round matchups.
+    """
+    team_seeds = pd.concat([
+        bracket_df[["team1", "seed1"]].rename(columns={"team1": "team", "seed1": "seed"}),
+        bracket_df[["team2", "seed2"]].rename(columns={"team2": "team", "seed2": "seed"})
+    ])
+    team_seeds = team_seeds[team_seeds["team"].isin(winners)]
+    team_seeds[["league", "seed"]] = team_seeds["seed"].str.split(" ", n=1, expand=True)
+    team_seeds["seed"] = team_seeds["seed"].astype(int)
+    team_seeds["round_seed"] = team_seeds.groupby("league")["seed"].rank(method="first")
+
+    matchups = []
+
+    for league, group in team_seeds.groupby("league"):
+        group_sorted = group.sort_values("round_seed")  # ascending: best → worst
+        teams = group_sorted["team"].tolist()
+        seeds = group_sorted["round_seed"].tolist()
+        
+        # Pair first with last, etc.
+        for i in range(len(teams) // 2):
+            matchup = {
+                "league": league,
+                "team1": teams[i],
+                "seed1": seeds[i],
+                "team2": teams[-(i+1)],
+                "seed2": seeds[-(i+1)]
+            }
+            matchups.append(matchup)
+
+    return pd.DataFrame(matchups)
+    
 
 def _build_results_dataframe(teams_progression, rounds):
     """
@@ -1550,6 +1599,6 @@ def create_bracket_from_composition(df_with_draw, knockout_bracket):
         if team1 == "Bye" and team2 == "Bye":
             raise ValueError("Invalid bracket: both sides cannot be 'Bye'")
 
-        pairs.append((team1, team2))
+        pairs.append((team1, team2, pos1, pos2))
 
-    return pd.DataFrame(pairs, columns=["team1", "team2"])
+    return pd.DataFrame(pairs, columns=["team1", "team2", "seed1", "seed2"])
