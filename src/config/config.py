@@ -530,7 +530,7 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
-        "knockout_draw_status": "pending",
+        "knockout_draw_status": "pending_draw",
         "knockout_draw": [  # None
             ("Liverpool", "Bye"),
             ("Paris S-G", "Brest"),
@@ -597,7 +597,7 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
-        "knockout_draw_status": "pending",
+        "knockout_draw_status": "pending_draw",
         "knockout_draw": [  # None
             ("Tottenham", "Bye"),
             ("Galatasaray", "AZ Alkmaar"),
@@ -664,7 +664,7 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
-        "knockout_draw_status": "pending",
+        "knockout_draw_status": "pending_draw",
         "knockout_draw": [  # None
             ("Vitória", "Bye"),
             ("Betis", "Gent"),

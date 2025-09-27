@@ -127,7 +127,9 @@ def continental_league_rules_group_stage():
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        "knockout_draw_status": "pending_draw",
         "knockout_draw": None,
+        "knockout_reseeding": False,
         "league_type": "UEFA"
     }
 
@@ -175,6 +177,7 @@ def continental_league_rules_knockout_stage():
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        "knockout_draw_status": "completed_draw",
         "knockout_draw": [
             ("Liverpool", "Bye"),
             ("Paris S-G", "Brest"),
@@ -193,6 +196,7 @@ def continental_league_rules_knockout_stage():
             ("Leverkusen", "Bye"),
             ("Bayern Munich", "Celtic"),
         ],
+        "knockout_reseeding": False,
         "league_type": "UEFA",
     }
 

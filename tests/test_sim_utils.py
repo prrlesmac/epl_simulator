@@ -993,7 +993,7 @@ class TestSimulatePlayoffBracket:
         )
 
         result = simulate_playoff_bracket(
-            bracket_df, knockout_format, elos, playoff_schedule
+            bracket_df, knockout_format, elos, playoff_schedule, has_reseeding=False
         )
         # Check result dataframe shape and columns
         assert isinstance(result, pd.DataFrame)
@@ -1208,7 +1208,7 @@ class TestPlayoffSimulation:
 
     def test_prepare_next_round(self):
         winners = ["A", "C"]
-        next_round = _prepare_next_round(winners)
+        next_round = _prepare_next_round(winners, bracket_df=None, has_reseeding=False)
         mock_next_round = pd.DataFrame(
             [
                 {"team1": "A", "team2": "C"},
@@ -1309,7 +1309,8 @@ class TestCreateBracketFromComposition:
         composition = [(1, 4), (2, 3)]
         result = create_bracket_from_composition(self.draw_df, composition)
         expected = pd.DataFrame(
-            {"team1": ["Team A", "Team B"], "team2": ["Team D", "Team C"]}
+            {"team1": ["Team A", "Team B"], "team2": ["Team D", "Team C"],
+            "seed1": [1, 2], "seed2": [4, 3]}
         )
         pd.testing.assert_frame_equal(result, expected)
 
@@ -1317,7 +1318,8 @@ class TestCreateBracketFromComposition:
         composition = [(1, "Bye"), ("Bye", 2)]
         result = create_bracket_from_composition(self.draw_df, composition)
         expected = pd.DataFrame(
-            {"team1": ["Team A", "Bye"], "team2": ["Bye", "Team B"]}
+            {"team1": ["Team A", "Bye"], "team2": ["Bye", "Team B"],
+             "seed1": [1, "Bye"], "seed2": ["Bye", 2]}
         )
         pd.testing.assert_frame_equal(result, expected)
 
@@ -1329,7 +1331,8 @@ class TestCreateBracketFromComposition:
     def test_partial_bracket_with_unused_draws(self):
         composition = [(3, 1)]
         result = create_bracket_from_composition(self.draw_df, composition)
-        expected = pd.DataFrame({"team1": ["Team C"], "team2": ["Team A"]})
+        expected = pd.DataFrame({"team1": ["Team C"], "team2": ["Team A"],
+                                 "seed1": [3], "seed2": [1]})
         pd.testing.assert_frame_equal(result, expected)
 
 
