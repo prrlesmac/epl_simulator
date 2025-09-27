@@ -1075,6 +1075,39 @@ class TestSingleSimulation:
         assert result["po_r2"].sum() == 2
         assert result["po_champion"].sum() == 1
 
+    def test_single_simulation_continental_case_4(
+        self,
+        csv_schedule_data_continental_case_3_4,
+        csv_elos_data_continental,
+        continental_league_rules_knockout_stage,
+    ):
+        """Test simulating a domestic league."""
+        # Prepare data for simulation
+        schedule_played, schedule_pending = split_and_merge_schedule(
+            csv_schedule_data_continental_case_3_4, csv_elos_data_continental
+        )
+        result = single_simulation(
+            schedule_played,
+            schedule_pending,
+            csv_elos_data_continental,
+            divisions=None,
+            league_rules=continental_league_rules_knockout_stage,
+        )
+        assert isinstance(result, pd.DataFrame)
+        assert set(["league_pos", "team", "points"]).issubset(result.columns)
+        assert set(result["team"].unique()) == set(
+            csv_schedule_data_continental_case_3_4["home"].unique()
+        )
+        assert set(result["team"].unique()) == set(
+            csv_schedule_data_continental_case_3_4["away"].unique()
+        )
+        assert sorted(result["league_pos"].tolist()) == list(range(1, len(result) + 1))
+        assert result["po_r32"].sum() == 24
+        assert result["po_r16"].sum() == 16
+        assert result["po_r8"].sum() == 8
+        assert result["po_r4"].sum() == 4
+        assert result["po_r2"].sum() == 2
+        assert result["po_champion"].sum() == 1
 
 if __name__ == "__main__":
     pytest.main([__file__])

@@ -192,6 +192,7 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
     tied_matches_df = tied_matches_df[
         (matches_df["home"].isin(tied_teams)) & (matches_df["away"].isin(tied_teams))
     ]
+    # TODO move away from using standings metrics and instead just call a win loss h2h function
     if rule=="h2h_win_loss_pct":
         standings_tied = get_standings_metrics_us(tied_matches_df)
     else:
@@ -298,7 +299,7 @@ def apply_common_games_tiebreaker(matches_df, tied_teams):
     opponents_by_team = {}
     for sel_team in tied_teams:
         home_opponents = tied_matches_df[tied_matches_df["home"] == sel_team]["away"].tolist()
-        away_opponents = tied_matches_df[tied_matches_df["home"] == sel_team]["away"].tolist()
+        away_opponents = tied_matches_df[tied_matches_df["away"] == sel_team]["home"].tolist()
         all_opponents = list(set(home_opponents + away_opponents))
         opponents_by_team[sel_team] = all_opponents
 
@@ -526,7 +527,7 @@ def get_standings_metrics_us(matches_df):
     win_loss_last_half_conf = get_win_loss_pct_last_half(matches_df_conf)
     strength_of_victory = get_opponents_strength(matches_df, win_loss_league, strength_of="schedule")
     strength_of_schedule = get_opponents_strength(matches_df, win_loss_league, strength_of="victory")
-    
+
     win_loss_conf = (
         win_loss_conf[["team","win_loss_pct"]]
         .rename(columns= {"win_loss_pct": "win_loss_pct_conf"})
@@ -677,7 +678,7 @@ def get_win_loss_pct_last_half(matches_df):
             | (matches_last_half["away"] == sel_team)
         )]
         matches_last_half["match_number"] = range(1, len(matches_last_half) + 1)
-        matches_last_half = matches_last_half[(matches_last_half["match_number"] + 0.01) >= (len(matches_last_half)/2)]
+        matches_last_half = matches_last_half[(matches_last_half["match_number"] - 0.01) >= (len(matches_last_half)/2)]
         matches_last_half["home_wins"] = np.where(
             (matches_last_half["home_goals"] > matches_last_half["away_goals"])
             & (matches_last_half["home"]==sel_team),
@@ -695,58 +696,15 @@ def get_win_loss_pct_last_half(matches_df):
             1,
             0
         )
-        wins = matches_last_half["home_wins"].sum() + matches_last_half["away_wins"].sum()
+        home_wins = matches_last_half[matches_last_half['home']==sel_team]["home_wins"].sum()
+        away_wins = matches_last_half[matches_last_half['away']==sel_team]["away_wins"].sum()
         played = len(matches_last_half)
-        win_loss_pct = round(wins / played, 3)
+        win_loss_pct = round((home_wins + away_wins) / played, 3)
         standings.append({"team": sel_team, "win_loss_pct_conference_last_half": win_loss_pct})
 
     standings = pd.DataFrame(standings)
 
     return standings
-
-
-def get_division_standings(matches_df, classif_rules, standings_metrics, divisions):
-    """
-    Generate standings for each division based on classification rules.
-
-    This function applies league classification rules to compute standings
-    for all teams within each division. It uses precomputed team metrics
-    (e.g., win-loss percentage, tie-breakers) and merges them with match
-    results to produce ranked division standings.
-
-    Args:
-        matches_df (pd.DataFrame): A DataFrame of match results.
-        classif_rules (dict): A dictionary of classification rules that define 
-            how teams are ranked (e.g., by win percentage, head-to-head, etc.).
-        standings_metrics (pd.DataFrame): A DataFrame of precomputed team metrics,
-            typically produced by `get_standings_metrics_us`.
-        divisions (pd.DataFrame): A mapping of teams to their divisions, with at least:
-            - "team": Team identifier
-            - "division": Division identifier
-
-    Returns:
-        pd.DataFrame: A DataFrame containing division standings with columns:
-            - All columns returned by `get_standings` (e.g., ranking, record, metrics)
-            - "div_pos": Team’s position within the division
-            - "division": Division identifier
-
-    Notes:
-        - Relies on `get_standings` to apply classification rules.
-        - Concatenates all division standings into a single DataFrame.
-        - Teams are ranked only against others in the same division.
-    """
-    div_to_iterate = divisions["division"].unique().tolist()
-    all_division_standings = []
-    for div in div_to_iterate:
-        division_teams = divisions[divisions["division"]==div]
-        division_standings_metrics = standings_metrics[standings_metrics["team"].isin(division_teams["team"])].copy()
-        division_standings = get_standings(matches_df, classif_rules, division_standings_metrics)
-        division_standings = division_standings.rename(columns={"pos": "div_pos"})
-        division_standings["division"] = div
-        all_division_standings.append(division_standings)
-    all_division_standings = pd.concat(all_division_standings)
-
-    return all_division_standings
 
 
 def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
@@ -1103,11 +1061,10 @@ def get_opponents_strength(matches_df, standings_df, strength_of):
         total_wins = sum(wins_lookup.get(opp, 0) for opp in opponents)
         total_ties = sum(ties_lookup.get(opp, 0) for opp in opponents)
         total_played = sum(played_lookup.get(opp, 0) for opp in opponents)
-
+        strength_calc = (total_wins + total_ties / 2) / total_played if total_played > 0 else 0
         result.append({
             "team": team,
-            f"strength_of_{strength_of}": (total_wins + total_ties / 2) / total_played if total_played > 0 else 0
-
+            f"strength_of_{strength_of}": round(strength_calc, 3)
         })
 
     return pd.DataFrame(result)
