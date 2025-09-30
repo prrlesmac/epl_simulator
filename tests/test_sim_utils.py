@@ -963,6 +963,147 @@ class TestGetStandings:
             < standings.loc[standings["team"] == "B", "league_pos"].iloc[0]
         )
 
+    def test_four_team_us_1(self):
+        matches = pd.DataFrame(
+            [
+                {"home": "A", "away": "B", "home_goals": 2, "away_goals": 1, "home_division": "East", "away_division": "East"},
+                {"home": "C", "away": "D", "home_goals": 0, "away_goals": 3, "home_division": "West", "away_division": "West"},
+                {"home": "B", "away": "A", "home_goals": 2, "away_goals": 0, "home_division": "East", "away_division": "East"},
+                {"home": "D", "away": "C", "home_goals": 1, "away_goals": 3, "home_division": "West", "away_division": "West"},
+                {"home": "A", "away": "C", "home_goals": 2, "away_goals": 1, "home_division": "East", "away_division": "West"},
+                {"home": "B", "away": "D", "home_goals": 0, "away_goals": 2, "home_division": "East", "away_division": "West"},
+                {"home": "C", "away": "A", "home_goals": 0, "away_goals": 2, "home_division": "West", "away_division": "East"},
+                {"home": "D", "away": "B", "home_goals": 2, "away_goals": 0, "home_division": "West", "away_division": "East"},
+                {"home": "A", "away": "D", "home_goals": 1, "away_goals": 3, "home_division": "East", "away_division": "West"},
+                {"home": "B", "away": "C", "home_goals": 1, "away_goals": 2, "home_division": "East", "away_division": "West"},
+                {"home": "D", "away": "A", "home_goals": 0, "away_goals": 1, "home_division": "West", "away_division": "East"},
+                {"home": "C", "away": "B", "home_goals": 3, "away_goals": 1, "home_division": "West", "away_division": "East"},
+            ]
+        )
+        matches["home_conference"] = "National"
+        matches["away_conference"] = "National"
+
+        divisions = pd.DataFrame(
+            [
+                {"team": "A", "division": "East", "conference": "National"},
+                {"team": "B", "division": "East", "conference": "National"},
+                {"team": "C", "division": "West", "conference": "National"},
+                {"team": "D", "division": "West", "conference": "National"},
+            ]
+        )
+
+        standings = (
+            get_standings(
+                matches_df=matches,
+                classif_rules={
+                "division": ["win_loss_pct",
+                         "h2h_win_loss_pct",
+                         "h2h_sweep_win_loss_pct",
+                         "win_loss_pct_div",
+                         "win_loss_pct_conf",
+                         "strength_of_victory",
+                         "strength_of_schedule"
+                         ],
+                "conference": [
+                         "division_winner",
+                         "win_loss_pct",
+                         "h2h_break_division_ties",
+                         "h2h_sweep_full",
+                         "win_loss_pct_conf",
+                         "h2h_win_loss_pct_common_games",
+                         "strength_of_victory",
+                         "strength_of_schedule",
+                         ],
+                    "league": ["win_loss_pct",
+                         "strength_of_victory",]
+                    },
+                league_type="NFL",
+                divisions=divisions
+            )
+            .sort_values("team")
+            .reset_index(drop=True)
+        )
+        standings = standings[["team","division_pos","conference_pos","league_pos"]]
+        expected_pos = pd.DataFrame(
+            [
+                {"team": "A", "division_pos": 1, "conference_pos": 1, "league_pos": 1},
+                {"team": "B", "division_pos": 2, "conference_pos": 4, "league_pos": 4},
+                {"team": "C", "division_pos": 2, "conference_pos": 3, "league_pos": 3},
+                {"team": "D", "division_pos": 1, "conference_pos": 2, "league_pos": 2},
+            ]
+        )
+       
+        pd.testing.assert_frame_equal(standings, expected_pos, check_dtype=False)
+
+    def test_four_team_us_2(self):
+        matches = pd.DataFrame(
+            [
+                {"home": "A", "away": "B", "home_goals": 2, "away_goals": 1, "home_division": "East", "away_division": "East"},
+                {"home": "C", "away": "D", "home_goals": 0, "away_goals": 3, "home_division": "West", "away_division": "West"},
+                {"home": "B", "away": "A", "home_goals": 2, "away_goals": 0, "home_division": "East", "away_division": "East"},
+                {"home": "D", "away": "C", "home_goals": 1, "away_goals": 3, "home_division": "West", "away_division": "West"},
+                {"home": "A", "away": "C", "home_goals": 2, "away_goals": 1, "home_division": "East", "away_division": "West"},
+                {"home": "B", "away": "D", "home_goals": 0, "away_goals": 2, "home_division": "East", "away_division": "West"},
+                {"home": "C", "away": "A", "home_goals": 0, "away_goals": 2, "home_division": "West", "away_division": "East"},
+                {"home": "D", "away": "B", "home_goals": 2, "away_goals": 0, "home_division": "West", "away_division": "East"},
+                {"home": "A", "away": "D", "home_goals": 1, "away_goals": 3, "home_division": "East", "away_division": "West"},
+                {"home": "B", "away": "C", "home_goals": 1, "away_goals": 2, "home_division": "East", "away_division": "West"},
+                {"home": "D", "away": "A", "home_goals": 0, "away_goals": 1, "home_division": "West", "away_division": "East"},
+                {"home": "C", "away": "B", "home_goals": 3, "away_goals": 1, "home_division": "West", "away_division": "East"},
+            ]
+        )
+        matches["home_conference"] = "National"
+        matches["away_conference"] = "National"
+
+        divisions = pd.DataFrame(
+            [
+                {"team": "A", "division": "East", "conference": "National"},
+                {"team": "B", "division": "East", "conference": "National"},
+                {"team": "C", "division": "West", "conference": "National"},
+                {"team": "D", "division": "West", "conference": "National"},
+            ]
+        )
+
+        standings = (
+            get_standings(
+                matches_df=matches,
+                classif_rules={
+                    "division": ["win_loss_pct",
+                         "strength_of_victory",
+                         "strength_of_schedule"
+                         ],
+                    "conference": [
+                         "division_winner",
+                         "win_loss_pct",
+                         "strength_of_victory",
+                         ],
+                    "league": ["win_loss_pct",
+                         "strength_of_victory",]
+                    },
+                league_type="NFL",
+                divisions=divisions
+            )
+            .sort_values("team")
+            .reset_index(drop=True)
+        )
+        standings = standings[["team","division_pos","conference_pos","league_pos"]]
+        expected_pos = pd.DataFrame(
+            [
+                {"team": "A", "division_pos": 1, "conference_pos": 1, "league_pos": 1},
+                {"team": "B", "division_pos": 2, "conference_pos": 4, "league_pos": 4},
+                {"team": "C", "division_pos": 2, "conference_pos": 3, "league_pos": 3},
+                {"team": "D", "division_pos": 1, "conference_pos": 2, "league_pos": 2},
+            ]
+        )
+       
+        pd.testing.assert_frame_equal(standings, expected_pos, check_dtype=False)
+
+    def test_invalid_type(self):
+        with pytest.raises(ValueError, match="Invalid league type for getting standings"):
+            get_standings(matches_df=None,
+                          classif_rules=None,
+                          league_type='Wrong league',
+                          divisions=None)
 
 class TestGetOpponentsAggregateStats:
     def test_opponent_stats(self):

@@ -231,12 +231,12 @@ def apply_h2h_sweep_tiebreaker(matches_df, tied_teams, sweep_type='full'):
     ]
     for sel_team in tied_teams:
         if sweep_type=="full":
-            home_wins = tied_matches_df[(tied_matches_df['home'] == sel_team) & (tied_matches_df['home_wins']==1)]["away"].tolist()
-            home_losses = tied_matches_df[(tied_matches_df['home'] == sel_team) & (tied_matches_df['home_wins']==0)]["away"].tolist()
-            away_wins = tied_matches_df[(tied_matches_df['away'] == sel_team) & (tied_matches_df['away_wins']==1)]["home"].tolist()
-            away_losses = tied_matches_df[(tied_matches_df['away'] == sel_team) & (tied_matches_df['away_wins']==0)]["home"].tolist()
+            home_wins = tied_matches_df[(tied_matches_df['home'] == sel_team) & (tied_matches_df['home_goals'] > tied_matches_df['away_goals'])]["away"].tolist()
+            home_losses_or_ties = tied_matches_df[(tied_matches_df['home'] == sel_team) & (tied_matches_df['home_goals'] <= tied_matches_df['away_goals'])]["away"].tolist()
+            away_wins = tied_matches_df[(tied_matches_df['away'] == sel_team) & (tied_matches_df['home_goals'] < tied_matches_df['away_goals'])]["home"].tolist()
+            away_losses_or_ties = tied_matches_df[(tied_matches_df['away'] == sel_team) & (tied_matches_df['home_goals'] >= tied_matches_df['away_goals'])]["home"].tolist()
             wins = list(set(home_wins+away_wins))
-            losses = list(set(home_losses+away_losses))
+            losses = list(set(home_losses_or_ties+away_losses_or_ties))
             h2h_sweep = (len(wins) == (len(tied_teams) - 1)) & (len(losses)==0)
 
         elif sweep_type=="win_loss_pct":
@@ -577,37 +577,37 @@ def get_win_loss_pct(matches_df):
         - Missing teams (e.g., teams that only played home or away) are handled 
           by filling missing values with 0.
     """
-    
-    matches_df["home_wins"] = np.where(
-        matches_df["home_goals"] > matches_df["away_goals"],
+    matches_df_wl = matches_df.copy()
+    matches_df_wl["home_wins"] = np.where(
+        matches_df_wl["home_goals"] > matches_df_wl["away_goals"],
         1,
         0
     )
-    matches_df["away_wins"] = np.where(
-        matches_df["away_goals"] > matches_df["home_goals"],
+    matches_df_wl["away_wins"] = np.where(
+        matches_df_wl["away_goals"] > matches_df_wl["home_goals"],
         1,
         0
     )
-    matches_df["home_ties"] = np.where(
-        matches_df["home_goals"] == matches_df["away_goals"],
+    matches_df_wl["home_ties"] = np.where(
+        matches_df_wl["home_goals"] == matches_df_wl["away_goals"],
         1,
         0
     )
-    matches_df["away_ties"] = np.where(
-        matches_df["away_goals"] == matches_df["home_goals"],
+    matches_df_wl["away_ties"] = np.where(
+        matches_df_wl["away_goals"] == matches_df_wl["home_goals"],
         1,
         0
     )
     home_pts = (
-        matches_df.groupby(["home"])[["home_wins","home_ties"]]
+        matches_df_wl.groupby(["home"])[["home_wins","home_ties"]]
         .sum()
-        .assign(home_played=matches_df.groupby("home").size())
+        .assign(home_played=matches_df_wl.groupby("home").size())
         .reset_index()
     )
     away_pts = (
-        matches_df.groupby(["away"])[["away_wins","away_ties"]]
+        matches_df_wl.groupby(["away"])[["away_wins","away_ties"]]
         .sum()
-        .assign(away_played=matches_df.groupby("away").size())
+        .assign(away_played=matches_df_wl.groupby("away").size())
         .reset_index()
     )
     home_pts = home_pts.rename(
@@ -796,10 +796,8 @@ def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
 
     if league_type == "UEFA":
         standings["playoff_pos"] = standings["league_pos"]
-    elif league_type in ["NBA","MLB","NFL"]:
-        standings["playoff_pos"] = standings["conference"] + " " + standings["conference_pos"].astype(str)
     else:
-        raise(ValueError("Invalid league type for getting standings"))
+        standings["playoff_pos"] = standings["conference"] + " " + standings["conference_pos"].astype(str)
 
     return standings
 
