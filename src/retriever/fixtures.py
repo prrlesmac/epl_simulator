@@ -241,7 +241,7 @@ def process_footy_table(fixtures, country):
 
     return fixtures
 
-def process_nfl_table(fixtures):
+def process_nfl_table_legacy(fixtures):
     """
     Cleans and formats an NFL fixtures DataFrame for analysis.
 
@@ -297,6 +297,78 @@ def process_nfl_table(fixtures):
     fixtures["notes"] = ""
 
     return fixtures
+
+
+
+def process_nfl_table(fixtures):
+    """
+    Cleans and formats an NFL fixtures DataFrame for analysis.
+
+    - Renames and standardizes key columns (teams, scores, dates, rounds).
+    - Filters out incomplete or preseason games.
+    - Extracts season year from URLs and adjusts for games played in Jan/Feb.
+    - Parses full datetime from textual date and season year.
+    - Adds flags for whether the game was played and whether it was at a neutral venue (e.g., Super Bowl).
+    - Adds an empty 'notes' column for future use.
+
+    Parameters:
+        fixtures (pd.DataFrame): Raw NFL game data with columns like 'hometm', 'vistm', 'week', 'date', 'url', etc.
+
+    Returns:
+        pd.DataFrame: Cleaned and enriched fixtures DataFrame.
+    """
+    fixtures.columns.values[2] = "date"
+    fixtures.columns.values[5] = "home_or_away"
+
+    fixtures["home"] = np.where(
+        fixtures["home_or_away"] == "@",
+        fixtures["loser/tie"],
+        fixtures["winner/tie"]
+    )
+    fixtures["away"] = np.where(
+        fixtures["home_or_away"] == "@",
+        fixtures["winner/tie"],
+        fixtures["loser/tie"]
+    )
+    fixtures["home_goals"] = np.where(
+        fixtures["home_or_away"] == "@",
+        fixtures["ptsl"],
+        fixtures["ptsw"]
+    )
+    fixtures["away_goals"] = np.where(
+        fixtures["home_or_away"] == "@",
+        fixtures["ptsw"],
+        fixtures["ptsl"]
+    )
+    fixtures = fixtures.rename(columns = {
+        "week": "round",
+    })
+    fixtures = fixtures[(~fixtures["away"].isnull()) & (~fixtures["home"].isnull())].copy()
+    fixtures = fixtures[~fixtures["round"].str.startswith("Pre")].copy()
+    fixtures["season"] = fixtures["url"].str.extract(r"/years/(\d{4})/")  
+    fixtures["home_goals"] = pd.to_numeric(fixtures["home_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
+    fixtures["away_goals"] = pd.to_numeric(fixtures["away_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
+
+    fixtures["round"] = np.where(
+        fixtures["round"].isin(["WildCard","Division","ConfChamp","SuperBowl"]),
+        fixtures["round"],
+        "League"
+    )
+
+    fixtures["played"] = np.where(
+        (fixtures["home_goals"].isnull()) | (fixtures["away_goals"].isnull()),
+        "N",
+        "Y",
+    )
+    fixtures["neutral"] = np.where(
+        fixtures["round"]=="SuperBowl",
+        "Y",
+        "N"
+    )
+    fixtures["notes"] = ""
+
+    return fixtures
+
 
 def process_nba_table(fixtures):
     """
