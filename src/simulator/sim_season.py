@@ -456,7 +456,6 @@ def run_all_simulations():
     end_time = time.time()
     print(f"Simulation took {end_time - start_time:.2f} seconds")
     # Save results to database
-    breakpoint()
     save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko)
     print("Simulations saved to db")
 
