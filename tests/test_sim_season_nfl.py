@@ -19,6 +19,14 @@ def read_schedule_csv(filepath):
 def csv_schedule_data_nfl_case_1():
     return read_schedule_csv("tests/data/schedules/schedule_nfl_case_1.csv")
 
+@pytest.fixture
+def csv_schedule_data_nfl_case_2():
+    return read_schedule_csv("tests/data/schedules/schedule_nfl_case_2.csv")
+
+@pytest.fixture
+def csv_schedule_data_nfl_case_3():
+    return read_schedule_csv("tests/data/schedules/schedule_nfl_case_3.csv")
+
 # ELOS fixtures
 @pytest.fixture
 def csv_elos_data_nfl_case_1():
@@ -174,6 +182,24 @@ class TestSimulateLeague:
         )
         self.assert_nfl_league_summary(result, schedule)
 
+
+    def test_simulate_league_nfl_case_2(
+        self,
+        csv_schedule_data_nfl_case_2,
+        csv_elos_data_nfl_case_1,
+        nfl_league_rules,
+        csv_nfl_divisions
+    ):
+        """Test simulating a NFL league."""
+        # Setup
+        league_rules = nfl_league_rules
+        schedule = csv_schedule_data_nfl_case_2
+        elos = csv_elos_data_nfl_case_1
+        divisions = csv_nfl_divisions
+        result = simulate_league(
+            league_rules, schedule, elos, divisions, num_simulations=10
+        )
+        self.assert_nfl_league_summary(result, schedule)
 
 if __name__ == "__main__":
     pytest.main([__file__])
