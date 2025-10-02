@@ -17,6 +17,7 @@ from retriever.fixtures import (
     get_fixtures_text,
     parse_game_element,
     process_fixtures,
+    process_nfl_table_legacy
 )
 
 
@@ -526,7 +527,7 @@ class TestProcessFixtures:
         result = process_fixtures(fixtures, "NBA").reset_index(drop=True)
         pd.testing.assert_frame_equal(output, result, check_like=True, check_index_type=False)  # ignores column order
 
-    def test_process_fixtures_nfl(self):
+    def test_process_fixtures_nfl_legacy(self):
         """Test processing fixtures forNFL."""
 
         fixtures = pd.DataFrame(
@@ -558,7 +559,7 @@ class TestProcessFixtures:
                 ]
             }
         )
-
+        fixtures.columns = fixtures.columns.str.lower()
         output = pd.DataFrame(
             {
                 "home": ["Pittsburgh Steelers", "Las Vegas Raiders"],
@@ -572,10 +573,69 @@ class TestProcessFixtures:
                 "notes": ["", ""]
             }
         )
-
-        result = process_fixtures(fixtures, "NFL").reset_index(drop=True)
+        result = process_nfl_table_legacy(fixtures).reset_index(drop=True)
+        result = result[
+            [
+                "home",
+                "away",
+                "home_goals",
+                "away_goals",
+                "played",
+                "neutral",
+                "round",
+                "date",
+                "notes",
+            ]
+        ]
         pd.testing.assert_frame_equal(output, result, check_like=True, check_index_type=False)  # ignores column order
 
+    def test_process_fixtures_nfl(self):
+        """Test processing fixtures forNFL."""
+
+        fixtures = pd.DataFrame(
+            {
+                "Week": ["Pre0", "Pre1", "18", "18"],
+                "Day": ["Thu", "Thu", "Sun", "Sun"],
+                "Date": ["2025-07-31", "2025-08-07", "2026-01-04", "2026-01-04"],
+                "Winner/tie": [
+                    "Los Angeles Chargers",
+                    "Indianapolis Colts",
+                    "Baltimore Ravens",
+                    "Kansas City Chiefs"
+                ],
+                "PtsW": [34, None, 23, None],
+                "  ": ["","@","","@"],
+                "Loser/tie": [
+                    "Detroit Lions",
+                    "Baltimore Ravens",
+                    "Pittsburgh Steelers",
+                    "Las Vegas Raiders"
+                ],
+                "PtsL": [7, None, 16, None],
+                "url": [
+                    "https://www.pro-football-reference.com/years/2025/games.htm",
+                    "https://www.pro-football-reference.com/years/2025/games.htm",
+                    "https://www.pro-football-reference.com/years/2025/games.htm",
+                    "https://www.pro-football-reference.com/years/2025/games.htm"
+                ]
+            }
+        )
+
+        output = pd.DataFrame(
+            {
+                "home": ["Baltimore Ravens", "Las Vegas Raiders"],
+                "away": ["Pittsburgh Steelers", "Kansas City Chiefs"],
+                "home_goals": pd.Series([23, pd.NA], dtype="Int64"),
+                "away_goals": pd.Series([16, pd.NA], dtype="Int64"),
+                "played": ["Y", "N"],
+                "neutral": ["N", "N"],
+                "round": ["League", "League"],
+                "date": ["2026-01-04", "2026-01-04"],
+                "notes": ["", ""]
+            }
+        )
+        result = process_fixtures(fixtures, "NFL").reset_index(drop=True)
+        pd.testing.assert_frame_equal(output, result, check_like=True, check_index_type=False)  # ignores column order
 
     def test_process_fixtures_mlb(self):
         """Test processing fixtures for MLB."""

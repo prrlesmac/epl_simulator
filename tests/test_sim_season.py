@@ -950,6 +950,10 @@ class TestSplitAndMergeSchedule:
         {"home": ["A", "B", "C"], "away": ["B", "C", "A"], "played": ["Y", "N", "N"]}
     )
     elos = pd.DataFrame({"club": ["A", "B", "C"], "elo": [1200, 1300, 1400]})
+    divisions = pd.DataFrame({"team": ["A", "B", "C"],
+                              "division": ["East", "West", "East"],
+                              "conference": ["National", "National", "American"]
+                              })
 
     def test_split_and_merge(self):
         played, pending = split_and_merge_schedule(self.schedule, self.elos)
@@ -977,6 +981,42 @@ class TestSplitAndMergeSchedule:
             }
         )
         pd.testing.assert_frame_equal(pending.reset_index(drop=True), expected_pending)
+
+
+    def test_split_and_merge_divisions(self):
+        played, pending = split_and_merge_schedule(self.schedule, self.elos, self.divisions)
+        # Check played schedule
+        expected_played = pd.DataFrame(
+            {
+                "home": ["A"],
+                "away": ["B"],
+                "played": ["Y"],
+                "elo_home": [1200],
+                "elo_away": [1300],
+                "home_division": ["East"],
+                "home_conference": ["National"],
+                "away_division": ["West"],
+                "away_conference": ["National"],
+            }
+        )
+        pd.testing.assert_frame_equal(played.reset_index(drop=True), expected_played)
+
+        # Check pending schedule
+        expected_pending = pd.DataFrame(
+            {
+                "home": ["B", "C"],
+                "away": ["C", "A"],
+                "played": ["N", "N"],
+                "elo_home": [1300, 1400],
+                "elo_away": [1400, 1200],
+                "home_division": ["West", "East"],
+                "home_conference": ["National", "American"],
+                "away_division": ["East", "East"],
+                "away_conference": ["American", "National"],
+            }
+        )
+        pd.testing.assert_frame_equal(pending.reset_index(drop=True), expected_pending)
+
 
     def test_missing_elo(self):
         elos_missing = pd.DataFrame(

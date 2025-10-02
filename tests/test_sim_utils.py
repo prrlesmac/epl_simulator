@@ -552,7 +552,6 @@ class TestCommonGamesTiebreaker:
         matches_df["home_division"] = ''
         matches_df["away_division"] = ''
         result = apply_common_games_tiebreaker(matches_df, tied_teams)
-        print(result)
         # Output should include only tied teams
         assert set(result["team"]) == set(tied_teams)
 

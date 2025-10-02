@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def split_and_merge_schedule(schedule, elos):
+def split_and_merge_schedule(schedule, elos, divisions=None):
     """
     Splits the schedule into played and pending matches, and merges Elo ratings
     into the pending matches.
@@ -29,6 +29,7 @@ def split_and_merge_schedule(schedule, elos):
         schedule (pandas.DataFrame): A DataFrame containing the full match schedule,
             with at least 'home', 'away', and 'played' columns.
         elos (pandas.DataFrame): A DataFrame containing Elo ratings with 'club' and 'elo' columns.
+        divisions (pandas.DataFrame): A DataFrame containing divisions for the league
 
     Returns:
         tuple:
@@ -42,6 +43,21 @@ def split_and_merge_schedule(schedule, elos):
         .rename(columns={"elo_x": "elo_home", "elo_y": "elo_away"})
         .drop(columns=["club_x", "club_y"])
     )
+
+    if divisions is not None:
+        schedule = (
+            schedule
+            .merge(divisions, how="left", left_on="home",right_on="team")
+            .merge(divisions, how="left", left_on="away",right_on="team")
+        )
+        schedule = schedule.rename(columns={
+            'division_x': 'home_division',
+            'division_y': 'away_division',
+            'conference_x': 'home_conference',
+            'conference_y': 'away_conference',
+        })
+        schedule = schedule.drop(columns=['team_x','team_y'])
+
     schedule_played = schedule[schedule["played"] == "Y"].copy()
     schedule_pending = schedule[schedule["played"] == "N"].copy()
 
@@ -289,18 +305,6 @@ def load_league_data(league):
             f"SELECT * FROM {config.db_table_definitions['divisions_table']['name']}_{table_suffix}",
             engine,
         )
-        schedule = (
-            schedule
-            .merge(divisions, how="left", left_on="home",right_on="team")
-            .merge(divisions, how="left", left_on="away",right_on="team")
-        )
-        schedule = schedule.rename(columns={
-            'division_x': 'home_division',
-            'division_y': 'away_division',
-            'conference_x': 'home_conference',
-            'conference_y': 'away_conference',
-        })
-        schedule = schedule.drop(columns=['team_x','team_y'])
     else:
         divisions = None
 
@@ -375,9 +379,8 @@ def simulate_league(league_rules, schedule, elos, divisions, num_simulations=100
     """
     # Validate configuration
     validate_league_configuration(schedule, league_rules)
-
     # Prepare data for simulation
-    schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos)
+    schedule_played, schedule_pending = split_and_merge_schedule(schedule, elos, divisions)
 
     # Run simulation
     sim_standings = run_simulation_parallel(
@@ -453,6 +456,7 @@ def run_all_simulations():
     end_time = time.time()
     print(f"Simulation took {end_time - start_time:.2f} seconds")
     # Save results to database
+    breakpoint()
     save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko)
     print("Simulations saved to db")
 
