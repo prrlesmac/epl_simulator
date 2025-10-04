@@ -710,8 +710,8 @@ league_rules = {
             "league": ["win_loss_pct"],
         },
         "qualification": {
-            "playoff": list(range(1, 15)),
-            "first_round_bye": list(range(1,3))
+            "playoff": [f"NFC {i}" for i in range(1, 8)] + [f"AFC {i}" for i in range(1, 8)],
+            "first_round_bye": [f"NFC {i}" for i in range(1, 2)] + [f"AFC {i}" for i in range(1, 2)]
         },
         "knockout_bracket": [
             ("NFC 1", "Bye"),

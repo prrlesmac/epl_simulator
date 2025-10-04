@@ -221,8 +221,12 @@ def run_simulation_parallel(
         standings_list = pool.starmap(single_simulation, args)
     #standings_list = [single_simulation(schedule_played, schedule_pending, elos, divisions, league_rules)]
     # Aggregate position frequencies
+    standings_all = pd.concat(standings_list)
+    if league_rules["has_knockout"]:
+        standings_all["league_pos"] = standings_all["playoff_pos"]
+
     standings_all = (
-        pd.concat(standings_list)
+        standings_all
         .groupby(["team", "league_pos"])
         .size()
         .reset_index(name="count")

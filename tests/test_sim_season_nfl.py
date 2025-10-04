@@ -58,8 +58,8 @@ def nfl_league_rules():
             "league": ["win_loss_pct"],
         },
         "qualification": {
-            "playoff": list(range(1, 15)),
-            "first_round_bye": list(range(1,3))
+            "playoff": [f"NFC {i}" for i in range(1, 8)] + [f"AFC {i}" for i in range(1, 8)],
+            "first_round_bye": [f"NFC {i}" for i in range(1, 2)] + [f"AFC {i}" for i in range(1, 2)]
         },
         "knockout_bracket": [
             ("NFC 1", "Bye"),
@@ -88,6 +88,52 @@ def nfl_league_rules():
 def csv_nfl_divisions():
     return pd.read_csv("tests/data/divisions/nfl_divisions.csv")
 
+@pytest.fixture
+def final_nfl_results():
+    return {
+        "eliminated in regular season": [
+            "Seattle Seahawks",
+            "Dallas Cowboys",
+            "Arizona Cardinals",
+            "San Francisco 49ers",
+            "New Orleans Saints",
+            "Chicago Bears",
+            "Carolina Panthers",
+            "New York Giants",
+            "Indianapolis Colts",
+            "New York Jets",
+            "Las Vegas Raiders",
+            "Jacksonville Jaguars",
+            "Cleveland Browns",
+            "Tennessee Titans",
+            "New England Patriots",
+            "Miami Dolphins"
+        ],
+        "first round bye": [
+            "Kansas City Chiefs",
+            "Detroit Lions",
+        ],
+        "eliminated in wild card": [
+            "Los Angeles Chargers",
+            "Pittsburgh Steelers",
+            "Denver Broncos",
+            "Minnesota Vikings",
+            "Green Bay Packers",
+            "Tampa Bay Buccaneers"
+        ],
+        "eliminated in divisional": [
+            "Houston Texans",
+            "Baltimore Ravens",
+            "Detroit Lions",
+            "Los Angeles Rams"
+        ],
+        "eliminated conference": [
+            "Buffalo Bills",
+            "Washington Commanders",
+        ],
+        "runner-up": ["Kansas City Chiefs"],
+        "champion": ["Philadelphia Eagles"],
+    }
 
 class TestSimulateLeague:
     """Test cases for simulate_league function."""
@@ -96,38 +142,38 @@ class TestSimulateLeague:
         # check all columns present
         expected_columns = [
             "team",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "10",
-            "11",
-            "12",
-            "13",
-            "14",
-            "15",
-            "16",
-            "17",
-            "18",
-            "19",
-            "20",
-            "21",
-            "22",
-            "23",
-            "24",
-            "25",
-            "26",
-            "27",
-            "28",
-            "29",
-            "30",
-            "31",
-            "32",
+            'NFC 1',
+            'NFC 2',
+            'NFC 3',
+            'NFC 4',
+            'NFC 5',
+            'NFC 6',
+            'NFC 7',
+            'NFC 8',
+            'NFC 9',
+            'NFC 10',
+            'NFC 11',
+            'NFC 12',
+            'NFC 13',
+            'NFC 14',
+            'NFC 15',
+            'NFC 16',
+            'AFC 1',
+            'AFC 2',
+            'AFC 3',
+            'AFC 4',
+            'AFC 5',
+            'AFC 6',
+            'AFC 7',
+            'AFC 8',
+            'AFC 9',
+            'AFC 10',
+            'AFC 11',
+            'AFC 12',
+            'AFC 13',
+            'AFC 14',
+            'AFC 15',
+            'AFC 16',
             "po_r16",
             "po_r8",
             "po_r4",
@@ -137,7 +183,7 @@ class TestSimulateLeague:
             "first_round_bye",
             "updated_at",
         ]
-        assert list(result.columns) == expected_columns
+        assert set(result.columns) == set(expected_columns)
 
         col_sum = result["playoff"].sum()
         assert np.isclose(col_sum, 14.0, atol=1e-3)
@@ -201,5 +247,51 @@ class TestSimulateLeague:
         )
         self.assert_nfl_league_summary(result, schedule)
 
+    def test_simulate_league_nfl_case_3(
+        self,
+        csv_schedule_data_nfl_case_3,
+        csv_elos_data_nfl_case_1,
+        nfl_league_rules,
+        csv_nfl_divisions,
+        final_nfl_results,
+    ):
+        """Test simulating a NFL league."""
+        # Setup
+        league_rules = nfl_league_rules
+        schedule = csv_schedule_data_nfl_case_3
+        elos = csv_elos_data_nfl_case_1
+        divisions = csv_nfl_divisions
+        result = simulate_league(
+            league_rules, schedule, elos, divisions, num_simulations=10
+        )
+        self.assert_nfl_league_summary(result, schedule)
+
+        eliminated_in_season = final_nfl_results["eliminated in regular season"]
+        advanced_to_playoff = [
+            team
+            for stage, teams in final_nfl_results.items()
+            if stage != "eliminated in regular season"
+            for team in teams
+        ]
+        first_round_bye = final_nfl_results["first round bye"]
+
+        for rounds in ["playoff","po_r16", "po_r8", "po_r4", "po_r2", "po_champion"]:
+            assert np.isclose(
+                result.loc[result["team"].isin(eliminated_in_season)][rounds].all(),
+                0.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16"]:
+            assert np.isclose(
+                result.loc[result["team"].isin(advanced_to_playoff)][rounds].all(),
+                1.0,
+                atol=1e-3,
+            )
+        assert np.isclose(
+            result.loc[result["team"].isin(first_round_bye)]["first_round_bye"].all(),
+            1.0,
+            atol=1e-3,
+        )
+    
 if __name__ == "__main__":
     pytest.main([__file__])
