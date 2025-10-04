@@ -293,5 +293,52 @@ class TestSimulateLeague:
             atol=1e-3,
         )
     
+    def test_simulate_league_nfl_case_4(
+        self,
+        csv_schedule_data_nfl_case_3,
+        csv_elos_data_nfl_case_1,
+        nfl_league_rules,
+        csv_nfl_divisions,
+        final_nfl_results,
+    ):
+        """Test simulating a NFL league."""
+        # Setup
+        league_rules = nfl_league_rules
+        schedule = csv_schedule_data_nfl_case_3
+        elos = csv_elos_data_nfl_case_1
+        divisions = csv_nfl_divisions
+        result = simulate_league(
+            league_rules, schedule, elos, divisions, num_simulations=10
+        )
+        breakpoint()
+        self.assert_nfl_league_summary(result, schedule)
+
+        eliminated_in_season = final_nfl_results["eliminated in regular season"]
+        advanced_to_playoff = [
+            team
+            for stage, teams in final_nfl_results.items()
+            if stage != "eliminated in regular season"
+            for team in teams
+        ]
+        first_round_bye = final_nfl_results["first round bye"]
+
+        for rounds in ["playoff","po_r16", "po_r8", "po_r4", "po_r2", "po_champion"]:
+            assert np.isclose(
+                result.loc[result["team"].isin(eliminated_in_season)][rounds].all(),
+                0.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16"]:
+            assert np.isclose(
+                result.loc[result["team"].isin(advanced_to_playoff)][rounds].all(),
+                1.0,
+                atol=1e-3,
+            )
+        assert np.isclose(
+            result.loc[result["team"].isin(first_round_bye)]["first_round_bye"].all(),
+            1.0,
+            atol=1e-3,
+        )
+
 if __name__ == "__main__":
     pytest.main([__file__])
