@@ -644,7 +644,10 @@ def main_fixtures():
     fixtures_all = []
     league_name = os.getenv("LEAGUES_TO_SIM")
     leagues_to_sim = config.active_uefa_leagues if league_name == "UEFA" else [league_name]
-    leagues_config = {k: v for k, v in config.fixtures_config.items() if k in leagues_to_sim}
+    if config.pull_fixture_history:
+        leagues_config = {k: v for k, v in config.fixtures_history_config.items() if k in leagues_to_sim}
+    else:
+        leagues_config = {k: v for k, v in config.fixtures_config.items() if k in leagues_to_sim}
     for k, v in leagues_config.items():
         print("Getting fixtures for: ", k)
         if k == "MLB":
@@ -663,7 +666,7 @@ def main_fixtures():
         fixtures["updated_at"] = datetime.now()
         fixtures_all.append(fixtures)
     fixtures_all = pd.concat(fixtures_all)
-    table_name = f"{config.db_table_definitions['fixtures_table']['name']}_{league_name.lower()}"
+    table_name = f"{config.db_table_definitions['fixtures_table']['name']}_{league_name.lower()}{'_history' if config.pull_fixture_history else ''}"
     fixtures_all.to_sql(
         table_name,
         engine,
