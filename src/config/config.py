@@ -407,8 +407,6 @@ fixtures_config = {
 number_of_simulations = 10
 home_advantage = 80
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
-leagues_to_sim = list(fixtures_config.keys())
-#leagues_to_sim = ["ENG", "ESP", "GER", "ITA", "FRA"]
 played_cutoff_date = None
 schedule_cutoff_date = None
 
