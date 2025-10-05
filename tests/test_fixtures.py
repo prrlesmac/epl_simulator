@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from retriever.fixtures import (
     extract_scores,
     get_fixtures,
+    parse_fixtures_html,
     get_fixtures_text,
     parse_game_element,
     process_fixtures,
@@ -667,6 +668,98 @@ class TestProcessFixtures:
 
         result = process_fixtures(fixtures, "MLB").reset_index(drop=True)
         pd.testing.assert_frame_equal(output, result, check_like=True, check_index_type=False)  # ignores column order
+
+
+
+
+class TestParseFixturesHtml:
+    @pytest.fixture
+    def sample_html(self):
+        return """
+        <html>
+        <body>
+            <table id="test_table">
+                <thead>
+                    <tr><th>Date</th><th>Home</th><th>Away</th><th>xG</th></tr>
+                </thead>
+                <tbody>
+                    <tr><th>1</th><td>Team A</td><td>Team B</td><td>1.2</td></tr>
+                    <tr><th>2</th><td></td><td></td><td></td></tr>
+                </tbody>
+            </table>
+        </body>
+        </html>
+        """
+
+    def test_parse_valid_table(self, sample_html):
+        df = parse_fixtures_html(sample_html, table_id=["test_table"])
+        expected = pd.DataFrame({
+            "Date": ["1"],
+            "Home": ["Team A"],
+            "Away": ["Team B"]
+        })
+        pd.testing.assert_frame_equal(df.reset_index(drop=True), expected)
+
+    def test_missing_table_id(self, sample_html):
+        with pytest.raises(ValueError, match="No valid tables found"):
+            parse_fixtures_html(sample_html, table_id=["wrong_id"])
+
+    def test_missing_thead_or_tbody(self):
+        html = """
+        <html><body>
+            <table id="test_table">
+                <tbody>
+                    <tr><td>Some</td><td>Data</td></tr>
+                </tbody>
+            </table>
+        </body></html>
+        """
+        with pytest.raises(ValueError, match="No valid tables found"):
+            parse_fixtures_html(html, table_id=["test_table"])
+
+    def test_no_data_rows(self):
+        html = """
+        <html><body>
+            <table id="test_table">
+                <thead>
+                    <tr><th>Date</th><th>Home</th><th>Away</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </body></html>
+        """
+        with pytest.raises(ValueError, match="No valid tables found"):
+            parse_fixtures_html(html, table_id=["test_table"])
+
+    def test_multiple_tables(self):
+        html = """
+        <html><body>
+            <table id="table1">
+                <thead>
+                    <tr><th>Date</th><th>Home</th><th>Away</th><th>xG</th></tr>
+                </thead>
+                <tbody>
+                    <tr><th>1</th><td>Team A</td><td>Team B</td><td>1.0</td></tr>
+                </tbody>
+            </table>
+            <table id="table2">
+                <thead>
+                    <tr><th>Date</th><th>Home</th><th>Away</th><th>xG</th></tr>
+                </thead>
+                <tbody>
+                    <tr><th>2</th><td>Team C</td><td>Team D</td><td>1.1</td></tr>
+                </tbody>
+            </table>
+        </body></html>
+        """
+        df = parse_fixtures_html(html, table_id=["table1", "table2"])
+        expected = pd.DataFrame({
+            "Date": ["1", "2"],
+            "Home": ["Team A", "Team C"],
+            "Away": ["Team B", "Team D"]
+        })
+        pd.testing.assert_frame_equal(df.reset_index(drop=True), expected)
+
 
 class TestIntegration:
     """Integration tests combining multiple functions."""

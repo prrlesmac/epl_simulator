@@ -193,6 +193,22 @@ club_name_mapping = {
     "Borac Banja Luka": "Borac Banja Luka",
     "Guimaraes": "Vitória",
     "Vikingur": "KV",
+    "Kairat": "Qaırat Almaty",
+    "Lausanne": "Lausanne-Sport",
+    "Shkendija": "Shkëndija 79",
+    "Craiova": "CS U Craiova",
+    "Kuopio": "KuPS",
+    "Lincoln": "Red Imps",
+    "Drita": "KF Drita",
+    "Shelbourne": "Shelbourne FC",
+    "Hamrun": "Ħamrun Spartans FC",
+    "Lech": "Lech Poznań",
+    "Haecken": "Häcken",
+    "Larnaca": "AÉK Lárnaka",
+    "Breidablik": "Breiðablik",
+    "Rakow": "Raków",
+    "AEK": "AEK Athens",
+    "Go Ahead Eagles": "Go Ahead Eag",
 }
 
 # Database
@@ -318,41 +334,50 @@ db_table_definitions = {
 }
 
 # Data scraping
+parsing_method = "http_request" # must be local_file, http_request, or playwright
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-elo_date = "2025-06-01"  # For testing purposes, set a fixed date
+#elo_date = "2025-06-01"  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
 fixtures_config = {
     "ENG": {
-        "fixtures_url": ["https://fbref.com/en/comps/9/2025-2026/schedule/2025-2026-Premier-League-Scores-and-Fixtures"],
+        "fixtures_url": "https://fbref.com/en/comps/9/2025-2026/schedule/2025-2026-Premier-League-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/Premier League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_9_1"],
     },
     "ESP": {
-        "fixtures_url": ["https://fbref.com/en/comps/12/2025-2026/schedule/2025-2026-La-Liga-Scores-and-Fixtures"],
+        "fixtures_url": "https://fbref.com/en/comps/12/2025-2026/schedule/2025-2026-La-Liga-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/La Liga Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_12_1"],
     },
     "ITA": {
-        "fixtures_url": ["https://fbref.com/en/comps/11/2025-2026/schedule/2025-2026-Serie-A-Scores-and-Fixtures"],
+        "fixtures_url": "https://fbref.com/en/comps/11/2025-2026/schedule/2025-2026-Serie-A-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/Serie A Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_11_1"],
     },
     "GER": {
-        "fixtures_url": ["https://fbref.com/en/comps/20/2025-2026/schedule/2025-2026-Bundesliga-Scores-and-Fixtures"],
+        "fixtures_url": "https://fbref.com/en/comps/20/2025-2026/schedule/2025-2026-Bundesliga-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/Bundesliga Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_20_1"],
     },
     "FRA": {
-        "fixtures_url": ["https://fbref.com/en/comps/13/2025-2026/schedule/2025-2026-Ligue-1-Scores-and-Fixtures"],
+        "fixtures_url": "https://fbref.com/en/comps/13/2025-2026/schedule/2025-2026-Ligue-1-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/Ligue 1 Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_13_1"],
     },
     "UCL": {
-        "fixtures_url": ["https://fbref.com/en/comps/8/2024-2025/schedule/2024-2025-Champions-League-Scores-and-Fixtures"],
-        "table_id": ["sched_2024-2025_8_2", "sched_2024-2025_8_3"],
+        "fixtures_url": "https://fbref.com/en/comps/8/schedule/Champions-League-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/Champions League Scores & Fixtures _ FBref.com.html",
+        "table_id": ["sched_2025-2026_8_2", "sched_2025-2026_8_3"],
     },
     "UEL": {
-        "fixtures_url": ["https://fbref.com/en/comps/19/2024-2025/schedule/2024-2025-Europa-League-Scores-and-Fixtures"],
-        "table_id": ["sched_2024-2025_19_2", "sched_2024-2025_19_3"],
+        "fixtures_url": "https://fbref.com/en/comps/19/schedule/Europa-League-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/Europa League Scores & Fixtures _ FBref.com.html",
+        "table_id": ["sched_2025-2026_19_2", "sched_2025-2026_19_3"],
     },
     "UECL": {
-        "fixtures_url": ["https://fbref.com/en/comps/882/2024-2025/schedule/2024-2025-Conference-League-Scores-and-Fixtures"],
-        "table_id": ["sched_2024-2025_882_2", "sched_2024-2025_882_3"],
+        "fixtures_url": "https://fbref.com/en/comps/882/schedule/Conference-League-Scores-and-Fixtures",
+        "local_file_path": "data/uefa/Conference League Scores & Fixtures _ FBref.com.html",
+        "table_id": ["sched_2025-2026_882_2", "sched_2025-2026_882_3"],
     },
     "NFL": {
         "fixtures_url": ["https://www.pro-football-reference.com/years/2025/games.htm"],
@@ -382,6 +407,8 @@ fixtures_config = {
 number_of_simulations = 10
 home_advantage = 80
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
+leagues_to_sim = list(fixtures_config.keys())
+#leagues_to_sim = ["ENG", "ESP", "GER", "ITA", "FRA"]
 played_cutoff_date = None
 schedule_cutoff_date = None
 
@@ -531,24 +558,7 @@ league_rules = {
             "po_r2": "single_game_neutral",
         },
         "knockout_draw_status": "pending_draw",
-        "knockout_draw": [  # None
-            ("Liverpool", "Bye"),
-            ("Paris S-G", "Brest"),
-            ("Aston Villa", "Bye"),
-            ("Atalanta", "Club Brugge"),
-            ("Arsenal", "Bye"),
-            ("PSV Eindhoven", "Juventus"),
-            ("Atlético Madrid", "Bye"),
-            ("Real Madrid", "Manchester City"),
-            ("Barcelona", "Bye"),
-            ("Benfica", "Monaco"),
-            ("Lille", "Bye"),
-            ("Dortmund", "Sporting CP"),
-            ("Inter", "Bye"),
-            ("Milan", "Feyenoord"),
-            ("Leverkusen", "Bye"),
-            ("Bayern Munich", "Celtic"),
-        ],
+        "knockout_draw": None,
         "knockout_reseeding": False,
     },
     "UEL": {
@@ -598,24 +608,7 @@ league_rules = {
             "po_r2": "single_game_neutral",
         },
         "knockout_draw_status": "pending_draw",
-        "knockout_draw": [  # None
-            ("Tottenham", "Bye"),
-            ("Galatasaray", "AZ Alkmaar"),
-            ("Eint Frankfurt", "Bye"),
-            ("Ajax", "Union SG"),
-            ("Olympiacos", "Bye"),
-            ("Twente", "Bodø/Glimt"),
-            ("Lazio", "Bye"),
-            ("Viktoria Plzeň", "Ferencváros"),
-            ("Rangers", "Bye"),
-            ("Anderlecht", "Fenerbahçe"),
-            ("Athletic Club", "Bye"),
-            ("Roma", "Porto"),
-            ("Lyon", "Bye"),
-            ("FCSB", "PAOK"),
-            ("Manchester Utd", "Bye"),
-            ("Real Sociedad", "Midtjylland"),
-        ],
+        "knockout_draw": None,
         "knockout_reseeding": False,
     },
     "UECL": {
@@ -665,24 +658,7 @@ league_rules = {
             "po_r2": "single_game_neutral",
         },
         "knockout_draw_status": "pending_draw",
-        "knockout_draw": [  # None
-            ("Vitória", "Bye"),
-            ("Betis", "Gent"),
-            ("Cercle Brugge", "Bye"),
-            ("TSC Bačka Top", "Jagiellonia"),
-            ("Lugano", "Bye"),
-            ("NK Celje", "APOEL"),
-            ("Fiorentina", "Bye"),
-            ("Panathinaikos", "Manchester City"),
-            ("Djurgården", "Bye"),
-            ("Pafos FC", "AC Omonia"),
-            ("Rapid Wien", "Bye"),
-            ("Borac Banja Luka", "Olimpija"),
-            ("Legia Warsaw", "Bye"),
-            ("Molde", "Shamrock Rov"),
-            ("Chelsea", "Bye"),
-            ("FC Copenhagen", "Heidenheim"),
-        ],
+        "knockout_draw": None,
         "knockout_reseeding": False,
 
     },

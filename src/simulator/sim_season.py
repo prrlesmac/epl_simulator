@@ -425,6 +425,13 @@ def save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko):
             index=False,
             dtype=config.db_table_definitions["domestic_sim_output_table"]["dtype"],
         )
+        sim_standings_wo_ko_df.to_sql(
+            f"{config.db_table_definitions['domestic_sim_output_table']['name']}_history",
+            engine,
+            if_exists="append",
+            index=False,
+            dtype=config.db_table_definitions["domestic_sim_output_table"]["dtype"],
+        )
 
     if sim_standings_w_ko:
         sim_standings_w_ko_df = pd.concat(sim_standings_w_ko)
@@ -435,7 +442,13 @@ def save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko):
             index=False,
             dtype=config.db_table_definitions["continental_sim_output_table"]["dtype"],
         )
-
+        sim_standings_w_ko_df.to_sql(
+            f"{config.db_table_definitions['continental_sim_output_table']['name']}_history",
+            engine,
+            if_exists="append",
+            index=False,
+            dtype=config.db_table_definitions["continental_sim_output_table"]["dtype"],
+        )
 
 def run_all_simulations():
     """
