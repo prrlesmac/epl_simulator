@@ -141,7 +141,11 @@ def single_simulation(
             draw = draw_from_pots(standings_df, pot_size=2)
             bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
         elif league_rules["knockout_draw_status"] == "completed_draw":
-            bracket = pd.DataFrame(league_rules["knockout_draw"], columns=["team1", "team2"])
+            if league_rules["knockout_reseeding"]:
+                combined_bracket = [t1 + t2 for t1, t2 in zip(league_rules["knockout_draw"], league_rules["knockout_bracket"])]
+                bracket = pd.DataFrame(combined_bracket, columns=["team1", "team2", "seed1", "seed2"])
+            else:
+                bracket = pd.DataFrame(league_rules["knockout_draw"], columns=["team1", "team2"])
         elif league_rules["knockout_draw_status"] == "no_draw":
             draw = standings_df.copy()
             draw["draw_order"] = draw["playoff_pos"]
