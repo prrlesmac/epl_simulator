@@ -486,6 +486,7 @@ def process_nfl_table(fixtures):
         "week": "round",
     })
     fixtures = fixtures[(~fixtures["away"].isnull()) & (~fixtures["home"].isnull())].copy()
+    fixtures = fixtures[(fixtures["away"]!="") & (fixtures["home"]!="")].copy()
     fixtures = fixtures[~fixtures["round"].str.startswith("Pre")].copy()
     fixtures["season"] = fixtures["url"].str.extract(r"/years/(\d{4})/")  
     fixtures["home_goals"] = pd.to_numeric(fixtures["home_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
@@ -646,7 +647,6 @@ def process_fixtures(fixtures, country):
 
 
 def main_fixtures():
-    engine = db_connect.get_postgres_engine()
     fixtures_all = []
     league_name = os.getenv("LEAGUES_TO_SIM")
     leagues_to_sim = config.active_uefa_leagues if league_name == "UEFA" else [league_name]
@@ -673,6 +673,7 @@ def main_fixtures():
         fixtures_all.append(fixtures)
     fixtures_all = pd.concat(fixtures_all)
     table_name = f"{config.db_table_definitions['fixtures_table']['name']}_{league_name.lower()}{'_history' if config.pull_fixture_history else ''}"
+    engine = db_connect.get_postgres_engine()
     fixtures_all.to_sql(
         table_name,
         engine,
