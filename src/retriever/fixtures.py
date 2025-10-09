@@ -33,7 +33,7 @@ def extract_scores(score):
     return pd.Series([home_goals, away_goals, home_pens, away_pens])
 
 
-def get_fixtures(url, table_id):
+def get_fixtures(url_list, table_id):
     """
     Fetches and parses a fixture table from a given webpage URL.
 
@@ -43,7 +43,7 @@ def get_fixtures(url, table_id):
     (`sched_2024-2025_9_1`) and that the table structure includes a thead and tbody.
 
     Args:
-        url (list): list of URLs of the webpages containing the fixture tables.
+        url_list (list): list of URLs of the webpages containing the fixture tables.
         table_id (list): list table IDs for geting the fixtures using beautiful soup
 
     Returns:
@@ -55,27 +55,34 @@ def get_fixtures(url, table_id):
         requests.exceptions.RequestException: If the HTTP request fails.
         AttributeError: If the expected table or structure is not found in the HTML.
     """
-    time.sleep(10)
     headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36"
-        ),
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Referer": "https://www.google.com/"
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            ),
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Referer": "https://www.google.com/"
     }
-    # Send a GET request to fetch the HTML content
-    response = requests.get(url, headers=headers)
-    # Check if the request was successful
-    if response.status_code == 200:
-        df_all = parse_fixtures_html(response.text, table_id)
-        print("Fetching fixtures data...")
-        return df_all
-    else:
-        print(f"Failed to fetch the page. Status code: {response.status_code}")
-        return None
+    df_all = []
+    for url in url_list:
+        print(url)
+        time.sleep(10)
+        # Send a GET request to fetch the HTML content
+        response = requests.get(url, headers=headers)
+        # Check if the request was successful
+        if response.status_code == 200:
+            df = parse_fixtures_html(response.text, table_id)
+            df['url'] = url
+            print("Fetching fixtures data...")
+            df_all.append(df)
+        else:
+            print(f"Failed to fetch the page. Status code: {response.status_code}")
+            return None
+    df_all = pd.concat(df_all)
+
+    return df_all
 
 def get_fixtures_playwright(url, table_id):
     """
@@ -214,15 +221,14 @@ def parse_fixtures_html(html, table_id):
         # Convert to a Pandas DataFrame
         df = pd.DataFrame(rows, columns=headers)
         
-        # Exclude rows where Home and Away are empty
-        df = df[(df["Home"] != "") | (df["Away"] != "")]
-        df = df[(~df["Home"].isnull()) | (~df["Away"].isnull())]
-
-        # Drop xG column if it exists
-        if "xG" in df.columns:
+        # Exclude the first header if it's a placeholder
+        # exclude rows where Home and Away are empty
+        # for ucl tables
+        if all(col in df.columns for col in ["Home", "Away","xG"]):
+            df = df[(df["Home"] != "") | (df["Away"] != "")]
             df = df.drop(columns=["xG"])
-
         df_all.append(df)
+
         print(f"Successfully processed table '{id}' with {len(df)} rows")
     
     if not df_all:

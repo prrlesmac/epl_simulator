@@ -341,42 +341,42 @@ elo_rating_url = f"http://api.clubelo.com/{elo_date}"
 pull_fixture_history = False
 fixtures_config = {
     "ENG": {
-        "fixtures_url": "https://fbref.com/en/comps/9/2025-2026/schedule/2025-2026-Premier-League-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/9/2025-2026/schedule/2025-2026-Premier-League-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Premier League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_9_1"],
     },
     "ESP": {
-        "fixtures_url": "https://fbref.com/en/comps/12/2025-2026/schedule/2025-2026-La-Liga-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/12/2025-2026/schedule/2025-2026-La-Liga-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/La Liga Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_12_1"],
     },
     "ITA": {
-        "fixtures_url": "https://fbref.com/en/comps/11/2025-2026/schedule/2025-2026-Serie-A-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/11/2025-2026/schedule/2025-2026-Serie-A-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Serie A Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_11_1"],
     },
     "GER": {
-        "fixtures_url": "https://fbref.com/en/comps/20/2025-2026/schedule/2025-2026-Bundesliga-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/20/2025-2026/schedule/2025-2026-Bundesliga-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Bundesliga Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_20_1"],
     },
     "FRA": {
-        "fixtures_url": "https://fbref.com/en/comps/13/2025-2026/schedule/2025-2026-Ligue-1-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/13/2025-2026/schedule/2025-2026-Ligue-1-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Ligue 1 Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_13_1"],
     },
     "UCL": {
-        "fixtures_url": "https://fbref.com/en/comps/8/schedule/Champions-League-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/8/schedule/Champions-League-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Champions League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_8_2", "sched_2025-2026_8_3"],
     },
     "UEL": {
-        "fixtures_url": "https://fbref.com/en/comps/19/schedule/Europa-League-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/19/schedule/Europa-League-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Europa League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_19_2", "sched_2025-2026_19_3"],
     },
     "UECL": {
-        "fixtures_url": "https://fbref.com/en/comps/882/schedule/Conference-League-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/882/schedule/Conference-League-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Conference League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_882_2", "sched_2025-2026_882_3"],
     },
