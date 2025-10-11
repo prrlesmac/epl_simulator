@@ -33,7 +33,7 @@ def calculate_win_probability(
     return we
 
 
-def simulate_match(proba, goal_adj=1):
+def simulate_match_goals(proba, goal_adj=1):
     """
     Simulates the outcome of a football match based on a win probability.
 
@@ -92,7 +92,7 @@ def simulate_extra_time(proba):
         str: 1 if team 1 wins, 2 if team 2 wins
     """
 
-    GH, GA = simulate_match(proba, goal_adj=1 / 3)
+    GH, GA = simulate_match_goals(proba, goal_adj=1 / 3)
 
     if GH > GA:
         result = 1
@@ -106,7 +106,7 @@ def simulate_extra_time(proba):
     return result
 
 
-def simulate_playoff(proba):
+def simulate_match_winner(proba):
     """
     Simulates the outcome of a playoff football match based on a win probability.
 
@@ -128,7 +128,7 @@ def simulate_playoff(proba):
     return result
 
 
-def simulate_matches_data_frame(matches_df):
+def simulate_matches_data_frame(matches_df, sim_type):
     """
     Simulate matches and determine winners.
 
@@ -151,11 +151,19 @@ def simulate_matches_data_frame(matches_df):
         )
 
         # Simulate match
-        result = simulate_match(win_proba)
-        # Append result
-        matches_df.at[index, "home_goals"] = result[0]
-        matches_df.at[index, "away_goals"] = result[1]
-
+        if sim_type == "goals":
+            result = simulate_match_goals(win_proba)
+            # Append result
+            matches_df.at[index, "home_goals"] = result[0]
+            matches_df.at[index, "away_goals"] = result[1]
+        elif sim_type == "winner":
+            result = simulate_match_winner(win_proba)
+            # Append result
+            matches_df.at[index, "home_goals"] = 1 if result == 1 else 0
+            matches_df.at[index, "away_goals"] = 0 if result == 1 else 1
+        else:
+            raise(ValueError("Invalid sim type in simulate_matches_data_frame"))
+            
     return pd.DataFrame(matches_df)
 
 
@@ -184,8 +192,11 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
     tied_matches_df = tied_matches_df[
         (matches_df["home"].isin(tied_teams)) & (matches_df["away"].isin(tied_teams))
     ]
-
-    standings_tied = get_standings_metrics(tied_matches_df)
+    # TODO move away from using standings metrics and instead just call a win loss h2h function
+    if rule=="h2h_win_loss_pct":
+        standings_tied = get_standings_metrics_us(tied_matches_df)
+    else:
+        standings_tied = get_standings_metrics_footy(tied_matches_df)
     # add h2h prefix to metrics
     standings_tied.columns = [
         f"h2h_{col}" if col != "team" else col for col in standings_tied.columns
@@ -194,11 +205,151 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
     return standings_tied
 
 
+def apply_h2h_sweep_tiebreaker(matches_df, tied_teams, sweep_type='full'):
+    """
+    Applies a head-to-head sweep tiebreaker rule to a group of tied teams based on their matches against each other.
+
+    Parameters:
+    matches_df (pd.DataFrame):
+        A DataFrame containing match results with at least the following columns: 'home', 'away', and any metrics
+        used in calculating standings (e.g., goals, points).
+
+    tied_teams (list of str):
+        A list of team names that are currently tied in the standings.
+
+    sweep_type (str):
+        Either "full": the team needs to have won all their games against all others
+        or "win_loss_pct": the team needs to have a better win loss pct against all others
+
+    Returns:
+    pd.DataFrame:
+        A DataFrame with two columns: 'team' and the h2h sweep tiebreaker result
+    """
+    tied_matches_df = matches_df.copy()
+    tied_matches_df = tied_matches_df[
+        (matches_df["home"].isin(tied_teams)) & (matches_df["away"].isin(tied_teams))
+    ]
+    for sel_team in tied_teams:
+        if sweep_type=="full":
+            home_wins = tied_matches_df[(tied_matches_df['home'] == sel_team) & (tied_matches_df['home_goals'] > tied_matches_df['away_goals'])]["away"].tolist()
+            home_losses_or_ties = tied_matches_df[(tied_matches_df['home'] == sel_team) & (tied_matches_df['home_goals'] <= tied_matches_df['away_goals'])]["away"].tolist()
+            away_wins = tied_matches_df[(tied_matches_df['away'] == sel_team) & (tied_matches_df['home_goals'] < tied_matches_df['away_goals'])]["home"].tolist()
+            away_losses_or_ties = tied_matches_df[(tied_matches_df['away'] == sel_team) & (tied_matches_df['home_goals'] >= tied_matches_df['away_goals'])]["home"].tolist()
+            wins = list(set(home_wins+away_wins))
+            losses = list(set(home_losses_or_ties+away_losses_or_ties))
+            h2h_sweep = (len(wins) == (len(tied_teams) - 1)) & (len(losses)==0)
+
+        elif sweep_type=="win_loss_pct":
+            rival_teams = [x for x in tied_teams if x!=sel_team]
+            win_loss_pct_list = []
+            for sel_rival in rival_teams:
+                h2h_tied_matches_df = tied_matches_df.copy()
+                h2h_tied_matches_df = h2h_tied_matches_df[
+                    (h2h_tied_matches_df["home"].isin([sel_team,sel_rival])) & (h2h_tied_matches_df["away"].isin([sel_team,sel_rival]))
+                ]
+                win_loss_pct_df = get_win_loss_pct(h2h_tied_matches_df)
+                win_loss_pct = win_loss_pct_df[win_loss_pct_df['team']==sel_team]["win_loss_pct"].values[0]
+                win_loss_pct_list.append(win_loss_pct)
+            h2h_sweep = all(x > 0.50001 for x in win_loss_pct_list)
+
+        else:
+            raise(ValueError("Invalid sweep type"))
+        if h2h_sweep:
+            h2h_sweep_team = sel_team
+            break
+    
+    if h2h_sweep:
+        standings_tied = pd.DataFrame({
+            "team": tied_teams,
+        })
+        standings_tied[f"h2h_sweep_{sweep_type}"] = np.where(
+            standings_tied["team"] == h2h_sweep_team,
+            1,
+            0
+        )
+
+    else:
+        standings_tied = pd.DataFrame({
+            "team": tied_teams,
+            f"h2h_sweep_{sweep_type}": [0] * len(tied_teams)  # creates a list of zeros with same length as teams
+        })
+    return standings_tied
+
+
+def apply_common_games_tiebreaker(matches_df, tied_teams):
+    """
+    Applies a head-to-head (H2H) tiebreaker rule to a group of tied teams based on their matches against each other.
+
+    Parameters:
+    matches_df (pd.DataFrame):
+        A DataFrame containing match results with at least the following columns: 'home', 'away', and any metrics
+        used in calculating standings (e.g., goals, points).
+
+    tied_teams (list of str):
+        A list of team names that are currently tied in the standings.
+
+    Returns:
+    pd.DataFrame:
+        A DataFrame with two columns: 'team' and the common games win pct 'common_games_win_pct'
+        It reflects the standings of tied teams based on the win loss pct of the games played 
+        against common opponents
+    """
+    tied_matches_df = matches_df.copy()
+    #find common opponents
+    opponents_by_team = {}
+    for sel_team in tied_teams:
+        home_opponents = tied_matches_df[tied_matches_df["home"] == sel_team]["away"].tolist()
+        away_opponents = tied_matches_df[tied_matches_df["away"] == sel_team]["home"].tolist()
+        all_opponents = list(set(home_opponents + away_opponents))
+        opponents_by_team[sel_team] = all_opponents
+
+    common_opponents = set.intersection(*(set(opp) for opp in opponents_by_team.values()))
+    if len(common_opponents)>=4:
+        common_matches_df = matches_df[
+            (matches_df["home"].isin(tied_teams) & matches_df["away"].isin(common_opponents))
+            | (matches_df["home"].isin(common_opponents) & matches_df["away"].isin(tied_teams))
+        ]
+
+        standings_tied = get_standings_metrics_us(common_matches_df)
+        standings_tied = standings_tied.rename(columns={"win_loss_pct": "h2h_win_loss_pct_common_games"})
+        standings_tied = standings_tied[["team", "h2h_win_loss_pct_common_games"]]
+        standings_tied = standings_tied[standings_tied["team"].isin(tied_teams)]
+    else:
+        standings_tied = pd.DataFrame({
+            "team": tied_teams,
+            "h2h_win_loss_pct_common_games": [0] * len(tied_teams)  # creates a list of zeros with same length as teams
+        })
+    return standings_tied
+
+
+
+def apply_break_division_tiebreaker(standings):
+    """
+    Applies a head-to-head (H2H) tiebreaker rule to a group of tied teams based on their matches against each other.
+
+    Parameters:
+    standings (pd.DataFrame):
+        A DataFrame containing league standings, including team name and division position
+
+    Returns:
+    pd.DataFrame:
+        A DataFrame with two columns: 'team' and the division tiebreaker position 'h2h_break_division_ties'
+    """
+    standings_tied = standings.copy()
+    standings_tied['rank'] = standings_tied.groupby('division')['division_pos'].rank(method='dense', ascending=True)
+    standings_tied['h2h_break_division_ties'] = np.where(
+        standings_tied['rank'] == 1,
+        1,
+        0
+    )
+
+    return standings_tied
+
 def apply_playoff_tiebreaker(matches_df, tied_teams):
 
     if len(tied_teams) > 2:
         standings_untied = get_standings(
-            matches_df, classif_rules=["points", "h2h_points", "h2h_goal_difference"]
+            matches_df, classif_rules={"league": ["points", "h2h_points", "h2h_goal_difference"]}, league_type="UEFA"
         )
         playoff_teams = standings_untied["team"].head(2).tolist()
         matches_df = matches_df[
@@ -217,7 +368,7 @@ def apply_playoff_tiebreaker(matches_df, tied_teams):
     we = calculate_win_probability(
         elo_home, elo_away, matchup_type="single_game_neutral"
     )
-    result = simulate_playoff(we)
+    result = simulate_match_winner(we)
 
     standings_playoff = pd.DataFrame(
         {
@@ -233,7 +384,7 @@ def apply_playoff_tiebreaker(matches_df, tied_teams):
     return standings_tied
 
 
-def get_standings_metrics(matches_df):
+def get_standings_metrics_footy(matches_df):
     """
     Calculates basic league standings metrics for each team based on match results.
 
@@ -331,39 +482,374 @@ def get_standings_metrics(matches_df):
     return standings
 
 
-def get_standings(matches_df, classif_rules):
+def get_standings_metrics_us(matches_df):
     """
-    Computes league standings metrics for each team and applies classification rules,
-    including optional head-to-head (H2H) tiebreakers.
+    Calculate team standings metrics for a U.S.-style sports league.
 
-    This function calculates standard league standings such as total points, goal difference, and goals scored,
-    and then ranks the teams using a list of classification rules. If any of the rules start with 'h2h',
-    it applies a head-to-head tiebreaker among teams tied on all previous rules.
+    This function computes win/loss percentages at the league, conference, and 
+    division levels, as well as additional tie-breaking metrics such as 
+    last-half conference win percentage, strength of victory, and strength of 
+    schedule. These metrics are typically used in standings tables for playoff 
+    qualification and tie-breaking.
 
-    Parameters:
-    matches_df (pd.DataFrame):
-        A DataFrame containing match-level data. Must include the following columns:
-        - 'home': name of the home team
-        - 'away': name of the away team
-        - 'home_goals': number of goals scored by the home team
-        - 'away_goals': number of goals scored by the away team
-
-    classif_rules (list of str):
-        A list of column names used to rank teams. These can include:
-        - Basic metrics such as 'points', 'goal_difference', 'goals_for', etc.
-        - Optional head-to-head metrics prefixed with 'h2h_', such as 'h2h_points', 'h2h_goal_difference', etc.
-          If an 'h2h_' rule is encountered, it is used to break ties between teams tied on all prior rules.
+    Args:
+        matches_df (pd.DataFrame): A DataFrame of match results containing at least:
+            - "home", "away": team identifiers for home and away teams
+            - "home_goals", "away_goals": scores for each match
+            - "home_conference", "away_conference": conference identifiers
+            - "home_division", "away_division": division identifiers
 
     Returns:
-    pd.DataFrame
-        A DataFrame where each row corresponds to a team, with the following columns:
-        - 'team': team name
-        - standard performance metrics (e.g., 'points', 'goal_difference', etc.)
-        - any head-to-head metrics added during tie-breaking
-        - 'pos': final ranking position based on the classification rules
+        pd.DataFrame: A DataFrame of team standings with the following columns:
+            - "team": Team identifier
+            - "win_loss_pct": Overall win-loss-tie percentage
+            - "wins": Total wins
+            - "ties": Total ties
+            - "played": Total games played
+            - "win_loss_pct_conf": Win-loss percentage within the conference
+            - "win_loss_pct_div": Win-loss percentage within the division
+            - Columns from `get_win_loss_pct_last_half` (e.g., last-half conf record)
+            - Columns from `get_opponents_strength` for strength of victory/schedule
 
+    Notes:
+        - The function relies on helper functions:
+            * `get_win_loss_pct`: Computes win-loss-tie percentage.
+            * `get_win_loss_pct_last_half`: Computes last-half conference win-loss pct.
+            * `get_opponents_strength`: Computes opponent-based strength metrics.
+        - The "strength_of_victory" and "strength_of_schedule" metrics depend on 
+          interpreting opponents' aggregated win-loss records.
     """
-    standings = get_standings_metrics(matches_df)
+    win_loss_league = get_win_loss_pct(matches_df)
+    matches_df_conf = matches_df[matches_df["home_conference"]==matches_df["away_conference"]].copy()
+    win_loss_conf = get_win_loss_pct(matches_df_conf)
+    matches_df_div = matches_df[matches_df["home_division"]==matches_df["away_division"]].copy()
+    win_loss_div = get_win_loss_pct(matches_df_div)
+    win_loss_last_half_conf = get_win_loss_pct_last_half(matches_df_conf)
+    strength_of_victory = get_opponents_strength(matches_df, win_loss_league, strength_of="schedule")
+    strength_of_schedule = get_opponents_strength(matches_df, win_loss_league, strength_of="victory")
+
+    win_loss_conf = (
+        win_loss_conf[["team","win_loss_pct"]]
+        .rename(columns= {"win_loss_pct": "win_loss_pct_conf"})
+    )
+    win_loss_div = (
+        win_loss_div[["team","win_loss_pct"]]
+        .rename(columns= {"win_loss_pct": "win_loss_pct_div"})
+    )
+    standings = (
+        win_loss_league
+        .merge(win_loss_conf, how="left", on="team")
+        .merge(win_loss_div, how="left", on="team")
+        .merge(win_loss_last_half_conf, how="left", on="team")
+        .merge(strength_of_victory, how="left", on="team")
+        .merge(strength_of_schedule, how="left", on="team")
+    )
+
+    return standings
+
+
+def get_win_loss_pct(matches_df):
+    """
+    Calculate win/loss percentage and basic record statistics for each team.
+
+    This function computes wins, ties, games played, and overall win-loss-tie 
+    percentage for each team across all matches. The win-loss percentage is 
+    calculated as:
+
+        win_loss_pct = (wins + 0.5 * ties) / played
+
+    Args:
+        matches_df (pd.DataFrame): A DataFrame of match results containing:
+            - "home", "away": team identifiers
+            - "home_goals", "away_goals": final scores for each match
+
+    Returns:
+        pd.DataFrame: A DataFrame containing team-level results with columns:
+            - "team": Team identifier
+            - "win_loss_pct": Overall win-loss-tie percentage (0–1, rounded to 3 decimals)
+            - "wins": Total number of wins
+            - "ties": Total number of ties
+            - "played": Total number of games played
+
+    Notes:
+        - Home and away performances are aggregated into a single record per team.
+        - Losses are implied as `played - wins - ties`.
+        - Missing teams (e.g., teams that only played home or away) are handled 
+          by filling missing values with 0.
+    """
+    matches_df_wl = matches_df.copy()
+    matches_df_wl["home_wins"] = np.where(
+        matches_df_wl["home_goals"] > matches_df_wl["away_goals"],
+        1,
+        0
+    )
+    matches_df_wl["away_wins"] = np.where(
+        matches_df_wl["away_goals"] > matches_df_wl["home_goals"],
+        1,
+        0
+    )
+    matches_df_wl["home_ties"] = np.where(
+        matches_df_wl["home_goals"] == matches_df_wl["away_goals"],
+        1,
+        0
+    )
+    matches_df_wl["away_ties"] = np.where(
+        matches_df_wl["away_goals"] == matches_df_wl["home_goals"],
+        1,
+        0
+    )
+    home_pts = (
+        matches_df_wl.groupby(["home"])[["home_wins","home_ties"]]
+        .sum()
+        .assign(home_played=matches_df_wl.groupby("home").size())
+        .reset_index()
+    )
+    away_pts = (
+        matches_df_wl.groupby(["away"])[["away_wins","away_ties"]]
+        .sum()
+        .assign(away_played=matches_df_wl.groupby("away").size())
+        .reset_index()
+    )
+    home_pts = home_pts.rename(
+        columns={
+            "home": "team",
+        }
+    )
+    away_pts = away_pts.rename(
+        columns={
+            "away": "team",
+        }
+    )
+    # Combine wins and losses into a single DataFrame
+    standings = pd.merge(home_pts, away_pts, how="outer", on="team").fillna(0)
+    standings["wins"] = standings["home_wins"] + standings["away_wins"]
+    standings["ties"] = standings["home_ties"] + standings["away_ties"]
+    standings["played"] = standings["home_played"] + standings["away_played"]
+    standings["win_loss_pct"] = round((standings["wins"] + standings["ties"] * 0.5) / (standings["played"]), 3)
+
+    standings = standings[
+        [
+            "team",
+            "win_loss_pct",
+            "wins",
+            "ties",
+            "played",
+        ]
+    ].fillna(0)
+
+    return standings
+
+def get_win_loss_pct_last_half(matches_df):
+    """
+    Calculate win-loss percentage for each team in the second half of their season.
+
+    This function computes each team's win-loss percentage based only on games
+    played in the last half of their schedule. The calculation is done by:
+      1. Identifying each team's games.
+      2. Splitting the schedule in half (by game order per team).
+      3. Calculating the number of wins and games played in the last half.
+
+    Args:
+        matches_df (pd.DataFrame): A DataFrame of match results containing:
+            - "home", "away": team identifiers
+            - "home_goals", "away_goals": match scores
+
+    Returns:
+        pd.DataFrame: A DataFrame with one row per team and columns:
+            - "team": Team identifier
+            - "win_loss_pct_conference_last_half": Win-loss percentage 
+              for the second half of the season (0–1, rounded to 3 decimals)
+
+    Notes:
+        - The "second half" is defined per team, based on the order of games
+          they played (not by calendar date).
+        - Ties are not explicitly considered; the metric is calculated as
+          wins / games played.
+        - Uses a simple range assignment for match numbers, so ensure the
+          input DataFrame is chronologically ordered.
+    """
+    list_of_teams = set(matches_df["home"].tolist() + matches_df["away"].tolist())
+    standings = []
+    for sel_team in list_of_teams:
+
+        matches_last_half = matches_df.copy()
+        matches_last_half = matches_last_half[(
+            (matches_last_half["home"] == sel_team)
+            | (matches_last_half["away"] == sel_team)
+        )]
+        matches_last_half["match_number"] = range(1, len(matches_last_half) + 1)
+        matches_last_half = matches_last_half[(matches_last_half["match_number"] - 0.01) >= (len(matches_last_half)/2)]
+        matches_last_half["home_wins"] = np.where(
+            (matches_last_half["home_goals"] > matches_last_half["away_goals"])
+            & (matches_last_half["home"]==sel_team),
+            1,
+            0
+        )
+        matches_last_half["away_wins"] = np.where(
+            (matches_last_half["away_goals"] > matches_last_half["home_goals"])
+            & (matches_last_half["away"]==sel_team),
+            1,
+            0
+        )
+        matches_last_half["away_wins"] = np.where(
+            matches_last_half["away_goals"] > matches_last_half["home_goals"],
+            1,
+            0
+        )
+        home_wins = matches_last_half[matches_last_half['home']==sel_team]["home_wins"].sum()
+        away_wins = matches_last_half[matches_last_half['away']==sel_team]["away_wins"].sum()
+        played = len(matches_last_half)
+        win_loss_pct = round((home_wins + away_wins) / played, 3)
+        standings.append({"team": sel_team, "win_loss_pct_conference_last_half": win_loss_pct})
+
+    standings = pd.DataFrame(standings)
+
+    return standings
+
+
+def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
+    """
+    Generate team standings and apply classification rules for league and subgroup rankings.
+
+    This function computes team performance metrics (points, win/loss percentages, 
+    goal difference, etc.) using either European-style ("UEFA") or U.S.-style 
+    ("NBA", "MLB", "NFL") rules. It then applies a hierarchy of classification 
+    rules to rank teams, including optional subgroup rankings (e.g., divisions, 
+    conferences). Head-to-head (H2H) rules can also be applied to break ties 
+    among teams tied on previous criteria.
+
+    Args:
+        matches_df (pd.DataFrame): Match-level data with at least:
+            - "home": Home team identifier
+            - "away": Away team identifier
+            - "home_goals": Goals scored by the home team
+            - "away_goals": Goals scored by the away team
+
+        classif_rules (dict): Dictionary mapping classification levels to rules.
+            Example:
+                {
+                    "league": ["points", "goal_difference", "goals_for"],
+                    "division": ["points", "h2h_points"]
+                }
+            - Keys represent classification levels (e.g., "league", "division").
+            - Values are ordered lists of rules for ranking.
+            - Rules may include:
+                * Aggregate metrics (e.g., "points", "goal_difference")
+                * Head-to-head rules prefixed with "h2h_" 
+                  (e.g., "h2h_points", "h2h_goal_difference")
+
+        league_type (str, optional): Determines which metric function to use.
+            - "UEFA": Uses `get_standings_metrics_footy` (soccer/football style).
+            - "NBA", "MLB", "NFL": Uses `get_standings_metrics_us` (U.S. sports style).
+            Defaults to None.
+
+        divisions (pd.DataFrame, optional): Mapping of teams to subgroup identifiers.
+            Required if classification rules include subgroups (e.g., "division", "conference").
+            Must include:
+            - "team": Team identifier
+            - Columns for each subgroup level (e.g., "division", "conference")
+
+    Returns:
+        pd.DataFrame: Standings for all teams with:
+            - "team": Team identifier
+            - Standard performance metrics (depends on league_type)
+            - Columns for each classification level position:
+                * "{classif}_pos": Ranking position within that level
+            - Subgroup identifiers (if applicable)
+
+    Raises:
+        ValueError: If `league_type` is not one of ["UEFA", "NBA", "MLB", "NFL"].
+
+    Notes:
+        - Classification rules are applied hierarchically:
+            1. Metrics are computed for all teams.
+            2. Teams are ranked using rules defined in `classif_rules`.
+            3. For non-league levels (e.g., divisions), standings are recomputed 
+               within each subgroup.
+        - Head-to-head rules ("h2h_*") are applied only among tied teams.
+    """
+    if league_type == "UEFA":
+        standings = get_standings_metrics_footy(matches_df)
+    elif league_type in ["NBA","MLB","NFL"]:
+        standings = get_standings_metrics_us(matches_df)
+    else:
+        raise(ValueError("Invalid league type for getting standings"))
+    for classif, rules in classif_rules.items():
+        if classif=="league":
+            league_standings = apply_classification_rules(matches_df, rules, standings.copy())
+            league_standings = league_standings[["team", "pos"]]
+            league_standings = league_standings.rename(columns={"pos": f"{classif}_pos"})
+            standings = standings.merge(league_standings, how="left",on="team")
+        else:
+            div_to_iterate = divisions[classif].unique().tolist()
+            all_division_standings = []
+            for div in div_to_iterate:
+                division_teams = divisions[divisions[classif]==div]
+                division_standings_metrics = standings[standings["team"].isin(division_teams["team"])].copy()
+                division_standings = apply_classification_rules(matches_df, rules, division_standings_metrics)
+                division_standings = division_standings[["team", "pos"]]
+                division_standings = division_standings.rename(columns={"pos": f"{classif}_pos"})
+                division_standings[classif] = div
+                all_division_standings.append(division_standings)
+            all_division_standings = pd.concat(all_division_standings)
+            standings = standings.merge(all_division_standings, how="left",on="team")
+
+    if league_type == "UEFA":
+        standings["playoff_pos"] = standings["league_pos"]
+    else:
+        standings["playoff_pos"] = standings["conference"] + " " + standings["conference_pos"].astype(str)
+
+    return standings
+
+
+def apply_classification_rules(matches_df, classif_rules, standings):
+    """
+    Apply classification and tie-breaking rules to rank teams in a standings table.
+
+    This function ranks teams based on a list of classification rules. It supports:
+      - Standard aggregate metrics (e.g., points, goal difference).
+      - Opponent-based metrics (e.g., opponent win percentage).
+      - Division winner bonuses.
+      - Head-to-head (H2H) tie-breakers among tied teams.
+      - Playoff tie-breakers (for leagues like Serie A).
+
+    For each rule, the function augments the standings with additional metrics if needed,
+    then applies ranking logic. At the end, it assigns each team a final position (`pos`)
+    after resolving ties with a fallback random tie-breaker.
+
+    Args:
+        matches_df (pd.DataFrame): Match-level data used to calculate tiebreakers.
+            Must include at least:
+            - "home", "away": Team identifiers
+            - "home_goals", "away_goals": Match scores
+        classif_rules (list of str): Ordered list of rules to rank teams.
+            Supported rule types:
+              - Aggregate stats already in `standings` (e.g., "points", "goal_difference").
+              - "opponent_*": Adds opponent-based metrics via `get_opponents_aggregate_stats`.
+              - "division_winner": Awards division leaders an extra ranking advantage.
+              - "h2h_*": Applies a head-to-head tie-breaker (e.g., "h2h_points").
+              - "playoff_*": Applies playoff tie-breaking rules for specific tied positions.
+        standings (pd.DataFrame): Team standings with precomputed metrics.
+            Must contain at least a "team" column, plus the metrics referenced in `classif_rules`.
+
+    Returns:
+        pd.DataFrame: Updated standings with:
+            - All original columns
+            - New columns for each applied classification rule
+            - "__tiebreaker__": Random fallback column for tie resolution
+            - "pos": Final team position after applying all rules
+
+    Notes:
+        - H2H rules are applied only among teams tied after previous rules.
+        - Playoff rules apply to specific tied positions (e.g., 1st or relegation spots).
+        - If ties remain after all rules, a deterministic fallback (`__tiebreaker__`)
+          ensures all teams get a unique ranking.
+        - Helper functions are used for specialized tie-breaking:
+            * `apply_h2h_tiebreaker`, `apply_h2h_sweep_tiebreaker`
+            * `apply_common_games_tiebreaker`
+            * `apply_break_division_tiebreaker`
+            * `apply_playoff_tiebreaker`
+    """
     # Sort by classification rules
     for i, rule in enumerate(classif_rules):
         is_h2h_rule = rule.startswith("h2h")
@@ -373,6 +859,9 @@ def get_standings(matches_df, classif_rules):
         if (is_opponent_rule) & (rule not in standings.columns.tolist()):
             opponent_stats = get_opponents_aggregate_stats(matches_df, standings)
             standings = pd.merge(standings,opponent_stats,on='team')
+
+        elif rule == "division_winner":
+            standings[rule] = np.where(standings["division_pos"] == 1, 1, 0)
 
         elif is_h2h_rule or is_playoff:
             # tiebreakers previous to current h2h one
@@ -398,9 +887,26 @@ def get_standings(matches_df, classif_rules):
                     tied_teams = subset_of_tied["team"].tolist()
 
                     if is_h2h_rule:
-                        substed_tied_standings = apply_h2h_tiebreaker(
-                            matches_df, tied_teams, rule
-                        )
+                        if rule=="h2h_sweep_full":
+                            substed_tied_standings = apply_h2h_sweep_tiebreaker(
+                                matches_df, tied_teams, "full"
+                            )
+                        elif rule=="h2h_sweep_win_loss_pct":
+                            substed_tied_standings = apply_h2h_sweep_tiebreaker(
+                                matches_df, tied_teams, "win_loss_pct"
+                            )
+                        elif rule=="h2h_win_loss_pct_common_games":
+                            substed_tied_standings = apply_common_games_tiebreaker(
+                                matches_df, tied_teams
+                            )
+                        elif rule=="h2h_break_division_ties":
+                            substed_tied_standings = apply_break_division_tiebreaker(
+                                subset_of_tied
+                            )
+                        else:
+                            substed_tied_standings = apply_h2h_tiebreaker(
+                                matches_df, tied_teams, rule
+                            )
                     elif is_playoff:
                         substed_tied_standings = apply_playoff_tiebreaker(
                             matches_df, tied_teams
@@ -429,7 +935,6 @@ def get_standings(matches_df, classif_rules):
         .rank(method="min", ascending=False)
         .astype(int)
     )
-
     return standings
 
 
@@ -485,7 +990,85 @@ def get_opponents_aggregate_stats(matches_df, standings_df):
     return pd.DataFrame(result)
 
 
-def validate_bracket(bracket_df, bracket_format):
+def get_opponents_strength(matches_df, standings_df, strength_of):
+    """
+    Calculate a team's strength of schedule or strength of victory based on their opponents' records.
+
+    Parameters
+    ----------
+    matches_df : pandas.DataFrame
+        DataFrame containing match results with at least the following columns:
+        - 'home': home team name
+        - 'away': away team name
+        - 'home_goals': goals scored by the home team
+        - 'away_goals': goals scored by the away team
+
+    standings_df : pandas.DataFrame
+        DataFrame containing current standings with at least the following columns:
+        - 'team': team name
+        - 'wins': number of wins
+        - 'ties': number of ties
+        - 'played': total games played
+
+    strength_of : str
+        Determines the type of calculation:
+        - 'schedule': use all opponents from games played (regardless of result).
+        - 'victory': use only opponents from games the team has won.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with two columns:
+        - 'team': team name
+        - 'strength_of_<strength_of>': winning percentage of the relevant opponents,
+          calculated as (total_wins + total_ties / 2) / total_played. If total_played is 0, returns 0.
+
+    Notes
+    -----
+    - In 'schedule' mode, all opponents are included, regardless of match result.
+    - In 'victory' mode, only opponents from matches the team has won are included.
+    - The winning percentage formula counts ties as half a win.
+    """
+    # Get set of all opponents each team has played against
+    team_opponents = {}
+
+    if strength_of == 'schedule':
+        for _, row in matches_df.iterrows():
+            team_opponents.setdefault(row['home'],[]).append(row['away'])
+            team_opponents.setdefault(row['away'],[]).append(row['home'])
+
+    elif strength_of == 'victory':
+        for _, row in matches_df.iterrows():
+            # Home team wins
+            if row['home_goals'] > row['away_goals']:
+                team_opponents.setdefault(row['home'], []).append(row['away'])
+            # Away team wins
+            elif row['away_goals'] > row['home_goals']:
+                team_opponents.setdefault(row['away'], []).append(row['home'])
+
+    else:
+        raise(ValueError("Must be strength of schedule or victory"))
+
+    wins_lookup = standings_df.set_index("team")["wins"].to_dict()
+    ties_lookup = standings_df.set_index("team")["ties"].to_dict()
+    played_lookup = standings_df.set_index("team")["played"].to_dict()
+
+    # Build result
+    result = []
+    for team, opponents in team_opponents.items():
+        total_wins = sum(wins_lookup.get(opp, 0) for opp in opponents)
+        total_ties = sum(ties_lookup.get(opp, 0) for opp in opponents)
+        total_played = sum(played_lookup.get(opp, 0) for opp in opponents)
+        strength_calc = (total_wins + total_ties / 2) / total_played if total_played > 0 else 0
+        result.append({
+            "team": team,
+            f"strength_of_{strength_of}": round(strength_calc, 3)
+        })
+
+    return pd.DataFrame(result)
+
+
+def validate_bracket(bracket_df, knockout_format):
     """
     Validates a playoff bracket DataFrame.
 
@@ -497,7 +1080,7 @@ def validate_bracket(bracket_df, bracket_format):
 
     Args:
         bracket_df (pd.DataFrame): A DataFrame with columns ['team1', 'team2'] representing matchups.
-        bracket_format (dict): Dictionary defining the format of each round in the knockout stage.
+        knockout_format (dict): Dictionary defining the format of each round in the knockout stage.
             Example: {"po_r32": "two-legged", "po_r16": "two-legged", ...}
 
     Raises:
@@ -527,27 +1110,28 @@ def validate_bracket(bracket_df, bracket_format):
         raise ValueError("At least two teams are required in the bracket.")
     # check that bracket format matches the number of rounds
     expected_rounds = int(math.log2(num_slots))
-    if len(bracket_format) != expected_rounds:
+    if len(knockout_format) != expected_rounds:
         raise ValueError(
-            f"Bracket format does not match the number of rounds. Expected {expected_rounds} rounds, got {len(bracket_format)}."
+            f"Bracket format does not match the number of rounds. Expected {expected_rounds} rounds, got {len(knockout_format)}."
         )
 
 
-def simulate_playoff_bracket(bracket_df, bracket_format, elos, playoff_schedule):
+def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule, has_reseeding):
     """
     Simulates a knockout playoff bracket using ELO ratings.
 
     Args:
-        bracket_df: Bracket structure with columns ['team1', 'team2']
-        bracket_format: Dictionary defining the format of each round
+        bracket_df: Bracket structure with columns ['team1', 'team2'],
+            and additional columns ['seed1','seed2'] in case the bracket has re-seeding
+        knockout_format: Dictionary defining the format of each round
         elos: DataFrame with columns ['team', 'elo'] representing team ELO ratings
         playoff_schedule: DataFrame with pending matches to simulate
+        has_reseeding (boolean): True/False if playoff has re-seeding after each round
 
     Returns:
         Wide-format DataFrame with one row per team and binary indicators for each round
     """
-    validate_bracket(bracket_df, bracket_format)
-
+    validate_bracket(bracket_df, knockout_format)
     elos_dict = dict(zip(elos["team"], elos["elo"]))
     teams_progression = {}
     rounds = []
@@ -556,7 +1140,7 @@ def simulate_playoff_bracket(bracket_df, bracket_format, elos, playoff_schedule)
 
     while len(current_round) > 0:
         round_label = f"po_r{2 * len(current_round)}"
-        round_format = bracket_format[round_label]
+        round_format = knockout_format[round_label]
         rounds.append(round_label)
 
         winners = _simulate_round(
@@ -568,7 +1152,7 @@ def simulate_playoff_bracket(bracket_df, bracket_format, elos, playoff_schedule)
             round_label,
         )
 
-        current_round = _prepare_next_round(winners)
+        current_round = _prepare_next_round(winners, bracket_df, has_reseeding)
 
     return _build_results_dataframe(teams_progression, rounds)
 
@@ -642,7 +1226,7 @@ def get_match_winner_from_playoff(
     tie_matches = _get_tie_matches(team1, team2, playoff_schedule)
 
     if tie_matches.empty:
-        result = simulate_playoff(win_proba)
+        result = simulate_match_winner(win_proba)
         return team1 if result == 1 else team2
 
     return _determine_winner_from_schedule(team1, team2, tie_matches, win_proba)
@@ -684,7 +1268,7 @@ def _determine_winner_from_schedule(team1, team2, tie_matches, win_proba):
     elif any(tie_matches["played"] == "Y"):
         return _get_winner_from_partial_matches(team1, team2, tie_matches, win_proba)
     else:
-        result = simulate_playoff(win_proba)
+        result = simulate_match_winner(win_proba)
         return team1 if result == 1 else team2
 
 
@@ -816,12 +1400,15 @@ def _track_team_progression(
             teams_progression[team]["po_champion"] = 1
 
 
-def _prepare_next_round(winners):
+def _prepare_next_round(winners, bracket_df, has_reseeding):
     """
     Pair up winners to create matchups for the next round.
 
     Args:
         winners (list): List of team names who won their previous matches.
+        bracket_df( pd.DataFrame): Optional: original bracket for playoffs
+            Used when has_reseeding is True for re-seeding purposes
+        has_reseeding (boolean): True/False if playoff has re-seeding after each round
 
     Returns:
         pd.DataFrame: DataFrame with columns 'team1' and 'team2' for next round matchups.
@@ -829,11 +1416,59 @@ def _prepare_next_round(winners):
     if len(winners) < 2:
         return pd.DataFrame()
 
-    it = iter(winners)
-    next_round_pairs = list(zip(it, it))
+    if has_reseeding and len(winners) > 2:
+        next_round_pairs = _playoff_round_reseeding(winners, bracket_df)
+        next_round_pairs = next_round_pairs[["team1", "team2"]]
+    else:
+        it = iter(winners)
+        next_round_pairs = list(zip(it, it))
+        next_round_pairs = pd.DataFrame(next_round_pairs, columns=["team1", "team2"])
 
-    return pd.DataFrame(next_round_pairs, columns=["team1", "team2"])
+    return next_round_pairs
 
+
+def _playoff_round_reseeding(winners, bracket_df):
+    """
+    Reseed all teams that have advanced to the next playoff rpund
+    Create the matchups for the following round.
+
+    Args:
+        winners (list): List of team names who won their previous matches.
+        bracket_df( pd.DataFrame): Optional: original bracket for playoffs
+            Used when has_reseeding is True for re-seeding purposes
+
+    Returns:
+        pd.DataFrame: DataFrame with columns 'team1' and 'team2' for next round matchups.
+    """
+    team_seeds = pd.concat([
+        bracket_df[["team1", "seed1"]].rename(columns={"team1": "team", "seed1": "seed"}),
+        bracket_df[["team2", "seed2"]].rename(columns={"team2": "team", "seed2": "seed"})
+    ])
+    team_seeds = team_seeds[team_seeds["team"].isin(winners)]
+    team_seeds[["league", "seed"]] = team_seeds["seed"].str.split(" ", n=1, expand=True)
+    team_seeds["seed"] = team_seeds["seed"].astype(int)
+    team_seeds["round_seed"] = team_seeds.groupby("league")["seed"].rank(method="first")
+
+    matchups = []
+
+    for league, group in team_seeds.groupby("league"):
+        group_sorted = group.sort_values("round_seed")  # ascending: best → worst
+        teams = group_sorted["team"].tolist()
+        seeds = group_sorted["round_seed"].tolist()
+        
+        # Pair first with last, etc.
+        for i in range(len(teams) // 2):
+            matchup = {
+                "league": league,
+                "team1": teams[i],
+                "seed1": seeds[i],
+                "team2": teams[-(i+1)],
+                "seed2": seeds[-(i+1)]
+            }
+            matchups.append(matchup)
+
+    return pd.DataFrame(matchups)
+    
 
 def _build_results_dataframe(teams_progression, rounds):
     """
@@ -863,17 +1498,17 @@ def draw_from_pots(df, pot_size=2):
     Randomly draws teams from position-based pots.
 
     Args:
-        df (pd.DataFrame): DataFrame with columns ['team', 'pos'] where 'pos' determines pot grouping.
+        df (pd.DataFrame): DataFrame with columns ['team', 'league_pos'] where 'league_pos' determines pot grouping.
         pot_size (int): Number of positions per pot (default is 2).
 
     Returns:
         pd.DataFrame: A DataFrame with columns ['draw_order', 'team'] indicating the randomized draw result.
     """
     df = df.copy()
-    df = df.sort_values("pos").reset_index(drop=True)
+    df = df.sort_values("league_pos").reset_index(drop=True)
 
     # Map position → team
-    pos_to_team = dict(zip(df["pos"], df["team"]))
+    pos_to_team = dict(zip(df["league_pos"], df["team"]))
 
     # Sort positions and group into pots
     sorted_positions = sorted(pos_to_team.keys())
@@ -894,13 +1529,13 @@ def draw_from_pots(df, pot_size=2):
     )
 
 
-def create_bracket_from_composition(df_with_draw, bracket_composition):
+def create_bracket_from_composition(df_with_draw, knockout_bracket):
     """
     Creates a playoff bracket based on a predefined composition and a team draw.
 
     Args:
         df_with_draw (pd.DataFrame): DataFrame with columns ['draw_order', 'team'] from draw.
-        bracket_composition (list of tuple): List of (pos1, pos2) tuples representing matchups.
+        knockout_bracket (list of tuple): List of (pos1, pos2) tuples representing matchups.
             Values can be integers (draw positions) or 'Bye'.
 
     Returns:
@@ -912,13 +1547,13 @@ def create_bracket_from_composition(df_with_draw, bracket_composition):
     pos_to_team = dict(zip(df_with_draw["draw_order"], df_with_draw["team"]))
     pairs = []
 
-    for pos1, pos2 in bracket_composition:
+    for pos1, pos2 in knockout_bracket:
         team1 = pos_to_team.get(pos1) if pos1 != "Bye" else "Bye"
         team2 = pos_to_team.get(pos2) if pos2 != "Bye" else "Bye"
 
         if team1 == "Bye" and team2 == "Bye":
             raise ValueError("Invalid bracket: both sides cannot be 'Bye'")
 
-        pairs.append((team1, team2))
+        pairs.append((team1, team2, pos1, pos2))
 
-    return pd.DataFrame(pairs, columns=["team1", "team2"])
+    return pd.DataFrame(pairs, columns=["team1", "team2", "seed1", "seed2"])

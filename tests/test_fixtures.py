@@ -15,7 +15,10 @@ from retriever.fixtures import (
     extract_scores,
     get_fixtures,
     parse_fixtures_html,
+    get_fixtures_text,
+    parse_game_element,
     process_fixtures,
+    process_nfl_table_legacy
 )
 
 
@@ -127,7 +130,7 @@ class TestGetFixtures:
         mock_response.text = self.create_mock_html(tables_data)
         mock_get.return_value = mock_response
 
-        result = get_fixtures("http://example.com", ["table1"])
+        result = get_fixtures(["http://example.com"], ["table1"])
 
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 2
@@ -156,7 +159,7 @@ class TestGetFixtures:
         mock_response.text = self.create_mock_html(tables_data)
         mock_get.return_value = mock_response
 
-        result = get_fixtures("http://example.com", ["table1", "table2"])
+        result = get_fixtures(["http://example.com"], ["table1", "table2"])
 
         assert len(result) == 2
         assert "Team1" in result["Home"].values
@@ -171,7 +174,7 @@ class TestGetFixtures:
         mock_get.return_value = mock_response
 
         with patch("builtins.print") as mock_print:
-            result = get_fixtures("http://example.com", ["table1"])
+            result = get_fixtures(["http://example.com"], ["table1"])
 
         mock_print.assert_called_with("Failed to fetch the page. Status code: 404")
 
@@ -195,7 +198,7 @@ class TestGetFixtures:
         mock_response.text = self.create_mock_html(tables_data)
         mock_get.return_value = mock_response
 
-        result = get_fixtures("http://example.com", ["table1"])
+        result = get_fixtures(["http://example.com"], ["table1"])
 
         # Should exclude the empty row
         assert len(result) == 2
@@ -208,9 +211,87 @@ class TestGetFixtures:
         mock_get.side_effect = requests.exceptions.RequestException("Network error")
 
         with pytest.raises(requests.exceptions.RequestException):
-            get_fixtures("http://example.com", ["table1"])
+            get_fixtures(["http://example.com"], ["table1"])
 
+    def create_mock_html_text(self):
+        """Helper to create mock HTML similar to Baseball Reference schedule page."""
+        html = """
+        <html><body>
+            <h2>MLB Regular Season</h2>
+           <h3>Wednesday, March 20, 2024</h3>
+            <p class="game">
+                <a href="/teams/NYA/2024.shtml">Yankees</a> 
+                @ 
+                <a href="/teams/BOS/2024.shtml">Red Sox</a> 
+                (3) - (5)
+            </p>
+        </body></html>
+        """
+        return html
 
+    def create_bad_score_html(self):
+        """Helper for game element missing scores."""
+        html = """
+        <p class="game">
+            <a href="/teams/NYA/2024.shtml">Yankees</a> 
+            @ 
+            <a href="/teams/BOS/2024.shtml">Red Sox</a>
+        </p>
+        """
+        return html
+
+    def test_parse_game_element_valid(self):
+        soup = BeautifulSoup(self.create_mock_html_text(), "html.parser")
+        game_el = soup.find("p", class_="game")
+        date = "Wednesday, March 20, 2024"
+        round = "MLB Season"
+        result = parse_game_element(game_el, date, round)
+
+        expected = {
+            'round': round,
+            'date': date,
+            'away': 'Yankees',
+            'home': 'Red Sox',
+            'away_goals': 3,
+            'home_goals': 5
+        }
+        assert result == expected
+
+    def test_parse_game_element_invalid_missing_scores(self):
+        soup = BeautifulSoup(self.create_bad_score_html(), "html.parser")
+        game_el = soup.find("p", class_="game")
+        result = parse_game_element(game_el, "Some Date", "MLB Season")
+        assert result is None
+
+    @patch("time.sleep")
+    @patch("requests.get")
+    def test_get_fixtures_text_success(self, mock_get, mock_sleep):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = self.create_mock_html_text()
+        mock_get.return_value = mock_response
+
+        df = get_fixtures_text(["http://dummy-url.com"])
+
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == 1
+        assert set(df.columns) == {'round','date', 'away', 'home', 'away_goals', 'home_goals'}
+        assert df.iloc[0]["away"] == "Yankees"
+        assert df.iloc[0]["home_goals"] == 5
+        mock_sleep.assert_called_once()
+
+    @patch("time.sleep")
+    @patch("requests.get")
+    def test_get_fixtures_text_failure(self, mock_get, mock_sleep):
+        mock_response = Mock()
+        mock_response.status_code = 404
+        mock_get.return_value = mock_response
+
+        result = get_fixtures_text(["http://dummy-url.com"])
+        assert result is None
+        mock_sleep.assert_called_once()
+
+    
 class TestProcessFixtures:
     """Test cases for the process_fixtures function."""
 
@@ -413,6 +494,184 @@ class TestProcessFixtures:
         assert result_uecl.iloc[0]["home"] == "Barcelona"
 
 
+    def test_process_fixtures_nba(self):
+        """Test processing fixtures for NBA."""
+        fixtures = pd.DataFrame(
+            {
+                "Date": ["Mon, Oct 21, 2024", "Tue, Oct 22, 2024", "Wed, Oct 23, 2024", "Thu, Oct 24, 2024", "Fri, Oct 25, 2024"],
+                "Start (ET)": ["7:30p", "10:00p","7:30p", "10:00p", "6:00p"],
+                "Visitor/Neutral": ["New York Knicks", "Minnesota Timberwolves", "Boston Celtics", "Chicago Bulls", "Detroit Pistons"],
+                "PTS": [109, 103, 110, 100, pd.NA],
+                "Home/Neutral": ["Boston Celtics", "Los Angeles Lakers", "Utah Jazz", "San Antonio Spurs", "Houston Rockets"],
+                "PTS.1": [132, 110, 115, 95, pd.NA],
+                "Attend.": ["19,156", "18,997", "20,000", "30,000", "25,000"],
+                "LOG": ["2:04", "2:26", "2:04","2:11", "2:17"],
+                "Arena": ["TD Garden", "Crypto.com Arena", "TD Arena", "AA Arena", "AA Court"],
+                "Notes": ["", "NBA Cup","","Play-In Game",""]
+            }
+        )
+
+        output = pd.DataFrame(
+            {
+                "home": ["Boston Celtics", "Los Angeles Lakers", "Utah Jazz", "San Antonio Spurs", "Houston Rockets"],
+                "away": ["New York Knicks", "Minnesota Timberwolves", "Boston Celtics", "Chicago Bulls", "Detroit Pistons"],
+                "home_goals": pd.Series([132, 110, 115, 95, pd.NA], dtype="Int64"),
+                "away_goals": pd.Series([109, 103, 110, 100, pd.NA], dtype="Int64"),
+                "played": ["Y", "Y", "Y", "Y","N"],
+                "neutral": ["N", "N", "N", "N","N"],
+                "round": ["League","NBA Cup","League", "Play-in","Playoff"],
+                "date": pd.to_datetime(["2024-10-21", "2024-10-22","2024-10-23", "2024-10-24","2024-10-25"]),
+                "notes": ["", "NBA Cup","","Play-In Game",""]
+            }
+        )
+
+        result = process_fixtures(fixtures, "NBA").reset_index(drop=True)
+        pd.testing.assert_frame_equal(output, result, check_like=True, check_index_type=False)  # ignores column order
+
+    def test_process_fixtures_nfl_legacy(self):
+        """Test processing fixtures forNFL."""
+
+        fixtures = pd.DataFrame(
+            {
+                "Week": ["Pre0", "Pre1", "18", "18"],
+                "Day": ["Thu", "Thu", "Sun", "Sun"],
+                "Date": ["July 31", "August 7", "January 4", "January 4"],
+                "VisTm": [
+                    "Los Angeles Chargers",
+                    "Indianapolis Colts",
+                    "Baltimore Ravens",
+                    "Kansas City Chiefs"
+                ],
+                "Pts": [34, None, 23, None],
+                "  ": ["","","",""],
+                "HomeTm": [
+                    "Detroit Lions",
+                    "Baltimore Ravens",
+                    "Pittsburgh Steelers",
+                    "Las Vegas Raiders"
+                ],
+                "Pts.1": [7, None, 16, None],
+                "Time": ["8:00 PM", "7:00 PM", "1:00 PM", "1:00 PM"],
+                "url": [
+                    "https://www.pro-football-reference.com/years/2025/games.htm",
+                    "https://www.pro-football-reference.com/years/2025/games.htm",
+                    "https://www.pro-football-reference.com/years/2025/games.htm",
+                    "https://www.pro-football-reference.com/years/2025/games.htm"
+                ]
+            }
+        )
+        fixtures.columns = fixtures.columns.str.lower()
+        output = pd.DataFrame(
+            {
+                "home": ["Pittsburgh Steelers", "Las Vegas Raiders"],
+                "away": ["Baltimore Ravens", "Kansas City Chiefs"],
+                "home_goals": pd.Series([16, pd.NA], dtype="Int64"),
+                "away_goals": pd.Series([23, pd.NA], dtype="Int64"),
+                "played": ["Y", "N"],
+                "neutral": ["N", "N"],
+                "round": ["League", "League"],
+                "date": pd.to_datetime(["2026-01-04", "2026-01-04"]),
+                "notes": ["", ""]
+            }
+        )
+        result = process_nfl_table_legacy(fixtures).reset_index(drop=True)
+        result = result[
+            [
+                "home",
+                "away",
+                "home_goals",
+                "away_goals",
+                "played",
+                "neutral",
+                "round",
+                "date",
+                "notes",
+            ]
+        ]
+        pd.testing.assert_frame_equal(output, result, check_like=True, check_index_type=False)  # ignores column order
+
+    def test_process_fixtures_nfl(self):
+        """Test processing fixtures forNFL."""
+
+        fixtures = pd.DataFrame(
+            {
+                "Week": ["Pre0", "Pre1", "18", "18"],
+                "Day": ["Thu", "Thu", "Sun", "Sun"],
+                "Date": ["2025-07-31", "2025-08-07", "2026-01-04", "2026-01-04"],
+                "Winner/tie": [
+                    "Los Angeles Chargers",
+                    "Indianapolis Colts",
+                    "Baltimore Ravens",
+                    "Kansas City Chiefs"
+                ],
+                "PtsW": [34, None, 23, None],
+                "  ": ["","@","","@"],
+                "Loser/tie": [
+                    "Detroit Lions",
+                    "Baltimore Ravens",
+                    "Pittsburgh Steelers",
+                    "Las Vegas Raiders"
+                ],
+                "PtsL": [7, None, 16, None],
+                "url": [
+                    "https://www.pro-football-reference.com/years/2025/games.htm",
+                    "https://www.pro-football-reference.com/years/2025/games.htm",
+                    "https://www.pro-football-reference.com/years/2025/games.htm",
+                    "https://www.pro-football-reference.com/years/2025/games.htm"
+                ]
+            }
+        )
+
+        output = pd.DataFrame(
+            {
+                "home": ["Baltimore Ravens", "Las Vegas Raiders"],
+                "away": ["Pittsburgh Steelers", "Kansas City Chiefs"],
+                "home_goals": pd.Series([23, pd.NA], dtype="Int64"),
+                "away_goals": pd.Series([16, pd.NA], dtype="Int64"),
+                "played": ["Y", "N"],
+                "neutral": ["N", "N"],
+                "round": ["League", "League"],
+                "date": ["2026-01-04", "2026-01-04"],
+                "notes": ["", ""]
+            }
+        )
+        result = process_fixtures(fixtures, "NFL").reset_index(drop=True)
+        pd.testing.assert_frame_equal(output, result, check_like=True, check_index_type=False)  # ignores column order
+
+    def test_process_fixtures_mlb(self):
+        """Test processing fixtures for MLB."""
+
+        fixtures = pd.DataFrame(
+            {
+                "date": ["Wednesday, March 20, 2024", "Thursday, March 21, 2024"],
+                "away": ["Los Angeles Dodgers", "San Diego Padres"],
+                "home": ["San Diego Padres", "Los Angeles Dodgers"],
+                "away_goals": [5, 15],
+                "home_goals": [2, 11],
+                "round": ["League","League"]
+            }
+        )
+
+        output = pd.DataFrame(
+            {
+                "away": ["Los Angeles Dodgers", "San Diego Padres"],
+                "home": ["San Diego Padres", "Los Angeles Dodgers"],
+                "home_goals": pd.Series([2, 11], dtype="Int64"),
+                "away_goals": pd.Series([5, 15], dtype="Int64"),
+                "played": ["Y", "Y"],
+                "neutral": ["N", "N"],
+                "round": ["League", "League"],
+                "date": pd.to_datetime(["2024-03-20", "2024-03-21"]),
+                "notes": ["", ""]
+            }
+        )
+
+        result = process_fixtures(fixtures, "MLB").reset_index(drop=True)
+        pd.testing.assert_frame_equal(output, result, check_like=True, check_index_type=False)  # ignores column order
+
+
+
+
 class TestParseFixturesHtml:
     @pytest.fixture
     def sample_html(self):
@@ -553,7 +812,7 @@ class TestIntegration:
         mock_get.return_value = mock_response
 
         # Test the full pipeline
-        fixtures = get_fixtures("http://example.com", ["fixtures_table"])
+        fixtures = get_fixtures(["http://example.com"], ["fixtures_table"])
         result = process_fixtures(fixtures, "UCL")
 
         # Verify results

@@ -178,7 +178,7 @@ club_name_mapping = {
     "Larne": "Larne FC",
     "Paphos": "Pafos FC",
     "Lugano": "Lugano",
-    "Shamrock": "Shamrock Rov",
+    "Shamrock": "Shamrock Rovers",
     "Dinamo Minsk": "Dinamo Minsk",
     "Hearts": "Hearts",
     "Cercle Brugge": "Cercle Brugge",
@@ -212,6 +212,15 @@ club_name_mapping = {
 }
 
 # Database
+# league type to db table mapping
+db_table_mapping = {
+    "UEFA_LOCAL": "domestic_sim_output_table",
+    "UEFA_CONTINENTAL": "continental_sim_output_table",
+    "NFL": "nfl_sim_output_table",
+    "MLB": "mlb_sim_output_table",
+    "NBA": "nba_sim_output_table",
+}
+
 db_table_definitions = {
     "elo_table": {
         "name": "current_elos",
@@ -323,6 +332,60 @@ db_table_definitions = {
             "updated_at": TIMESTAMP(),
         },
     },
+    "nfl_sim_output_table": {
+        "name": "sim_standings_nfl",
+        "dtype": {
+            "team": VARCHAR(100),
+            "AFC 1": FLOAT(),
+            "AFC 2": FLOAT(),
+            "AFC 3": FLOAT(),
+            "AFC 4": FLOAT(),
+            "AFC 5": FLOAT(),
+            "AFC 6": FLOAT(),
+            "AFC 7": FLOAT(),
+            "AFC 8": FLOAT(),
+            "AFC 9": FLOAT(),
+            "AFC 10": FLOAT(),
+            "AFC 11": FLOAT(),
+            "AFC 12": FLOAT(),
+            "AFC 13": FLOAT(),
+            "AFC 14": FLOAT(),
+            "AFC 15": FLOAT(),
+            "AFC 16": FLOAT(),
+            "NFC 1": FLOAT(),
+            "NFC 2": FLOAT(),
+            "NFC 3": FLOAT(),
+            "NFC 4": FLOAT(),
+            "NFC 5": FLOAT(),
+            "NFC 6": FLOAT(),
+            "NFC 7": FLOAT(),
+            "NFC 8": FLOAT(),
+            "NFC 9": FLOAT(),
+            "NFC 10": FLOAT(),
+            "NFC 11": FLOAT(),
+            "NFC 12": FLOAT(),
+            "NFC 13": FLOAT(),
+            "NFC 14": FLOAT(),
+            "NFC 15": FLOAT(),
+            "NFC 16": FLOAT(),
+            "po_r16": FLOAT(),
+            "po_r8": FLOAT(),
+            "po_r4": FLOAT(),
+            "po_r2": FLOAT(),
+            "po_champion": FLOAT(),
+            "playoff": FLOAT(),
+            "first_round_bye": FLOAT(),
+            "updated_at": TIMESTAMP(),
+        },
+    },
+    "divisions_table": {
+        "name": "teams",
+        "dtype": {
+            "team": VARCHAR(50),
+            "division": VARCHAR(50),
+            "conference": VARCHAR(50),
+        },
+    },
 }
 
 # Data scraping
@@ -330,67 +393,102 @@ parsing_method = "http_request" # must be local_file, http_request, or playwrigh
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 #elo_date = "2025-06-01"  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
+pull_fixture_history = False
 fixtures_config = {
     "ENG": {
-        "fixtures_url": "https://fbref.com/en/comps/9/2025-2026/schedule/2025-2026-Premier-League-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/9/2025-2026/schedule/2025-2026-Premier-League-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Premier League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_9_1"],
     },
     "ESP": {
-        "fixtures_url": "https://fbref.com/en/comps/12/2025-2026/schedule/2025-2026-La-Liga-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/12/2025-2026/schedule/2025-2026-La-Liga-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/La Liga Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_12_1"],
     },
     "ITA": {
-        "fixtures_url": "https://fbref.com/en/comps/11/2025-2026/schedule/2025-2026-Serie-A-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/11/2025-2026/schedule/2025-2026-Serie-A-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Serie A Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_11_1"],
     },
     "GER": {
-        "fixtures_url": "https://fbref.com/en/comps/20/2025-2026/schedule/2025-2026-Bundesliga-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/20/2025-2026/schedule/2025-2026-Bundesliga-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Bundesliga Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_20_1"],
     },
     "FRA": {
-        "fixtures_url": "https://fbref.com/en/comps/13/2025-2026/schedule/2025-2026-Ligue-1-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/13/2025-2026/schedule/2025-2026-Ligue-1-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Ligue 1 Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_13_1"],
     },
     "UCL": {
-        "fixtures_url": "https://fbref.com/en/comps/8/schedule/Champions-League-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/8/schedule/Champions-League-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Champions League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_8_2", "sched_2025-2026_8_3"],
     },
     "UEL": {
-        "fixtures_url": "https://fbref.com/en/comps/19/schedule/Europa-League-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/19/schedule/Europa-League-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Europa League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_19_2", "sched_2025-2026_19_3"],
     },
     "UECL": {
-        "fixtures_url": "https://fbref.com/en/comps/882/schedule/Conference-League-Scores-and-Fixtures",
+        "fixtures_url": ["https://fbref.com/en/comps/882/schedule/Conference-League-Scores-and-Fixtures"],
         "local_file_path": "data/uefa/Conference League Scores & Fixtures _ FBref.com.html",
         "table_id": ["sched_2025-2026_882_2", "sched_2025-2026_882_3"],
+    },
+    "NFL": {
+        "fixtures_url": ["https://www.pro-football-reference.com/years/2025/games.htm"],
+        "table_id": ["games"],
+    },
+    "NBA": {
+        "fixtures_url": [
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-october.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-november.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-december.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-january.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-february.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-march.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-april.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-may.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-june.html",            
+            ],
+        "table_id": ["schedule"],
+    },
+    "MLB": {
+        "fixtures_url": ["https://www.baseball-reference.com/leagues/majors/2024-schedule.shtml"],
+        "table_id": ["games"],
+    }
+}
+
+fixtures_history_config = {
+        "NFL": {
+        "fixtures_url": [
+            f"https://www.pro-football-reference.com/years/{year}/games.htm"
+            for year in range(1966, 2025)
+        ],
+        "table_id": ["games"],
     },
 }
 
 ## Simulation
 number_of_simulations = 10000
 home_advantage = 80
-leagues_to_sim = list(fixtures_config.keys())
-#leagues_to_sim = ["ENG", "ESP", "GER", "ITA", "FRA"]
+active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
 played_cutoff_date = None
 schedule_cutoff_date = None
 
 league_rules = {
     "ENG": {
+        "sim_type": "goals",
         "has_knockout": False,
-        "classification": [
-            "points",
-            "goal_difference",
-            "goals_for",
-            "h2h_points",
-            "h2h_away_goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "goal_difference",
+                "goals_for",
+                "h2h_points",
+                "h2h_away_goals_for",
+            ]
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
@@ -398,14 +496,17 @@ league_rules = {
         },
     },
     "ESP": {
+        "sim_type": "goals",
         "has_knockout": False,
-        "classification": [
-            "points",
-            "h2h_points",
-            "h2h_goal_difference",
-            "goal_difference",
-            "goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "h2h_points",
+                "h2h_goal_difference",
+                "goal_difference",
+                "goals_for",
+            ],
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
@@ -413,15 +514,18 @@ league_rules = {
         },
     },
     "ITA": {
+        "sim_type": "goals",
         "has_knockout": False,
-        "classification": [
-            "points",
-            "playoff",
-            "h2h_points",
-            "h2h_goal_difference",
-            "goal_difference",
-            "goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "playoff",
+                "h2h_points",
+                "h2h_goal_difference",
+                "goal_difference",
+                "goals_for",
+            ],
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
@@ -429,16 +533,19 @@ league_rules = {
         },
     },
     "GER": {
+        "sim_type": "goals",
         "has_knockout": False,
-        "classification": [
-            "points",
-            "goal_difference",
-            "goals_for",
-            "h2h_points",
-            "h2h_goal_difference",
-            "h2h_away_goals_for",
-            "away_goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "goal_difference",
+                "goals_for",
+                "h2h_points",
+                "h2h_goal_difference",
+                "h2h_away_goals_for",
+                "away_goals_for",
+            ],
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
@@ -447,8 +554,10 @@ league_rules = {
         },
     },
     "FRA": {
+        "sim_type": "goals",
         "has_knockout": False,
-        "classification": [
+        "classification": {
+            "league": [
             "points",
             "goal_difference",
             "h2h_points",
@@ -457,7 +566,8 @@ league_rules = {
             "h2h_away_goals_for",
             "goals_for",
             "away_goals_for",
-        ],
+            ],
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
@@ -466,18 +576,21 @@ league_rules = {
         },
     },
     "UCL": {
+        "sim_type": "goals",
         "has_knockout": True,
-        "classification": [
-            "points",
-            "goal_difference",
-            "goals_for",
-            "away_goals_for",
-            "wins",
-            "away_wins",
-            "opponent_points",
-            "opponent_goal_difference",
-            "opponent_goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "goal_difference",
+                "goals_for",
+                "away_goals_for",
+                "wins",
+                "away_wins",
+                "opponent_points",
+                "opponent_goal_difference",
+                "opponent_goals_for",
+            ],
+        },
         # No relegation info for UCL, exclude or set None
         "qualification": {
             "direct_to_round_of_16": list(range(1, 9)),
@@ -508,39 +621,26 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        "knockout_draw_status": "pending_draw",
         "knockout_draw": None,
-        # [ 
-        #     ("Liverpool", "Bye"),
-        #     ("Paris S-G", "Brest"),
-        #     ("Aston Villa", "Bye"),
-        #     ("Atalanta", "Club Brugge"),
-        #     ("Arsenal", "Bye"),
-        #     ("PSV Eindhoven", "Juventus"),
-        #     ("Atlético Madrid", "Bye"),
-        #     ("Real Madrid", "Manchester City"),
-        #     ("Barcelona", "Bye"),
-        #     ("Benfica", "Monaco"),
-        #     ("Lille", "Bye"),
-        #     ("Dortmund", "Sporting CP"),
-        #     ("Inter", "Bye"),
-        #     ("Milan", "Feyenoord"),
-        #     ("Leverkusen", "Bye"),
-        #     ("Bayern Munich", "Celtic"),
-        # ]
+        "knockout_reseeding": False,
     },
     "UEL": {
+        "sim_type": "goals",
         "has_knockout": True,
-        "classification": [
-            "points",
-            "goal_difference",
-            "goals_for",
-            "away_goals_for",
-            "wins",
-            "away_wins",
-            "opponent_points",
-            "opponent_goal_difference",
-            "opponent_goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "goal_difference",
+                "goals_for",
+                "away_goals_for",
+                "wins",
+                "away_wins",
+                "opponent_points",
+                "opponent_goal_difference",
+                "opponent_goals_for",
+            ],
+        },
         # No relegation info for UCL, exclude or set None
         "qualification": {
             "direct_to_round_of_16": list(range(1, 17)),
@@ -571,21 +671,26 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        "knockout_draw_status": "pending_draw",
         "knockout_draw": None,
+        "knockout_reseeding": False,
     },
     "UECL": {
+        "sim_type": "goals",
         "has_knockout": True,
-        "classification": [
-            "points",
-            "goal_difference",
-            "goals_for",
-            "away_goals_for",
-            "wins",
-            "away_wins",
-            "opponent_points",
-            "opponent_goal_difference",
-            "opponent_goals_for",
-        ],
+        "classification": {
+            "league": [
+                "points",
+                "goal_difference",
+                "goals_for",
+                "away_goals_for",
+                "wins",
+                "away_wins",
+                "opponent_points",
+                "opponent_goal_difference",
+                "opponent_goals_for",
+            ],
+        },
         # No relegation info for UCL, exclude or set None
         "qualification": {
             "direct_to_round_of_16": list(range(1, 17)),
@@ -616,6 +721,56 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        "knockout_draw_status": "pending_draw",
         "knockout_draw": None,
+        "knockout_reseeding": False,
+
+    },
+    "NFL": {
+        "sim_type": "winner",
+        "has_knockout": True,
+        "classification": {
+            "division": ["win_loss_pct",
+                         "h2h_win_loss_pct",
+                         "win_loss_pct_div",
+                         "win_loss_pct_conf",
+                         "strength_of_victory",
+                         "strength_of_schedule"
+                         ],
+            "conference": [
+                         "division_winner",
+                         "win_loss_pct",
+                         "h2h_break_division_ties",
+                         "h2h_sweep_full",
+                         "win_loss_pct_conf",
+                         "h2h_win_loss_pct_common_games",
+                         "strength_of_victory",
+                         "strength_of_schedule",
+                         ],
+            "league": ["win_loss_pct"],
+        },
+        "qualification": {
+            "playoff": [f"NFC {i}" for i in range(1, 8)] + [f"AFC {i}" for i in range(1, 8)],
+            "first_round_bye": [f"NFC {i}" for i in range(1, 2)] + [f"AFC {i}" for i in range(1, 2)]
+        },
+        "knockout_bracket": [
+            ("NFC 1", "Bye"),
+            ("NFC 2", "NFC 7"),
+            ("NFC 3", "NFC 6"),
+            ("NFC 4", "NFC 5"),
+            ("AFC 1", "Bye"),
+            ("AFC 2", "AFC 7"),
+            ("AFC 3", "AFC 6"),
+            ("AFC 4", "AFC 5"),
+        ],
+        "knockout_format": {
+            "po_r16": "single_game",
+            "po_r8": "single_game",
+            "po_r4": "single_game",
+            "po_r2": "single_game_neutral",
+        },
+        "knockout_draw_status": "no_draw",
+        "knockout_draw": None,
+        "knockout_reseeding": True
     },
 }

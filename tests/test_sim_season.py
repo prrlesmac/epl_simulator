@@ -1,7 +1,6 @@
 import pytest
 import pandas as pd
 import numpy as np
-from pandas.testing import assert_frame_equal
 from .conftest import schedule_dtypes
 
 # Import the functions we want to test
@@ -89,13 +88,16 @@ def csv_elos_data_continental():
 @pytest.fixture
 def continental_league_rules_group_stage():
     return {
+        "sim_type": "goals",
         "has_knockout": True,
-        "classification": [
+        "classification": {
+            "league": [
             "points",
             "goal_difference",
             "goals_for",
-            "away_goals_for",
-        ],
+            "away_goals_for"
+            ]
+        },
         "qualification": {
             "direct_to_round_of_16": list(range(1, 9)),
             "playoff": list(range(9, 25)),
@@ -125,7 +127,10 @@ def continental_league_rules_group_stage():
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        "knockout_draw_status": "pending_draw",
         "knockout_draw": None,
+        "knockout_reseeding": False,
+        "league_type": "UEFA"
     }
 
 
@@ -133,13 +138,16 @@ def continental_league_rules_group_stage():
 @pytest.fixture
 def continental_league_rules_knockout_stage():
     return {
+        "sim_type": "goals",
         "has_knockout": True,
-        "classification": [
+        "classification": {
+            "league": [
             "points",
             "goal_difference",
             "goals_for",
-            "away_goals_for",
-        ],
+            "away_goals_for"
+            ]
+        },
         "qualification": {
             "direct_to_round_of_16": list(range(1, 9)),
             "playoff": list(range(9, 25)),
@@ -169,6 +177,7 @@ def continental_league_rules_knockout_stage():
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        "knockout_draw_status": "completed_draw",
         "knockout_draw": [
             ("Liverpool", "Bye"),
             ("Paris S-G", "Brest"),
@@ -187,25 +196,31 @@ def continental_league_rules_knockout_stage():
             ("Leverkusen", "Bye"),
             ("Bayern Munich", "Celtic"),
         ],
+        "knockout_reseeding": False,
+        "league_type": "UEFA",
     }
 
 
 @pytest.fixture
 def domestic_league_rules():
     return {
+        "sim_type": "goals",
         "has_knockout": False,
-        "classification": [
+        "classification": {
+            "league": [
             "points",
             "goal_difference",
             "goals_for",
             "h2h_points",
             "h2h_away_goals_for",
-        ],
+            ]
+        },
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
             "relegation_direct": [18, 19, 20],
         },
+        "league_type": "UEFA"
     }
 
 
@@ -261,7 +276,7 @@ def final_ucl_results():
 class TestValidateLeagueConfiguration:
     """Test cases for validate_league_configuration function."""
 
-    def test_validate_continental_league_missing_bracket_draw(self):
+    def test_validate_continental_league_missing_knockout_draw(self):
         """Test validation fails when continental league has knockout matches but no bracket draw."""
         schedule = pd.DataFrame({"round": ["League", "R16"], "played": ["Y", "N"]})
         league_rules = {
@@ -274,7 +289,7 @@ class TestValidateLeagueConfiguration:
         ):
             validate_league_configuration(schedule, league_rules)
 
-    def test_validate_continental_league_bracket_draw_with_pending_league(self):
+    def test_validate_continental_league_knockout_draw_with_pending_league(self):
         """Test validation fails when continental league has bracket draw but league phase unfinished."""
         schedule = pd.DataFrame({"round": ["League", "League"], "played": ["Y", "N"]})
         league_rules = {
@@ -503,7 +518,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_domestic_case_1
         mock_elos = csv_elos_data_domestic_case_1
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_domestic_league_summary(result, mock_schedule)
@@ -520,7 +535,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_domestic_case_2
         mock_elos = csv_elos_data_domestic_case_1
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_domestic_league_summary(result, mock_schedule)
@@ -537,7 +552,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_domestic_case_3
         mock_elos = csv_elos_data_domestic_case_1
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_domestic_league_summary(result, mock_schedule)
@@ -573,7 +588,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_1
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -590,7 +605,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_2
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -640,7 +655,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_3_4
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -693,7 +708,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_3_4
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -746,7 +761,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_5
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -797,7 +812,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_6
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -848,7 +863,7 @@ class TestSimulateLeague:
         mock_schedule = csv_schedule_data_continental_case_7
         mock_elos = csv_elos_data_continental
         result = simulate_league(
-            league_rules, mock_schedule, mock_elos, num_simulations=10
+            league_rules, mock_schedule, mock_elos, divisions=None, num_simulations=10
         )
 
         self.assert_continental_league_summary(result, mock_schedule)
@@ -935,6 +950,10 @@ class TestSplitAndMergeSchedule:
         {"home": ["A", "B", "C"], "away": ["B", "C", "A"], "played": ["Y", "N", "N"]}
     )
     elos = pd.DataFrame({"club": ["A", "B", "C"], "elo": [1200, 1300, 1400]})
+    divisions = pd.DataFrame({"team": ["A", "B", "C"],
+                              "division": ["East", "West", "East"],
+                              "conference": ["National", "National", "American"]
+                              })
 
     def test_split_and_merge(self):
         played, pending = split_and_merge_schedule(self.schedule, self.elos)
@@ -949,7 +968,7 @@ class TestSplitAndMergeSchedule:
                 "elo_away": [1300],
             }
         )
-        assert_frame_equal(played.reset_index(drop=True), expected_played)
+        pd.testing.assert_frame_equal(played.reset_index(drop=True), expected_played)
 
         # Check pending schedule
         expected_pending = pd.DataFrame(
@@ -961,7 +980,43 @@ class TestSplitAndMergeSchedule:
                 "elo_away": [1400, 1200],
             }
         )
-        assert_frame_equal(pending.reset_index(drop=True), expected_pending)
+        pd.testing.assert_frame_equal(pending.reset_index(drop=True), expected_pending)
+
+
+    def test_split_and_merge_divisions(self):
+        played, pending = split_and_merge_schedule(self.schedule, self.elos, self.divisions)
+        # Check played schedule
+        expected_played = pd.DataFrame(
+            {
+                "home": ["A"],
+                "away": ["B"],
+                "played": ["Y"],
+                "elo_home": [1200],
+                "elo_away": [1300],
+                "home_division": ["East"],
+                "home_conference": ["National"],
+                "away_division": ["West"],
+                "away_conference": ["National"],
+            }
+        )
+        pd.testing.assert_frame_equal(played.reset_index(drop=True), expected_played)
+
+        # Check pending schedule
+        expected_pending = pd.DataFrame(
+            {
+                "home": ["B", "C"],
+                "away": ["C", "A"],
+                "played": ["N", "N"],
+                "elo_home": [1300, 1400],
+                "elo_away": [1400, 1200],
+                "home_division": ["West", "East"],
+                "home_conference": ["National", "American"],
+                "away_division": ["East", "East"],
+                "away_conference": ["American", "National"],
+            }
+        )
+        pd.testing.assert_frame_equal(pending.reset_index(drop=True), expected_pending)
+
 
     def test_missing_elo(self):
         elos_missing = pd.DataFrame(
@@ -1002,13 +1057,6 @@ class TestSingleSimulation:
         domestic_league_rules,
     ):
         """Test simulating a domestic league."""
-        # Setup
-        has_knockout = domestic_league_rules.get("has_knockout")
-        bracket_composition = domestic_league_rules.get("knockout_bracket")
-        bracket_format = domestic_league_rules.get("knockout_format")
-        bracket_draw = domestic_league_rules.get("knockout_draw")
-        classif_rules = domestic_league_rules["classification"]
-
         # Prepare data for simulation
         schedule_played, schedule_pending = split_and_merge_schedule(
             csv_schedule_data_domestic_case_2, csv_elos_data_domestic_case_1
@@ -1016,15 +1064,13 @@ class TestSingleSimulation:
         result = single_simulation(
             schedule_played,
             schedule_pending,
-            classif_rules,
-            has_knockout,
-            bracket_composition,
-            bracket_format,
-            bracket_draw,
+            csv_elos_data_domestic_case_1,
+            divisions=None,
+            league_rules=domestic_league_rules,
         )
 
         assert isinstance(result, pd.DataFrame)
-        assert set(["pos", "team", "points"]).issubset(result.columns)
+        assert set(["league_pos", "team", "points"]).issubset(result.columns)
         # For set equality (teams in 'team' col match unique 'home' and 'away' teams)
         assert set(result["team"].unique()) == set(
             csv_schedule_data_domestic_case_2["home"].unique()
@@ -1033,7 +1079,7 @@ class TestSingleSimulation:
             csv_schedule_data_domestic_case_2["away"].unique()
         )
         # For checking 'pos' column values go from 1 to n rows
-        assert sorted(result["pos"].tolist()) == list(range(1, len(result) + 1))
+        assert sorted(result["league_pos"].tolist()) == list(range(1, len(result) + 1))
 
     def test_single_simulation_continental_case_2(
         self,
@@ -1042,15 +1088,6 @@ class TestSingleSimulation:
         continental_league_rules_group_stage,
     ):
         """Test simulating a domestic league."""
-        # Setup
-        has_knockout = continental_league_rules_group_stage.get("has_knockout")
-        bracket_composition = continental_league_rules_group_stage.get(
-            "knockout_bracket"
-        )
-        bracket_format = continental_league_rules_group_stage.get("knockout_format")
-        bracket_draw = continental_league_rules_group_stage.get("knockout_draw")
-        classif_rules = continental_league_rules_group_stage["classification"]
-
         # Prepare data for simulation
         schedule_played, schedule_pending = split_and_merge_schedule(
             csv_schedule_data_continental_case_2, csv_elos_data_continental
@@ -1058,22 +1095,19 @@ class TestSingleSimulation:
         result = single_simulation(
             schedule_played,
             schedule_pending,
-            classif_rules,
-            has_knockout,
-            bracket_composition,
-            bracket_format,
-            bracket_draw,
+            csv_elos_data_continental,
+            divisions=None,
+            league_rules=continental_league_rules_group_stage,
         )
-
         assert isinstance(result, pd.DataFrame)
-        assert set(["pos", "team", "points"]).issubset(result.columns)
+        assert set(["league_pos", "team", "points"]).issubset(result.columns)
         assert set(result["team"].unique()) == set(
             csv_schedule_data_continental_case_2["home"].unique()
         )
         assert set(result["team"].unique()) == set(
             csv_schedule_data_continental_case_2["away"].unique()
         )
-        assert sorted(result["pos"].tolist()) == list(range(1, len(result) + 1))
+        assert sorted(result["league_pos"].tolist()) == list(range(1, len(result) + 1))
         assert result["po_r32"].sum() == 24
         assert result["po_r16"].sum() == 16
         assert result["po_r8"].sum() == 8
@@ -1081,6 +1115,39 @@ class TestSingleSimulation:
         assert result["po_r2"].sum() == 2
         assert result["po_champion"].sum() == 1
 
+    def test_single_simulation_continental_case_4(
+        self,
+        csv_schedule_data_continental_case_3_4,
+        csv_elos_data_continental,
+        continental_league_rules_knockout_stage,
+    ):
+        """Test simulating a domestic league."""
+        # Prepare data for simulation
+        schedule_played, schedule_pending = split_and_merge_schedule(
+            csv_schedule_data_continental_case_3_4, csv_elos_data_continental
+        )
+        result = single_simulation(
+            schedule_played,
+            schedule_pending,
+            csv_elos_data_continental,
+            divisions=None,
+            league_rules=continental_league_rules_knockout_stage,
+        )
+        assert isinstance(result, pd.DataFrame)
+        assert set(["league_pos", "team", "points"]).issubset(result.columns)
+        assert set(result["team"].unique()) == set(
+            csv_schedule_data_continental_case_3_4["home"].unique()
+        )
+        assert set(result["team"].unique()) == set(
+            csv_schedule_data_continental_case_3_4["away"].unique()
+        )
+        assert sorted(result["league_pos"].tolist()) == list(range(1, len(result) + 1))
+        assert result["po_r32"].sum() == 24
+        assert result["po_r16"].sum() == 16
+        assert result["po_r8"].sum() == 8
+        assert result["po_r4"].sum() == 4
+        assert result["po_r2"].sum() == 2
+        assert result["po_champion"].sum() == 1
 
 if __name__ == "__main__":
     pytest.main([__file__])

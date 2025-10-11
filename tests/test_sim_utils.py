@@ -6,13 +6,17 @@ import pandas as pd
 import random
 from simulator.sim_utils import (
     calculate_win_probability,
-    simulate_match,
-    simulate_playoff,
+    simulate_match_goals,
+    simulate_match_winner,
     simulate_extra_time,
     simulate_matches_data_frame,
     apply_h2h_tiebreaker,
+    apply_h2h_sweep_tiebreaker,
     apply_playoff_tiebreaker,
-    get_standings_metrics,
+    apply_common_games_tiebreaker,
+    apply_break_division_tiebreaker,
+    get_standings_metrics_footy,
+    get_standings_metrics_us,
     get_standings,
     get_opponents_aggregate_stats,
     validate_bracket,
@@ -123,7 +127,7 @@ class TestSimulateMatch:
 
     def test_return_type_and_structure(self):
         """Test that function returns a tuple of two integers"""
-        result = simulate_match(0.5)
+        result = simulate_match_goals(0.5)
         assert isinstance(result, tuple)
         assert len(result) == 2
         assert isinstance(result[0], (int, np.integer))
@@ -133,26 +137,26 @@ class TestSimulateMatch:
         """Test that goals are always non-negative"""
         for proba in [0.1, 0.3, 0.5, 0.7, 0.9]:
             for _ in range(100):
-                gh, ga = simulate_match(proba)
+                gh, ga = simulate_match_goals(proba)
                 assert gh >= 0, f"Home goals should be non-negative, got {gh}"
                 assert ga >= 0, f"Away goals should be non-negative, got {ga}"
 
     def test_boundary_probabilities(self):
         """Test edge cases with extreme probabilities"""
         # Test with very low probability
-        gh, ga = simulate_match(0.01)
+        gh, ga = simulate_match_goals(0.01)
         assert isinstance(gh, (int, np.integer))
         assert isinstance(ga, (int, np.integer))
         assert gh >= 0 and ga >= 0
 
         # Test with very high probability
-        gh, ga = simulate_match(0.99)
+        gh, ga = simulate_match_goals(0.99)
         assert isinstance(gh, (int, np.integer))
         assert isinstance(ga, (int, np.integer))
         assert gh >= 0 and ga >= 0
 
         # Test with exactly 0.5
-        gh, ga = simulate_match(0.5)
+        gh, ga = simulate_match_goals(0.5)
         assert isinstance(gh, (int, np.integer))
         assert isinstance(ga, (int, np.integer))
         assert gh >= 0 and ga >= 0
@@ -160,10 +164,10 @@ class TestSimulateMatch:
     def test_deterministic_with_fixed_seed(self):
         """Test that results are deterministic with fixed random seed"""
         np.random.seed(42)
-        result1 = simulate_match(0.6)
+        result1 = simulate_match_goals(0.6)
 
         np.random.seed(42)
-        result2 = simulate_match(0.6)
+        result2 = simulate_match_goals(0.6)
 
         assert result1 == result2, "Results should be identical with same seed"
 
@@ -173,7 +177,7 @@ class TestSimulateMatch:
         with patch("numpy.random.poisson") as mock_poisson:
             mock_poisson.side_effect = [1, 2, 1]  # Base, GH, GA
 
-            result = simulate_match(0.6)
+            result = simulate_match_goals(0.6)
 
             # Should call poisson 3 times
             assert mock_poisson.call_count == 3
@@ -186,28 +190,28 @@ class TestSimulatePlayoffs:
 
     def test_invalid_probability_low(self):
         with pytest.raises(ValueError):
-            simulate_playoff(-0.1)
+            simulate_match_winner(-0.1)
 
     def test_invalid_probability_high(self):
         with pytest.raises(ValueError):
-            simulate_playoff(1.5)
+            simulate_match_winner(1.5)
 
     def test_output_is_1_or_2_and_integer(self):
         # Run multiple simulations to ensure the result is always 1 or 2
         for _ in range(1000):
-            result = simulate_playoff(0.5)
+            result = simulate_match_winner(0.5)
             assert isinstance(result, int), f"Expected int but got {type(result)}"
             assert result in (1, 2), f"Unexpected result: {result}"
 
     def test_result_bias_extreme_prob_1(self):
         # With proba = 1, team 1 should always win
         for _ in range(100):
-            assert simulate_playoff(1.0) == 1
+            assert simulate_match_winner(1.0) == 1
 
     def test_result_bias_extreme_prob_0(self):
         # With proba = 0, team 2 should always win
         for _ in range(100):
-            assert simulate_playoff(0.0) == 2
+            assert simulate_match_winner(0.0) == 2
 
     def test_simulate_extra_time_returns_valid_output(self):
         """Ensure output is always 1 or 2."""
@@ -232,22 +236,37 @@ class TestSimulateMatchesDataFrame:
 
     def test_function_signature_and_return_type(self, sample_matches_df):
         """Test that function accepts correct parameters and returns DataFrame."""
-        result = simulate_matches_data_frame(sample_matches_df)
+        result1 = simulate_matches_data_frame(sample_matches_df, sim_type='goals')
+        result2 = simulate_matches_data_frame(sample_matches_df, sim_type='winner')
 
-        assert isinstance(result, pd.DataFrame)
-        assert len(result) == len(sample_matches_df)
+        assert isinstance(result1, pd.DataFrame)
+        assert len(result1) == len(sample_matches_df)
+        assert isinstance(result2, pd.DataFrame)
+        assert len(result2) == len(sample_matches_df)
 
     def test_original_columns_preserved(self, sample_matches_df):
         """Test that original DataFrame columns are preserved."""
 
         original_columns = set(sample_matches_df.columns)
-        result = simulate_matches_data_frame(sample_matches_df)
+        result1 = simulate_matches_data_frame(sample_matches_df, sim_type='goals')
+        result2 = simulate_matches_data_frame(sample_matches_df, sim_type='winner')
 
         # Check that all original columns are preserved
         for col in original_columns:
-            assert col in result.columns
-            pd.testing.assert_series_equal(result[col], sample_matches_df[col])
+            assert col in result1.columns
+            pd.testing.assert_series_equal(result1[col], sample_matches_df[col])
 
+        for col in original_columns:
+            assert col in result2.columns
+            pd.testing.assert_series_equal(result2[col], sample_matches_df[col])
+
+    def test_raise_error(self, sample_matches_df):
+        """Test that value error raised when sim_type invalid."""
+        with pytest.raises(ValueError) as exc_info:
+            simulate_matches_data_frame(sample_matches_df, sim_type="home_and_away")
+
+        # Optional: check the error message
+        assert "Invalid sim type in simulate_matches_data_frame" in str(exc_info.value)
 
 class TestApplyH2HTiebreaker:
 
@@ -285,6 +304,57 @@ class TestApplyH2HTiebreaker:
         assert result.shape[0] == 2
         assert result.loc[result["team"] == "A", "h2h_points"].values[0] == 3
         assert result.loc[result["team"] == "B", "h2h_points"].values[0] == 0
+
+    def test_h2h_win_loss_pct_ranking_case_1(self):
+        matches = pd.DataFrame(
+                {
+                    "home": [
+                        "A", "B",  # A vs B, B vs A
+                        "A", "C",  # A vs C, C vs A
+                        "A", "D",  # A vs D, D vs A
+                        "B", "C",  # B vs C, C vs B
+                        "B", "D",  # B vs D, D vs B
+                        "C", "D",  # C vs D, D vs C
+                    ],
+                    "away": [
+                        "B", "A",
+                        "C", "A",
+                        "D", "A",
+                        "C", "B",
+                        "D", "B",
+                        "D", "C",
+                    ],
+                    "home_goals": [
+                        2, 0,   # A home vs B 2-1 ; B home vs A 0-1
+                        1, 2,   # A home vs C 1-1 ; C home vs A 2-0
+                        3, 1,   # A home vs D 3-0 ; D home vs A 1-0
+                        2, 1,   # B home vs C 2-0 ; C home vs B 1-0
+                        3, 2,   # B home vs D 3-1 ; D home vs B 2-2
+                        2, 1,   # C home vs D 2-2 ; D home vs C 1-1
+                    ],
+                    "away_goals": [
+                        1, 1,
+                        1, 0,
+                        0, 0,
+                        0, 0,
+                        1, 2,
+                        2, 1,
+                    ],
+                }
+        )
+        matches["home_conference"] = ''
+        matches["away_conference"] = ''
+        matches["home_division"] = ''
+        matches["away_division"] = ''
+
+        tied_teams = ["A", "B"]
+        result = apply_h2h_tiebreaker(matches, tied_teams, "h2h_win_loss_pct")
+
+        assert set(result.columns) == {"team", "h2h_win_loss_pct"}
+        assert result.shape[0] == 2
+        assert result.loc[result["team"] == "A", "h2h_win_loss_pct"].values[0] == 1
+        assert result.loc[result["team"] == "B", "h2h_win_loss_pct"].values[0] == 0
+
 
     def test_h2h_goal_diff_ranking(self):
         matches = pd.DataFrame(
@@ -344,6 +414,213 @@ class TestApplyH2HTiebreaker:
             apply_h2h_tiebreaker(matches, tied_teams, "h2h_unexpected_metric")
 
 
+class TestApplyH2HSweepTiebreaker:
+
+    def test_h2h_sweep_case_1(self):
+        matches = pd.DataFrame(
+            {
+                "home": ["A", "B", "C", "A", "B", "C"],
+                "away": ["B", "C", "A", "B", "C", "A"],
+                "home_goals": [2, 0, 1, 0, 2, 0],
+                "away_goals": [0, 2, 2, 2, 1, 1],
+            }
+        )
+        tied_teams = ["A", "B", "C"]
+        matches["home_wins"] = np.where(
+            matches["home_goals"] > matches["away_goals"],
+            1,
+            0
+        )
+        matches["away_wins"] = np.where(
+            matches["away_goals"] > matches["home_goals"],
+            1,
+            0
+        )
+        result_full = apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="full")
+        result_h2h = apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="win_loss_pct")
+
+        assert set(result_full.columns) == {"team", "h2h_sweep_full"}
+        assert result_full.shape[0] == 3
+        assert result_full.loc[result_full["team"] == "A", "h2h_sweep_full"].values[0] == 0
+        assert result_full.loc[result_full["team"] == "B", "h2h_sweep_full"].values[0] == 0
+        assert result_full.loc[result_full["team"] == "C", "h2h_sweep_full"].values[0] == 0
+
+        assert set(result_h2h.columns) == {"team", "h2h_sweep_win_loss_pct"}
+        assert result_h2h.shape[0] == 3
+        assert result_h2h.loc[result_h2h["team"] == "A", "h2h_sweep_win_loss_pct"].values[0] == 0
+        assert result_h2h.loc[result_h2h["team"] == "B", "h2h_sweep_win_loss_pct"].values[0] == 0
+        assert result_h2h.loc[result_h2h["team"] == "C", "h2h_sweep_win_loss_pct"].values[0] == 0
+
+    def test_h2h_sweep_case_2(self):
+        matches = pd.DataFrame(
+            {
+                "home": ["A", "B", "C", "A", "B", "C"],
+                "away": ["B", "C", "A", "B", "C", "A"],
+                "home_goals": [2, 0, 1, 4, 2, 0],
+                "away_goals": [0, 2, 2, 2, 1, 1],
+            }
+        )
+        tied_teams = ["A", "B", "C"]
+        matches["home_wins"] = np.where(
+            matches["home_goals"] > matches["away_goals"],
+            1,
+            0
+        )
+        matches["away_wins"] = np.where(
+            matches["away_goals"] > matches["home_goals"],
+            1,
+            0
+        )
+        result_full = apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="full")
+        result_h2h = apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="win_loss_pct")
+
+        assert set(result_full.columns) == {"team", "h2h_sweep_full"}
+        assert result_full.shape[0] == 3
+        assert result_full.loc[result_full["team"] == "A", "h2h_sweep_full"].values[0] == 1
+        assert result_full.loc[result_full["team"] == "B", "h2h_sweep_full"].values[0] == 0
+        assert result_full.loc[result_full["team"] == "C", "h2h_sweep_full"].values[0] == 0
+
+        assert set(result_h2h.columns) == {"team", "h2h_sweep_win_loss_pct"}
+        assert result_h2h.shape[0] == 3
+        assert result_h2h.loc[result_h2h["team"] == "A", "h2h_sweep_win_loss_pct"].values[0] == 1
+        assert result_h2h.loc[result_h2h["team"] == "B", "h2h_sweep_win_loss_pct"].values[0] == 0
+        assert result_h2h.loc[result_h2h["team"] == "C", "h2h_sweep_win_loss_pct"].values[0] == 0
+
+    def test_raise_error(self):
+        """Test that value error raised when sweep type is invalid."""
+        matches = pd.DataFrame(
+            {
+                "home": ["A", "B", "C", "A", "B", "C"],
+                "away": ["B", "C", "A", "B", "C", "A"],
+                "home_goals": [2, 0, 1, 4, 2, 0],
+                "away_goals": [0, 2, 2, 2, 1, 1],
+            }
+        )
+        tied_teams = ["A", "B", "C"]
+        matches["home_wins"] = np.where(
+            matches["home_goals"] > matches["away_goals"],
+            1,
+            0
+        )
+        matches["away_wins"] = np.where(
+            matches["away_goals"] > matches["home_goals"],
+            1,
+            0
+        )
+        with pytest.raises(ValueError) as exc_info:
+            apply_h2h_sweep_tiebreaker(matches, tied_teams, sweep_type="home_and_away")
+
+        # Optional: check the error message
+        assert "Invalid sweep type" in str(exc_info.value)
+
+        # TODO add a case where a team doesn have full sweep but they have h2h positivve against all
+
+class TestCommonGamesTiebreaker:
+    def test_apply_common_games_tiebreaker_more_than_4(self):
+        # ----------------------------
+        # Setup test data
+        # ----------------------------
+        tied_teams = ["A", "B"]
+
+        # Teams A and B are tied; their common opponents are C and D
+        matches_df = pd.DataFrame(
+            {
+                "home": [
+                    "A", "B", "C", "D",    # A vs C, B vs C, C vs A, D vs A
+                    "A", "B", "C", "D",    # A vs D, B vs D, D vs B, C vs B
+                    "A", "B", "X", "Y",    # A vs D, B vs D, D vs B, C vs B
+                    "E", "A",               # Extra matches vs non-common opponent E
+                ],
+                "away": [
+                    "C", "C", "A", "A",
+                    "D", "D", "B", "B",
+                    "X", "Y", "B", "A",    # A vs D, B vs D, D vs B, C vs B
+                    "A", "E"
+                ],
+                "home_goals": [2, 3, 1, 0,
+                                1, 2, 2, 1,
+                                2, 2, 1, 3,
+                                3, 1],
+                "away_goals": [1, 0, 2, 3, 
+                               0, 1, 1, 2, 
+                               1, 0, 0, 1,
+                               1, 0],
+            }
+        )
+        matches_df["home_conference"] = ''
+        matches_df["away_conference"] = ''
+        matches_df["home_division"] = ''
+        matches_df["away_division"] = ''
+        result = apply_common_games_tiebreaker(matches_df, tied_teams)
+        # Output should include only tied teams
+        assert set(result["team"]) == set(tied_teams)
+
+        # The win-loss pct column should be renamed correctly
+        assert "h2h_win_loss_pct_common_games" in result.columns
+
+        # The mocked values for A and B should appear
+        a_pct = result.loc[result["team"] == "A", "h2h_win_loss_pct_common_games"].iloc[0]
+        b_pct = result.loc[result["team"] == "B", "h2h_win_loss_pct_common_games"].iloc[0]
+        assert round(a_pct,3) == 0.833
+        assert round(b_pct,3) == 0.667
+
+
+    def test_apply_common_games_tiebreaker_less_than_4(self):
+        # ----------------------------
+        # Setup test data
+        # ----------------------------
+        tied_teams = ["A", "B"]
+
+        # Teams A and B are tied; their common opponents are C and D
+        matches_df = pd.DataFrame(
+            {
+                "home": [
+                    "A", "B", "C", "D",    # A vs C, B vs C, C vs A, D vs A
+                    "A", "B", "C", "D",    # A vs D, B vs D, D vs B, C vs B
+                    "E", "A"               # Extra matches vs non-common opponent E
+                ],
+                "away": [
+                    "C", "C", "A", "A",
+                    "D", "D", "B", "B",
+                    "A", "E"
+                ],
+                "home_goals": [2, 3, 1, 0, 1, 2, 2, 1, 0, 1],
+                "away_goals": [1, 0, 2, 3, 0, 1, 1, 2, 1, 0],
+            }
+        )
+        matches_df["home_conference"] = ''
+        matches_df["away_conference"] = ''
+        matches_df["home_division"] = ''
+        matches_df["away_division"] = ''
+        result = apply_common_games_tiebreaker(matches_df, tied_teams)
+        # Output should include only tied teams
+        assert set(result["team"]) == set(tied_teams)
+
+        # The win-loss pct column should be renamed correctly
+        assert "h2h_win_loss_pct_common_games" in result.columns
+
+        # The mocked values for A and B should appear
+        a_pct = result.loc[result["team"] == "A", "h2h_win_loss_pct_common_games"].iloc[0]
+        b_pct = result.loc[result["team"] == "B", "h2h_win_loss_pct_common_games"].iloc[0]
+        assert a_pct == 0
+        assert b_pct == 0
+
+
+class TestBreakDivisionTies:
+    def test_break_division_all_same_division_pos(self):
+        standings = pd.DataFrame({
+            "team": ["A", "B", "C", "D"],
+            "division": ["East", "East", "West", "West"],
+            "division_pos": [1, 2, 1, 2],
+        })
+
+        result = apply_break_division_tiebreaker(standings)
+
+        assert result.loc[result["team"] == "A", "h2h_break_division_ties"].iloc[0] == 1
+        assert result.loc[result["team"] == "B", "h2h_break_division_ties"].iloc[0] == 0
+        assert result.loc[result["team"] == "C", "h2h_break_division_ties"].iloc[0] == 1
+        assert result.loc[result["team"] == "D", "h2h_break_division_ties"].iloc[0] == 0
+
 class TestApplyPlayoffTiebreaker:
 
     def test_two_team_playoff(self):
@@ -393,83 +670,118 @@ class TestApplyPlayoffTiebreaker:
 
 class TestGetStandingsMetrics:
 
-    class TestGetStandingsMetrics:
-        def test_four_team_double_round_robin(self):
-            matches = pd.DataFrame(
-                [
-                    {"home": "A", "away": "B", "home_goals": 2, "away_goals": 1},
-                    {"home": "C", "away": "D", "home_goals": 0, "away_goals": 3},
-                    {"home": "B", "away": "A", "home_goals": 0, "away_goals": 0},
-                    {"home": "D", "away": "C", "home_goals": 1, "away_goals": 1},
-                    {"home": "A", "away": "C", "home_goals": 1, "away_goals": 1},
-                    {"home": "B", "away": "D", "home_goals": 0, "away_goals": 2},
-                    {"home": "C", "away": "A", "home_goals": 0, "away_goals": 2},
-                    {"home": "D", "away": "B", "home_goals": 2, "away_goals": 0},
-                    {"home": "A", "away": "D", "home_goals": 1, "away_goals": 3},
-                    {"home": "B", "away": "C", "home_goals": 1, "away_goals": 2},
-                    {"home": "D", "away": "A", "home_goals": 0, "away_goals": 1},
-                    {"home": "C", "away": "B", "home_goals": 1, "away_goals": 1},
-                ]
-            )
+    def test_four_team_double_round_robin(self):
+        matches = pd.DataFrame(
+            [
+                {"home": "A", "away": "B", "home_goals": 2, "away_goals": 1},
+                {"home": "C", "away": "D", "home_goals": 0, "away_goals": 3},
+                {"home": "B", "away": "A", "home_goals": 0, "away_goals": 0},
+                {"home": "D", "away": "C", "home_goals": 1, "away_goals": 1},
+                {"home": "A", "away": "C", "home_goals": 1, "away_goals": 1},
+                {"home": "B", "away": "D", "home_goals": 0, "away_goals": 2},
+                {"home": "C", "away": "A", "home_goals": 0, "away_goals": 2},
+                {"home": "D", "away": "B", "home_goals": 2, "away_goals": 0},
+                {"home": "A", "away": "D", "home_goals": 1, "away_goals": 3},
+                {"home": "B", "away": "C", "home_goals": 1, "away_goals": 2},
+                {"home": "D", "away": "A", "home_goals": 0, "away_goals": 1},
+                {"home": "C", "away": "B", "home_goals": 1, "away_goals": 1},
+            ]
+        )
 
-            result = (
-                get_standings_metrics(matches)
-                .sort_values("team")
-                .reset_index(drop=True)
-            )
+        result = (
+            get_standings_metrics_footy(matches)
+            .sort_values("team")
+            .reset_index(drop=True)
+        )
 
-            expected = {
-                "A": {
-                    "points": 11,
-                    "goal_difference": 2,
-                    "goals_for": 7,
-                    "goals_against": 5,
-                    "away_goals_for": 3,
-                },
-                "B": {
-                    "points": 2,
-                    "goal_difference": -6,
-                    "goals_for": 3,
-                    "goals_against": 9,
-                    "away_goals_for": 2,
-                },
-                "C": {
-                    "points": 6,
-                    "goal_difference": -4,
-                    "goals_for": 5,
-                    "goals_against": 9,
-                    "away_goals_for": 4,
-                },
-                "D": {
-                    "points": 13,
-                    "goal_difference": 8,
-                    "goals_for": 11,
-                    "goals_against": 3,
-                    "away_goals_for": 8,
-                },
-            }
+        expected = {
+            "A": {
+                "points": 11,
+                "goal_difference": 2,
+                "goals_for": 7,
+                "goals_against": 5,
+                "away_goals_for": 3,
+            },
+            "B": {
+                "points": 2,
+                "goal_difference": -6,
+                "goals_for": 3,
+                "goals_against": 9,
+                "away_goals_for": 2,
+            },
+            "C": {
+                "points": 6,
+                "goal_difference": -4,
+                "goals_for": 5,
+                "goals_against": 9,
+                "away_goals_for": 4,
+            },
+            "D": {
+                "points": 13,
+                "goal_difference": 8,
+                "goals_for": 11,
+                "goals_against": 3,
+                "away_goals_for": 8,
+            },
+        }
 
-            for i, row in result.iterrows():
-                team = row["team"]
-                stats = expected[team]
-                assert row["points"] == stats["points"], f"{team} points mismatch"
-                assert (
-                    row["goal_difference"] == stats["goal_difference"]
-                ), f"{team} GD mismatch"
-                assert row["goals_for"] == stats["goals_for"], f"{team} GF mismatch"
-                assert (
-                    row["goals_against"] == stats["goals_against"]
-                ), f"{team} GA mismatch"
-                assert (
-                    row["away_goals_for"] == stats["away_goals_for"]
-                ), f"{team} away GF mismatch"
+        for i, row in result.iterrows():
+            team = row["team"]
+            stats = expected[team]
+            assert row["points"] == stats["points"], f"{team} points mismatch"
+            assert (
+                row["goal_difference"] == stats["goal_difference"]
+            ), f"{team} GD mismatch"
+            assert row["goals_for"] == stats["goals_for"], f"{team} GF mismatch"
+            assert (
+                row["goals_against"] == stats["goals_against"]
+            ), f"{team} GA mismatch"
+            assert (
+                row["away_goals_for"] == stats["away_goals_for"]
+            ), f"{team} away GF mismatch"
 
-        def test_no_matches(self):
-            df = pd.DataFrame(columns=["home", "away", "home_goals", "away_goals"])
+    def test_no_matches(self):
+        df = pd.DataFrame(columns=["home", "away", "home_goals", "away_goals"])
 
-            result = get_standings_metrics(df)
+        result = get_standings_metrics_footy(df)
 
-            assert result.empty
+        assert result.empty
+
+    def test_four_team_double_round_robin_us(self):
+        matches = pd.DataFrame(
+            [
+                {"home": "A", "away": "B", "home_goals": 2, "away_goals": 1, "home_division": "East", "away_division": "East"},
+                {"home": "C", "away": "D", "home_goals": 0, "away_goals": 3, "home_division": "West", "away_division": "West"},
+                {"home": "B", "away": "A", "home_goals": 2, "away_goals": 0, "home_division": "East", "away_division": "East"},
+                {"home": "D", "away": "C", "home_goals": 1, "away_goals": 3, "home_division": "West", "away_division": "West"},
+                {"home": "A", "away": "C", "home_goals": 2, "away_goals": 1, "home_division": "East", "away_division": "West"},
+                {"home": "B", "away": "D", "home_goals": 0, "away_goals": 2, "home_division": "East", "away_division": "West"},
+                {"home": "C", "away": "A", "home_goals": 0, "away_goals": 2, "home_division": "West", "away_division": "East"},
+                {"home": "D", "away": "B", "home_goals": 2, "away_goals": 0, "home_division": "West", "away_division": "East"},
+                {"home": "A", "away": "D", "home_goals": 1, "away_goals": 3, "home_division": "East", "away_division": "West"},
+                {"home": "B", "away": "C", "home_goals": 1, "away_goals": 2, "home_division": "East", "away_division": "West"},
+                {"home": "D", "away": "A", "home_goals": 0, "away_goals": 1, "home_division": "West", "away_division": "East"},
+                {"home": "C", "away": "B", "home_goals": 3, "away_goals": 1, "home_division": "West", "away_division": "East"},
+            ]
+        )
+        matches["home_conference"] = "National"
+        matches["away_conference"] = "National"
+        result = get_standings_metrics_us(matches)
+
+        expected = pd.DataFrame({
+            "team": ["A", "B", "C", "D"],
+            "win_loss_pct": [0.667, 0.167, 0.500, 0.667],
+            "wins": [4, 1, 3, 4],
+            "ties": [0, 0, 0, 0],
+            "played": [6, 6, 6, 6],
+            "win_loss_pct_conf": [0.667, 0.167, 0.500, 0.667],
+            "win_loss_pct_div": [0.5, 0.5, 0.5, 0.5],
+            "win_loss_pct_conference_last_half": [0.667, 0, 0.667, 0.667],
+            "strength_of_schedule": [0.444, 0.611, 0.5, 0.444],
+            "strength_of_victory": [0.458, 0.667, 0.333, 0.375]
+        })
+
+        pd.testing.assert_frame_equal(result, expected, check_dtype=False)
 
 class TestGetStandings:
     def test_four_teams_with_tiebreakers(self):
@@ -487,7 +799,9 @@ class TestGetStandings:
         standings = (
             get_standings(
                 matches_df=matches,
-                classif_rules=["points", "goal_difference", "h2h_points"],
+                classif_rules={"league": ["points", "goal_difference", "h2h_points"]},
+                league_type="UEFA",
+                divisions=None
             )
             .sort_values("team")
             .reset_index(drop=True)
@@ -514,7 +828,7 @@ class TestGetStandings:
         expected_positions = {"C": 1, "A": 2, "B": 3, "D": 4}
         for _, row in standings.iterrows():
             assert (
-                row["pos"] == expected_positions[row["team"]]
+                row["league_pos"] == expected_positions[row["team"]]
             ), f"{row['team']} position mismatch"
 
     def test_tie_broken_by_goal_difference(self):
@@ -532,7 +846,10 @@ class TestGetStandings:
 
         standings = (
             get_standings(
-                matches_df=matches, classif_rules=["points", "goal_difference"]
+                matches_df=matches,
+                classif_rules={"league": ["points", "goal_difference"]},
+                league_type="UEFA",
+                divisions=None
             )
             .sort_values("team")
             .reset_index(drop=True)
@@ -548,8 +865,8 @@ class TestGetStandings:
 
         # B should rank higher (pos smaller)
         assert (
-            standings.loc[standings["team"] == "A", "pos"].iloc[0]
-            < standings.loc[standings["team"] == "B", "pos"].iloc[0]
+            standings.loc[standings["team"] == "A", "league_pos"].iloc[0]
+            < standings.loc[standings["team"] == "B", "league_pos"].iloc[0]
         )
 
     def test_tie_broken_by_head_to_head(self):
@@ -568,7 +885,9 @@ class TestGetStandings:
         standings = (
             get_standings(
                 matches_df=matches,
-                classif_rules=["points", "goal_difference", "h2h_points"],
+                classif_rules={"league": ["points", "goal_difference", "h2h_points"]},
+                league_type="UEFA",
+                divisions=None
             )
             .sort_values("team")
             .reset_index(drop=True)
@@ -576,8 +895,8 @@ class TestGetStandings:
 
         # A and B tied on points and GD, but A won both h2h matches, so A ranks higher
         assert (
-            standings.loc[standings["team"] == "A", "pos"].iloc[0]
-            < standings.loc[standings["team"] == "B", "pos"].iloc[0]
+            standings.loc[standings["team"] == "A", "league_pos"].iloc[0]
+            < standings.loc[standings["team"] == "B", "league_pos"].iloc[0]
         )
 
     def test_three_way_tie_with_h2h(self):
@@ -596,21 +915,23 @@ class TestGetStandings:
         standings = (
             get_standings(
                 matches_df=matches,
-                classif_rules=[
+                classif_rules={"league": [
                     "points",
                     "goal_difference",
                     "h2h_points",
                     "h2h_goal_difference",
-                ],
+                ]},
+                league_type="UEFA",
+                divisions=None
             )
             .sort_values("team")
             .reset_index(drop=True)
         )
 
-        assert standings.loc[standings["team"] == "A", "pos"].iloc[0] == 1
-        assert standings.loc[standings["team"] == "B", "pos"].iloc[0] == 3
-        assert standings.loc[standings["team"] == "C", "pos"].iloc[0] == 2
-        assert standings.loc[standings["team"] == "D", "pos"].iloc[0] == 4
+        assert standings.loc[standings["team"] == "A", "league_pos"].iloc[0] == 1
+        assert standings.loc[standings["team"] == "B", "league_pos"].iloc[0] == 3
+        assert standings.loc[standings["team"] == "C", "league_pos"].iloc[0] == 2
+        assert standings.loc[standings["team"] == "D", "league_pos"].iloc[0] == 4
 
     def test_tie_broken_by_opponent_stats(self):
         # Teams A and B tied on points and goal difference, h2h decides
@@ -628,17 +949,160 @@ class TestGetStandings:
         standings = (
             get_standings(
                 matches_df=matches,
-                classif_rules=["points", "goal_difference", "opponent_points","opponent_goal_difference","opponent_goals_for"],
+                classif_rules={"league": ["points", "goal_difference", "opponent_points","opponent_goal_difference","opponent_goals_for"]},
+                league_type="UEFA",
+                divisions=None
             )
             .sort_values("team")
             .reset_index(drop=True)
         )
         # A and B tied on points and GD, but A wins because of opponent goal diff
         assert (
-            standings.loc[standings["team"] == "A", "pos"].iloc[0]
-            < standings.loc[standings["team"] == "B", "pos"].iloc[0]
+            standings.loc[standings["team"] == "A", "league_pos"].iloc[0]
+            < standings.loc[standings["team"] == "B", "league_pos"].iloc[0]
         )
 
+    def test_four_team_us_1(self):
+        matches = pd.DataFrame(
+            [
+                {"home": "A", "away": "B", "home_goals": 2, "away_goals": 1, "home_division": "East", "away_division": "East"},
+                {"home": "C", "away": "D", "home_goals": 0, "away_goals": 3, "home_division": "West", "away_division": "West"},
+                {"home": "B", "away": "A", "home_goals": 2, "away_goals": 0, "home_division": "East", "away_division": "East"},
+                {"home": "D", "away": "C", "home_goals": 1, "away_goals": 3, "home_division": "West", "away_division": "West"},
+                {"home": "A", "away": "C", "home_goals": 2, "away_goals": 1, "home_division": "East", "away_division": "West"},
+                {"home": "B", "away": "D", "home_goals": 0, "away_goals": 2, "home_division": "East", "away_division": "West"},
+                {"home": "C", "away": "A", "home_goals": 0, "away_goals": 2, "home_division": "West", "away_division": "East"},
+                {"home": "D", "away": "B", "home_goals": 2, "away_goals": 0, "home_division": "West", "away_division": "East"},
+                {"home": "A", "away": "D", "home_goals": 1, "away_goals": 3, "home_division": "East", "away_division": "West"},
+                {"home": "B", "away": "C", "home_goals": 1, "away_goals": 2, "home_division": "East", "away_division": "West"},
+                {"home": "D", "away": "A", "home_goals": 0, "away_goals": 1, "home_division": "West", "away_division": "East"},
+                {"home": "C", "away": "B", "home_goals": 3, "away_goals": 1, "home_division": "West", "away_division": "East"},
+            ]
+        )
+        matches["home_conference"] = "National"
+        matches["away_conference"] = "National"
+
+        divisions = pd.DataFrame(
+            [
+                {"team": "A", "division": "East", "conference": "National"},
+                {"team": "B", "division": "East", "conference": "National"},
+                {"team": "C", "division": "West", "conference": "National"},
+                {"team": "D", "division": "West", "conference": "National"},
+            ]
+        )
+
+        standings = (
+            get_standings(
+                matches_df=matches,
+                classif_rules={
+                "division": ["win_loss_pct",
+                         "h2h_win_loss_pct",
+                         "h2h_sweep_win_loss_pct",
+                         "win_loss_pct_div",
+                         "win_loss_pct_conf",
+                         "strength_of_victory",
+                         "strength_of_schedule"
+                         ],
+                "conference": [
+                         "division_winner",
+                         "win_loss_pct",
+                         "h2h_break_division_ties",
+                         "h2h_sweep_full",
+                         "win_loss_pct_conf",
+                         "h2h_win_loss_pct_common_games",
+                         "strength_of_victory",
+                         "strength_of_schedule",
+                         ],
+                    "league": ["win_loss_pct",
+                         "strength_of_victory",]
+                    },
+                league_type="NFL",
+                divisions=divisions
+            )
+            .sort_values("team")
+            .reset_index(drop=True)
+        )
+        standings = standings[["team","division_pos","conference_pos","league_pos"]]
+        expected_pos = pd.DataFrame(
+            [
+                {"team": "A", "division_pos": 1, "conference_pos": 1, "league_pos": 1},
+                {"team": "B", "division_pos": 2, "conference_pos": 4, "league_pos": 4},
+                {"team": "C", "division_pos": 2, "conference_pos": 3, "league_pos": 3},
+                {"team": "D", "division_pos": 1, "conference_pos": 2, "league_pos": 2},
+            ]
+        )
+       
+        pd.testing.assert_frame_equal(standings, expected_pos, check_dtype=False)
+
+    def test_four_team_us_2(self):
+        matches = pd.DataFrame(
+            [
+                {"home": "A", "away": "B", "home_goals": 2, "away_goals": 1, "home_division": "East", "away_division": "East"},
+                {"home": "C", "away": "D", "home_goals": 0, "away_goals": 3, "home_division": "West", "away_division": "West"},
+                {"home": "B", "away": "A", "home_goals": 2, "away_goals": 0, "home_division": "East", "away_division": "East"},
+                {"home": "D", "away": "C", "home_goals": 1, "away_goals": 3, "home_division": "West", "away_division": "West"},
+                {"home": "A", "away": "C", "home_goals": 2, "away_goals": 1, "home_division": "East", "away_division": "West"},
+                {"home": "B", "away": "D", "home_goals": 0, "away_goals": 2, "home_division": "East", "away_division": "West"},
+                {"home": "C", "away": "A", "home_goals": 0, "away_goals": 2, "home_division": "West", "away_division": "East"},
+                {"home": "D", "away": "B", "home_goals": 2, "away_goals": 0, "home_division": "West", "away_division": "East"},
+                {"home": "A", "away": "D", "home_goals": 1, "away_goals": 3, "home_division": "East", "away_division": "West"},
+                {"home": "B", "away": "C", "home_goals": 1, "away_goals": 2, "home_division": "East", "away_division": "West"},
+                {"home": "D", "away": "A", "home_goals": 0, "away_goals": 1, "home_division": "West", "away_division": "East"},
+                {"home": "C", "away": "B", "home_goals": 3, "away_goals": 1, "home_division": "West", "away_division": "East"},
+            ]
+        )
+        matches["home_conference"] = "National"
+        matches["away_conference"] = "National"
+
+        divisions = pd.DataFrame(
+            [
+                {"team": "A", "division": "East", "conference": "National"},
+                {"team": "B", "division": "East", "conference": "National"},
+                {"team": "C", "division": "West", "conference": "National"},
+                {"team": "D", "division": "West", "conference": "National"},
+            ]
+        )
+
+        standings = (
+            get_standings(
+                matches_df=matches,
+                classif_rules={
+                    "division": ["win_loss_pct",
+                         "strength_of_victory",
+                         "strength_of_schedule"
+                         ],
+                    "conference": [
+                         "division_winner",
+                         "win_loss_pct",
+                         "strength_of_victory",
+                         ],
+                    "league": ["win_loss_pct",
+                         "strength_of_victory",]
+                    },
+                league_type="NFL",
+                divisions=divisions
+            )
+            .sort_values("team")
+            .reset_index(drop=True)
+        )
+        standings = standings[["team","division_pos","conference_pos","league_pos"]]
+        expected_pos = pd.DataFrame(
+            [
+                {"team": "A", "division_pos": 1, "conference_pos": 1, "league_pos": 1},
+                {"team": "B", "division_pos": 2, "conference_pos": 4, "league_pos": 4},
+                {"team": "C", "division_pos": 2, "conference_pos": 3, "league_pos": 3},
+                {"team": "D", "division_pos": 1, "conference_pos": 2, "league_pos": 2},
+            ]
+        )
+       
+        pd.testing.assert_frame_equal(standings, expected_pos, check_dtype=False)
+
+    def test_invalid_type(self):
+        with pytest.raises(ValueError, match="Invalid league type for getting standings"):
+            get_standings(matches_df=None,
+                          classif_rules=None,
+                          league_type='Wrong league',
+                          divisions=None)
 
 class TestGetOpponentsAggregateStats:
     def test_opponent_stats(self):
@@ -654,16 +1118,14 @@ class TestGetOpponentsAggregateStats:
         standings = (
             get_standings(
                 matches_df=matches,
-                classif_rules=["points", "goal_difference", "goals_for"],
+                classif_rules={"league": ["points", "goal_difference", "goals_for"]},
+                league_type="UEFA",
+                divisions=None
             )
             .sort_values("team")
             .reset_index(drop=True)
         )
-        print(standings)
-
         opponent_stats = get_opponents_aggregate_stats(matches, standings)
-        print(opponent_stats)
-
         # Expected points and goal diff
         expected_opponent_stats = pd.DataFrame(
             [
@@ -687,14 +1149,14 @@ class TestValidateBracket:
                 "team2": ["E", "F", "G", "H"],
             }
         )
-        bracket_format = {
+        knockout_format = {
             "po_r8": "single-leg",
             "po_r4": "two-legged",
             "po_final": "single-leg",
         }
 
         # Should not raise
-        validate_bracket(bracket, bracket_format)
+        validate_bracket(bracket, knockout_format)
 
     def test_empty_slots(self):
         bracket = pd.DataFrame(
@@ -703,10 +1165,10 @@ class TestValidateBracket:
                 "team2": ["B", " "],
             }
         )
-        bracket_format = {"po_r4": "single-leg"}
+        knockout_format = {"po_r4": "single-leg"}
 
         with pytest.raises(ValueError, match="empty team slots"):
-            validate_bracket(bracket, bracket_format)
+            validate_bracket(bracket, knockout_format)
 
     def test_duplicate_teams(self):
         bracket = pd.DataFrame(
@@ -715,10 +1177,10 @@ class TestValidateBracket:
                 "team2": ["A", "C"],
             }
         )
-        bracket_format = {"po_r4": "single-leg"}
+        knockout_format = {"po_r4": "single-leg"}
 
         with pytest.raises(ValueError, match="Duplicate teams"):
-            validate_bracket(bracket, bracket_format)
+            validate_bracket(bracket, knockout_format)
 
     def test_slots_not_power_of_two(self):
         bracket = pd.DataFrame(
@@ -727,10 +1189,10 @@ class TestValidateBracket:
                 "team2": ["D", "E", "F"],
             }
         )
-        bracket_format = {"po_r8": "single-leg"}
+        knockout_format = {"po_r8": "single-leg"}
 
         with pytest.raises(ValueError, match="power of 2"):
-            validate_bracket(bracket, bracket_format)
+            validate_bracket(bracket, knockout_format)
 
     def test_less_than_two_teams(self):
         bracket = pd.DataFrame(
@@ -739,10 +1201,10 @@ class TestValidateBracket:
                 "team2": ["Bye", "Bye"],
             }
         )
-        bracket_format = {"po_r4": "single-leg"}
+        knockout_format = {"po_r4": "single-leg"}
 
         with pytest.raises(ValueError, match="At least two teams"):
-            validate_bracket(bracket, bracket_format)
+            validate_bracket(bracket, knockout_format)
 
     def test_mismatched_rounds(self):
         bracket = pd.DataFrame(
@@ -752,10 +1214,10 @@ class TestValidateBracket:
             }
         )
         # Only 2 rounds instead of expected 3 for 8 teams
-        bracket_format = {"po_r8": "single-leg", "po_r4": "two-legged"}
+        knockout_format = {"po_r8": "single-leg", "po_r4": "two-legged"}
 
         with pytest.raises(ValueError, match="does not match the number of rounds"):
-            validate_bracket(bracket, bracket_format)
+            validate_bracket(bracket, knockout_format)
 
     def test_bye_teams_allowed(self):
         bracket = pd.DataFrame(
@@ -764,14 +1226,14 @@ class TestValidateBracket:
                 "team2": ["Bye", "B", "Bye", "H"],
             }
         )
-        bracket_format = {
+        knockout_format = {
             "po_r8": "single-leg",
             "po_r4": "two-legged",
             "po_final": "single-leg",
         }
 
         # Should not raise even though 'Bye's present
-        validate_bracket(bracket, bracket_format)
+        validate_bracket(bracket, knockout_format)
 
 
 import pandas as pd
@@ -807,7 +1269,7 @@ class TestSimulatePlayoffBracket:
             }
         )
 
-        bracket_format = {
+        knockout_format = {
             "po_r16": "two-legged",
             "po_r8": "two-legged",
             "po_r4": "two-legged",
@@ -909,7 +1371,7 @@ class TestSimulatePlayoffBracket:
         )
 
         result = simulate_playoff_bracket(
-            bracket_df, bracket_format, elos, playoff_schedule
+            bracket_df, knockout_format, elos, playoff_schedule, has_reseeding=False
         )
         # Check result dataframe shape and columns
         assert isinstance(result, pd.DataFrame)
@@ -1124,7 +1586,7 @@ class TestPlayoffSimulation:
 
     def test_prepare_next_round(self):
         winners = ["A", "C"]
-        next_round = _prepare_next_round(winners)
+        next_round = _prepare_next_round(winners, bracket_df=None, has_reseeding=False)
         mock_next_round = pd.DataFrame(
             [
                 {"team1": "A", "team2": "C"},
@@ -1161,7 +1623,7 @@ class TestDrawFromPots:
         self.df = pd.DataFrame(
             {
                 "team": ["Team A", "Team B", "Team C", "Team D", "Team E", "Team F"],
-                "pos": [1, 2, 3, 4, 5, 6],
+                "league_pos": [1, 2, 3, 4, 5, 6],
             }
         )
 
@@ -1197,7 +1659,7 @@ class TestDrawFromPots:
         assert any(pot_differences)
 
     def test_handles_uneven_pots(self):
-        df = pd.DataFrame({"team": ["A", "B", "C", "D", "E"], "pos": [1, 2, 3, 4, 5]})
+        df = pd.DataFrame({"team": ["A", "B", "C", "D", "E"], "league_pos": [1, 2, 3, 4, 5]})
         result = draw_from_pots(df, pot_size=2)
         assert len(result) == 5
         assert set(result["team"]) == set(df["team"])
@@ -1205,7 +1667,7 @@ class TestDrawFromPots:
         assert result["draw_order"].max() == 5
 
     def test_single_pot(self):
-        df = pd.DataFrame({"team": ["X", "Y"], "pos": [1, 2]})
+        df = pd.DataFrame({"team": ["X", "Y"], "league_pos": [1, 2]})
         result = draw_from_pots(df, pot_size=2)
         assert set(result["team"]) == {"X", "Y"}
         assert len(result) == 2
@@ -1225,7 +1687,8 @@ class TestCreateBracketFromComposition:
         composition = [(1, 4), (2, 3)]
         result = create_bracket_from_composition(self.draw_df, composition)
         expected = pd.DataFrame(
-            {"team1": ["Team A", "Team B"], "team2": ["Team D", "Team C"]}
+            {"team1": ["Team A", "Team B"], "team2": ["Team D", "Team C"],
+            "seed1": [1, 2], "seed2": [4, 3]}
         )
         pd.testing.assert_frame_equal(result, expected)
 
@@ -1233,7 +1696,8 @@ class TestCreateBracketFromComposition:
         composition = [(1, "Bye"), ("Bye", 2)]
         result = create_bracket_from_composition(self.draw_df, composition)
         expected = pd.DataFrame(
-            {"team1": ["Team A", "Bye"], "team2": ["Bye", "Team B"]}
+            {"team1": ["Team A", "Bye"], "team2": ["Bye", "Team B"],
+             "seed1": [1, "Bye"], "seed2": ["Bye", 2]}
         )
         pd.testing.assert_frame_equal(result, expected)
 
@@ -1245,7 +1709,8 @@ class TestCreateBracketFromComposition:
     def test_partial_bracket_with_unused_draws(self):
         composition = [(3, 1)]
         result = create_bracket_from_composition(self.draw_df, composition)
-        expected = pd.DataFrame({"team1": ["Team C"], "team2": ["Team A"]})
+        expected = pd.DataFrame({"team1": ["Team C"], "team2": ["Team A"],
+                                 "seed1": [3], "seed2": [1]})
         pd.testing.assert_frame_equal(result, expected)
 
 
