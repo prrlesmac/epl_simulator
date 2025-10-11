@@ -85,7 +85,7 @@ def main_elos():
     elos["club"] = elos["club"].replace(config.club_name_mapping)
     elos["updated_at"] = datetime.now()
     elos.to_sql(
-        config.db_table_definitions["elo_table"]["name"],
+        f"{config.db_table_definitions["elo_table"]["name"]}_uefa",
         engine,
         if_exists="replace",
         index=False,
