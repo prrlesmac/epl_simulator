@@ -407,47 +407,62 @@ def simulate_league(league_rules, schedule, elos, divisions, num_simulations=100
     return sim_standings
 
 
-def save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko):
+def save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko, league_type):
     """
     Save simulation results to the database.
 
     Args:
         sim_standings_wo_ko (list): List of DataFrames for leagues without knockout stages.
         sim_standings_w_ko (list): List of DataFrames for leagues with knockout stages.
+        league_type (str): identifies the league type to output so that correct table is assigned
     """
     engine = db_connect.get_postgres_engine()
     if sim_standings_wo_ko:
+        if league_type == "UEFA":
+            table_map = config.db_table_mapping["UEFA_LOCAL"]
+        else:
+            table_map = config.db_table_mapping[league_type]
+        output_table = config.db_table_definitions[table_map]["name"]
+        output_table_def =config.db_table_definitions[table_map]["dtype"]
+
         sim_standings_wo_ko_df = pd.concat(sim_standings_wo_ko)
         sim_standings_wo_ko_df.to_sql(
-            config.db_table_definitions["domestic_sim_output_table"]["name"],
+            output_table,
             engine,
             if_exists="replace",
             index=False,
-            dtype=config.db_table_definitions["domestic_sim_output_table"]["dtype"],
+            dtype=output_table_def,
         )
         sim_standings_wo_ko_df.to_sql(
-            f"{config.db_table_definitions['domestic_sim_output_table']['name']}_history",
+            f"{output_table}_history",
             engine,
             if_exists="append",
             index=False,
-            dtype=config.db_table_definitions["domestic_sim_output_table"]["dtype"],
+            dtype=output_table_def,
         )
 
     if sim_standings_w_ko:
+        if league_type == "UEFA":
+            table_map = config.db_table_mapping["UEFA_CONTINENTAL"]
+        else:
+            table_map = config.db_table_mapping[league_type]
+        output_table = config.db_table_definitions[table_map]["name"]
+        output_table_def =config.db_table_definitions[table_map]["dtype"]
+
         sim_standings_w_ko_df = pd.concat(sim_standings_w_ko)
         sim_standings_w_ko_df.to_sql(
-            config.db_table_definitions["continental_sim_output_table"]["name"],
+            output_table,
             engine,
             if_exists="replace",
             index=False,
-            dtype=config.db_table_definitions["continental_sim_output_table"]["dtype"],
+            dtype=output_table_def,
         )
         sim_standings_w_ko_df.to_sql(
-            f"{config.db_table_definitions['continental_sim_output_table']['name']}_history",
+            f"{output_table}_history",
             engine,
             if_exists="append",
             index=False,
-            dtype=config.db_table_definitions["continental_sim_output_table"]["dtype"],
+            dtype=output_table_def,
         )
 
 def run_all_simulations():
@@ -477,7 +492,7 @@ def run_all_simulations():
     end_time = time.time()
     print(f"Simulation took {end_time - start_time:.2f} seconds")
     # Save results to database
-    save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko)
+    save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko, league_type)
     print("Simulations saved to db")
 
 

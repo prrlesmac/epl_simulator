@@ -178,7 +178,7 @@ club_name_mapping = {
     "Larne": "Larne FC",
     "Paphos": "Pafos FC",
     "Lugano": "Lugano",
-    "Shamrock": "Shamrock Rov",
+    "Shamrock": "Shamrock Rovers",
     "Dinamo Minsk": "Dinamo Minsk",
     "Hearts": "Hearts",
     "Cercle Brugge": "Cercle Brugge",
@@ -212,6 +212,15 @@ club_name_mapping = {
 }
 
 # Database
+# league type to db table mapping
+db_table_mapping = {
+    "UEFA_LOCAL": "domestic_sim_output_table",
+    "UEFA_CONTINENTAL": "continental_sim_output_table",
+    "NFL": "nfl_sim_output_table",
+    "MLB": "mlb_sim_output_table",
+    "NBA": "nba_sim_output_table",
+}
+
 db_table_definitions = {
     "elo_table": {
         "name": "current_elos",
@@ -323,6 +332,52 @@ db_table_definitions = {
             "updated_at": TIMESTAMP(),
         },
     },
+    "nfl_sim_output_table": {
+        "name": "sim_standings_nfl",
+        "dtype": {
+            "team": VARCHAR(100),
+            "AFC 1": FLOAT(),
+            "AFC 2": FLOAT(),
+            "AFC 3": FLOAT(),
+            "AFC 4": FLOAT(),
+            "AFC 5": FLOAT(),
+            "AFC 6": FLOAT(),
+            "AFC 7": FLOAT(),
+            "AFC 8": FLOAT(),
+            "AFC 9": FLOAT(),
+            "AFC 10": FLOAT(),
+            "AFC 11": FLOAT(),
+            "AFC 12": FLOAT(),
+            "AFC 13": FLOAT(),
+            "AFC 14": FLOAT(),
+            "AFC 15": FLOAT(),
+            "AFC 16": FLOAT(),
+            "NFC 1": FLOAT(),
+            "NFC 2": FLOAT(),
+            "NFC 3": FLOAT(),
+            "NFC 4": FLOAT(),
+            "NFC 5": FLOAT(),
+            "NFC 6": FLOAT(),
+            "NFC 7": FLOAT(),
+            "NFC 8": FLOAT(),
+            "NFC 9": FLOAT(),
+            "NFC 10": FLOAT(),
+            "NFC 11": FLOAT(),
+            "NFC 12": FLOAT(),
+            "NFC 13": FLOAT(),
+            "NFC 14": FLOAT(),
+            "NFC 15": FLOAT(),
+            "NFC 16": FLOAT(),
+            "po_r16": FLOAT(),
+            "po_r8": FLOAT(),
+            "po_r4": FLOAT(),
+            "po_r2": FLOAT(),
+            "po_champion": FLOAT(),
+            "playoff": FLOAT(),
+            "first_round_bye": FLOAT(),
+            "updated_at": TIMESTAMP(),
+        },
+    },
     "divisions_table": {
         "name": "teams",
         "dtype": {
@@ -415,7 +470,7 @@ fixtures_history_config = {
 }
 
 ## Simulation
-number_of_simulations = 10
+number_of_simulations = 10000
 home_advantage = 80
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
 played_cutoff_date = None
