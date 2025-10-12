@@ -1,135 +1,103 @@
-import pandas as pd
+from ranker.elo_utils import EloCalculator
 import numpy as np
 from db import db_connect
+import pandas as pd
+from datetime import datetime
+from config import config
+import os
+from dotenv import load_dotenv
 
-engine = db_connect.get_postgres_engine()
-matches = pd.read_sql(
+load_dotenv()
+
+def load_matches_data(league):
     """
-    SELECT * FROM public.fixtures_nfl_history
-    UNION ALL
-    SELECT * FROM public.fixtures_nfl
-    WHERE played='Y'
-    """,
-    engine,
-)
-matches["result"] = np.select(
-    [
-        matches["home_goals"] > matches["away_goals"],
-        matches["home_goals"] < matches["away_goals"]
-    ],
-    [
-        "H",  # Home win
-        "A"   # Away win
-    ],
-    default="T"  # Tie
-)
+    Load schedule for a specific league from the database.
 
-# Elo calculator
-class EloCalculator:
-    def __init__(self, initial_rating=1600, k=30):
-        self.ratings = {}
-        self.initial_rating = initial_rating
-        self.k = k
+    Args:
+        league (str): The league identifier to load data for.
 
-    def get_rating(self, team):
-        # Return current rating or initial rating if team not rated yet
-        return self.ratings.get(team, self.initial_rating)
+    Returns:
+        pd.DataFrame: DataFrames containing all matches for a league
+    """
+    engine = db_connect.get_postgres_engine()
+    table_suffix = league.lower()
+    matches = pd.read_sql(
+        f"""
+        SELECT * FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix}_history 
+        WHERE country = '{league}'
+        UNION ALL
+        SELECT * FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix}
+        WHERE country = '{league}'
+        AND played = 'Y'
+        """,
+        engine,
+    )
+    matches["result"] = np.select(
+        [
+            matches["home_goals"] > matches["away_goals"],
+            matches["home_goals"] < matches["away_goals"]
+        ],
+        [
+            "H",  # Home win
+            "A"   # Away win
+        ],
+        default="T"  # Tie
+    )
 
-    def calculate_elo(self, rating_a, rating_b, result):
-        # Calculate expected scores
-        expected_a = 1 / (1 + 10 ** ((rating_b - rating_a) / 400))
-        expected_b = 1 - expected_a
+    return matches
 
-        # Actual scores based on result
-        if result == "H":  # Home wins
-            actual_a, actual_b = 1, 0
-        elif result == "A":  # Away wins
-            actual_a, actual_b = 0, 1
-        elif result == "T":  # Tie
-            actual_a, actual_b = 0.5, 0.5
-        else:  # invalid
-            raise ValueError("match result must be H, A or T")
+def save_elos_to_database(matches_elos, current_ratings, league):
+    """
+    Save Elo calculation results to the database.
 
-        # Update ratings
-        new_rating_a = rating_a + self.k * (actual_a - expected_a)
-        new_rating_b = rating_b + self.k * (actual_b - expected_b)
-        return new_rating_a, new_rating_b, expected_a, expected_b
-
-    def update_ratings(self, home_team, away_team, result):
-        # Get current ratings
-        home_rating = self.get_rating(home_team)
-        away_rating = self.get_rating(away_team)
-
-        # Calculate new ratings and win expectancies
-        new_home_rating, new_away_rating, expected_home, expected_away = (
-            self.calculate_elo(home_rating, away_rating, result)
-        )
-
-        # Update ratings
-        self.ratings[home_team] = new_home_rating
-        self.ratings[away_team] = new_away_rating
-
-        # Return ratings and win expectancies
-        return (
-            home_rating,
-            away_rating,
-            new_home_rating,
-            new_away_rating,
-            expected_home,
-            expected_away,
-        )
-
-    def get_current_ratings(self):
-        # Return a DataFrame of current Elo ratings
-        return pd.DataFrame(
-            self.ratings.items(), columns=["club", "elo"]
-        ).sort_values(by="elo", ascending=False)
+    Args:
+        matches_elos (pd.DataFrame): DataFrame with matches and elos
+        current_ratings (list): DataFrame with current/latest elo for each team
+        league (str): identifies the league name to output so that correct table is assigned
+    """
+    engine = db_connect.get_postgres_engine()
+    table_suffix = league.lower()
+    match_output_table = f"{config.db_table_definitions['historic_elo_table']['name']}_{table_suffix}"
+    match_output_table_def = config.db_table_definitions["historic_elo_table"]["dtype"]
+    matches_elos.to_sql(
+        match_output_table,
+        engine,
+        if_exists="replace",
+        index=False,
+        dtype=match_output_table_def,
+    )
+    elo_output_table = f"{config.db_table_definitions['elo_table']['name']}_{table_suffix}"
+    elo_output_table_def = config.db_table_definitions["elo_table"]["dtype"]
+    current_ratings.to_sql(
+        elo_output_table,
+        engine,
+        if_exists="replace",
+        index=False,
+        dtype=elo_output_table_def,
+    )
 
 
-# Initialize Elo Calculator
-elo_calculator = EloCalculator()
+def run_elo_calc():
 
-# Add columns to the DataFrame
-matches["home_elo_before"] = 0.0
-matches["away_elo_before"] = 0.0
-matches["home_elo_after"] = 0.0
-matches["away_elo_after"] = 0.0
-matches["home_win_expectancy"] = 0.0
-matches["away_win_expectancy"] = 0.0
+    print("Loading historical matches")
+    matches = load_matches_data(os.getenv("LEAGUES_TO_SIM"))
 
-# Process matches and update the DataFrame
-for index, match in matches.iterrows():
-    (
-        home_elo_before,
-        away_elo_before,
-        home_elo_after,
-        away_elo_after,
-        home_expectancy,
-        away_expectancy,
-    ) = elo_calculator.update_ratings(match["home"], match["away"], match["result"])
+    print("Calculating Elos")
+    # Initialize Elo Calculator
+    elo_calculator = EloCalculator(matches=matches)
 
-    # Populate the DataFrame
-    matches.at[index, "home_elo_before"] = home_elo_before
-    matches.at[index, "away_elo_before"] = away_elo_before
-    matches.at[index, "home_elo_after"] = home_elo_after
-    matches.at[index, "away_elo_after"] = away_elo_after
-    matches.at[index, "home_win_expectancy"] = home_expectancy
-    matches.at[index, "away_win_expectancy"] = away_expectancy
+    # Calculate elos match by match
+    elo_calculator.update_matches_elos()
+    matches_elos = elo_calculator.matches
+    matches_elos["updated_at"] = datetime.now()
 
-# Get current Elo ratings for each team
-current_ratings = elo_calculator.get_current_ratings()
+    # Get current Elo ratings for each team
+    current_ratings = elo_calculator.get_current_ratings()
+    current_ratings["updated_at"] = datetime.now()
 
-matches.to_sql(
-    "historic_elos_nfl",
-    engine,
-    if_exists="replace",
-    index=False,
-    dtype=None,
-)
-current_ratings.to_sql(
-    "current_elos_nfl",
-    engine,
-    if_exists="replace",
-    index=False,
-    dtype=None,
-)
+    print("Saving to DB")
+    save_elos_to_database(matches_elos, current_ratings, os.getenv("LEAGUES_TO_SIM"))
+
+
+if __name__ == "__main__":
+    run_elo_calc()
