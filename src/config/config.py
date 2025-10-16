@@ -495,7 +495,6 @@ fixtures_history_config = {
 
 ## Simulation
 number_of_simulations = 10000
-home_advantage = 80
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
 played_cutoff_date = None
 schedule_cutoff_date = None
@@ -503,6 +502,7 @@ schedule_cutoff_date = None
 league_rules = {
     "ENG": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": False,
         "classification": {
             "league": [
@@ -521,6 +521,7 @@ league_rules = {
     },
     "ESP": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": False,
         "classification": {
             "league": [
@@ -539,6 +540,7 @@ league_rules = {
     },
     "ITA": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": False,
         "classification": {
             "league": [
@@ -558,6 +560,7 @@ league_rules = {
     },
     "GER": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": False,
         "classification": {
             "league": [
@@ -579,6 +582,7 @@ league_rules = {
     },
     "FRA": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": False,
         "classification": {
             "league": [
@@ -601,6 +605,7 @@ league_rules = {
     },
     "UCL": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "league": [
@@ -651,6 +656,7 @@ league_rules = {
     },
     "UEL": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "league": [
@@ -701,6 +707,7 @@ league_rules = {
     },
     "UECL": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "league": [
@@ -752,6 +759,8 @@ league_rules = {
     },
     "NFL": {
         "sim_type": "winner",
+        "home_advantage": 50,
+        "elo_kfactor": 20,
         "has_knockout": True,
         "classification": {
             "division": ["win_loss_pct",

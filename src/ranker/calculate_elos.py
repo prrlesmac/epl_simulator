@@ -32,17 +32,6 @@ def load_matches_data(league):
         """,
         engine,
     )
-    matches["result"] = np.select(
-        [
-            matches["home_goals"] > matches["away_goals"],
-            matches["home_goals"] < matches["away_goals"]
-        ],
-        [
-            "H",  # Home win
-            "A"   # Away win
-        ],
-        default="T"  # Tie
-    )
 
     return matches
 
@@ -80,11 +69,13 @@ def save_elos_to_database(matches_elos, current_ratings, league):
 def run_elo_calc():
 
     print("Loading historical matches")
-    matches = load_matches_data(os.getenv("LEAGUES_TO_SIM"))
+    league = os.getenv("LEAGUES_TO_SIM")
+    matches = load_matches_data(league)
+    elo_params = config.league_rules[league]
 
     print("Calculating Elos")
     # Initialize Elo Calculator
-    elo_calculator = EloCalculator(matches=matches)
+    elo_calculator = EloCalculator(matches=matches, elo_params=elo_params)
 
     # Calculate elos match by match
     elo_calculator.update_matches_elos()
