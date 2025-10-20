@@ -360,6 +360,7 @@ def process_footy_table(fixtures, country):
     """
     fixtures = fixtures[(fixtures["home"] != "") & (fixtures["away"] != "")].copy()
     fixtures["score"] = fixtures["score"].replace("", None)
+    fixtures["season"] = ""
     # Apply function to the 'score' column and expand results into new columns
     fixtures[["home_goals", "away_goals", "home_pens", "away_pens"]] = fixtures[
         "score"
@@ -538,6 +539,7 @@ def process_nba_table(fixtures):
     })
     fixtures = fixtures[(~fixtures["away"].isnull()) & (~fixtures["home"].isnull())].copy()
     fixtures["date"] = pd.to_datetime(fixtures["date"], format='%a, %b %d, %Y')
+    fixtures["season"] = fixtures["url"].str.extract(r"/leagues/NBA_(\d{4})_")  
     fixtures["home_goals"] = pd.to_numeric(fixtures["home_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
     fixtures["away_goals"] = pd.to_numeric(fixtures["away_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
 
@@ -583,6 +585,7 @@ def process_mlb_table(fixtures):
     """
     fixtures = fixtures[(~fixtures["away"].isnull()) & (~fixtures["home"].isnull())].copy()
     fixtures["date"] = pd.to_datetime(fixtures["date"], format='%A, %B %d, %Y')
+    fixtures["season"] = fixtures["url"].str.extract(r"/leagues/majors/(\d{4})-")
     fixtures["home_goals"] = pd.to_numeric(fixtures["home_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
     fixtures["away_goals"] = pd.to_numeric(fixtures["away_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
 
@@ -640,6 +643,7 @@ def process_fixtures(fixtures, country):
             "neutral",
             "round",
             "date",
+            "season",
             "notes",
         ]
     ]

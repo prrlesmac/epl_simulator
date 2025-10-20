@@ -8,12 +8,21 @@ class EloCalculator:
         self.ratings = {}
         self.initial_rating = initial_rating
         self.k = elo_params['elo_kfactor']
+        self.season_start_adj = elo_params['season_start_adj']
         self.home_adv = elo_params['home_advantage']
 
     def get_rating(self, team):
         # Return current rating or initial rating if team not rated yet
         return self.ratings.get(team, self.initial_rating)
-
+    
+    def adjust_season_start_elo(self):
+        league_avg = sum(self.ratings.values()) / len(self.ratings)
+        
+        self.ratings = {
+            team: (1 - self.season_start_adj) * rating + (self.season_start_adj) * league_avg
+            for team, rating in self.ratings.items()
+        }
+        
     def calculate_elo(self, rating_a, rating_b, goals_a, goals_b):
 
         def nfl_mov_multiplier(winner_point_diff, winner_elo_diff):
@@ -110,3 +119,9 @@ class EloCalculator:
             self.matches.at[index, "away_elo_after"] = away_elo_after
             self.matches.at[index, "home_win_expectancy"] = home_expectancy
             self.matches.at[index, "away_win_expectancy"] = away_expectancy
+
+            prev_match_season = self.matches.at[max(0,index-1), "season"]
+            new_match_season = self.matches.at[index, "season"]
+
+            if prev_match_season != new_match_season:
+                self.adjust_season_start_elo()

@@ -267,6 +267,7 @@ db_table_definitions = {
             "neutral": VARCHAR(10),
             "country": VARCHAR(100),
             "date": DATE(),
+            "season": VARCHAR(10),
             "round": VARCHAR(100),
             "notes": VARCHAR(255),
             "updated_at": TIMESTAMP(),
@@ -417,7 +418,7 @@ parsing_method = "http_request" # must be local_file, http_request, or playwrigh
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 #elo_date = "2025-06-01"  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
-pull_fixture_history = False
+pull_fixture_history = True
 fixtures_config = {
     "ENG": {
         "fixtures_url": ["https://fbref.com/en/comps/9/2025-2026/schedule/2025-2026-Premier-League-Scores-and-Fixtures"],
@@ -761,6 +762,7 @@ league_rules = {
         "sim_type": "winner",
         "home_advantage": 50,
         "elo_kfactor": 20,
+        "season_start_adj": 1/3,
         "has_knockout": True,
         "classification": {
             "division": ["win_loss_pct",
