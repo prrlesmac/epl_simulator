@@ -111,7 +111,7 @@ class EloCalculator:
                 away_elo_after,
                 home_expectancy,
                 away_expectancy,
-            ) = self.update_ratings(match["home"], match["away"], match["home_goals"], match["away_goals"])
+            ) = self.update_ratings(match["home_current"], match["away_current"], match["home_goals"], match["away_goals"])
             # Populate the DataFrame
             self.matches.at[index, "home_elo_before"] = home_elo_before
             self.matches.at[index, "away_elo_before"] = away_elo_before

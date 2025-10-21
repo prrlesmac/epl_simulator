@@ -9,12 +9,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def load_matches_data(league):
+def load_matches_data(league, name_remap):
     """
     Load schedule for a specific league from the database.
 
     Args:
         league (str): The league identifier to load data for.
+        name_remap (Dict): Contains the remapping for franchise name changes
 
     Returns:
         pd.DataFrame: DataFrames containing all matches for a league
@@ -32,6 +33,8 @@ def load_matches_data(league):
         """,
         engine,
     )
+    matches["home_current"] = matches["home"].replace(name_remap)
+    matches["away_current"] = matches["away"].replace(name_remap)
 
     return matches
 
@@ -70,7 +73,8 @@ def run_elo_calc():
 
     print("Loading historical matches")
     league = os.getenv("LEAGUES_TO_SIM")
-    matches = load_matches_data(league)
+    name_remap = config.nfl_name_remap
+    matches = load_matches_data(league, name_remap)
     elo_params = config.league_rules[league]
 
     print("Calculating Elos")

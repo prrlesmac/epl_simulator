@@ -211,6 +211,127 @@ club_name_mapping = {
     "Go Ahead Eagles": "Go Ahead Eag",
 }
 
+# NFL franchise name remaps
+nfl_name_remap = {
+    # Arizona Cardinals franchise
+    "Chicago Cardinals": "Arizona Cardinals",
+    "St. Louis Cardinals": "Arizona Cardinals",
+    "Phoenix Cardinals": "Arizona Cardinals",
+    "Arizona Cardinals": "Arizona Cardinals",
+
+    # Atlanta Falcons
+    "Atlanta Falcons": "Atlanta Falcons",
+
+    # Baltimore Ravens
+    "Baltimore Ravens": "Baltimore Ravens",
+
+    # Buffalo Bills
+    "Buffalo Bills": "Buffalo Bills",
+
+    # Carolina Panthers
+    "Carolina Panthers": "Carolina Panthers",
+
+    # Chicago Bears
+    "Decatur Staleys": "Chicago Bears",
+    "Chicago Staleys": "Chicago Bears",
+    "Chicago Bears": "Chicago Bears",
+
+    # Cincinnati Bengals
+    "Cincinnati Bengals": "Cincinnati Bengals",
+
+    # Cleveland Browns
+    "Cleveland Browns": "Cleveland Browns",
+
+    # Dallas Cowboys
+    "Dallas Cowboys": "Dallas Cowboys",
+
+    # Denver Broncos
+    "Denver Broncos": "Denver Broncos",
+
+    # Detroit Lions
+    "Portsmouth Spartans": "Detroit Lions",
+    "Detroit Lions": "Detroit Lions",
+
+    # Green Bay Packers
+    "Green Bay Packers": "Green Bay Packers",
+
+    # Houston Texans
+    "Houston Texans": "Houston Texans",
+
+    # Indianapolis Colts franchise
+    "Baltimore Colts": "Indianapolis Colts",
+    "Indianapolis Colts": "Indianapolis Colts",
+
+    # Jacksonville Jaguars
+    "Jacksonville Jaguars": "Jacksonville Jaguars",
+
+    # Kansas City Chiefs franchise
+    "Dallas Texans": "Kansas City Chiefs",
+    "Kansas City Chiefs": "Kansas City Chiefs",
+
+    # Las Vegas Raiders franchise
+    "Oakland Raiders": "Las Vegas Raiders",
+    "Los Angeles Raiders": "Las Vegas Raiders",
+    "Las Vegas Raiders": "Las Vegas Raiders",
+
+    # Los Angeles Chargers
+    "San Diego Chargers": "Los Angeles Chargers",
+    "Los Angeles Chargers": "Los Angeles Chargers",
+
+    # Los Angeles Rams franchise
+    "Cleveland Rams": "Los Angeles Rams",
+    "Los Angeles Rams": "Los Angeles Rams",
+    "St. Louis Rams": "Los Angeles Rams",
+
+    # Miami Dolphins
+    "Miami Dolphins": "Miami Dolphins",
+
+    # Minnesota Vikings
+    "Minnesota Vikings": "Minnesota Vikings",
+
+    # New England Patriots franchise
+    "Boston Patriots": "New England Patriots",
+    "New England Patriots": "New England Patriots",
+
+    # New Orleans Saints
+    "New Orleans Saints": "New Orleans Saints",
+
+    # New York Giants
+    "New York Giants": "New York Giants",
+
+    # New York Jets franchise
+    "New York Titans": "New York Jets",
+    "New York Jets": "New York Jets",
+
+    # Philadelphia Eagles
+    "Philadelphia Eagles": "Philadelphia Eagles",
+
+    # Pittsburgh Steelers
+    "Pittsburgh Pirates": "Pittsburgh Steelers",  # early name
+    "Pittsburgh Steelers": "Pittsburgh Steelers",
+
+    # San Francisco 49ers
+    "San Francisco 49ers": "San Francisco 49ers",
+
+    # Seattle Seahawks
+    "Seattle Seahawks": "Seattle Seahawks",
+
+    # Tampa Bay Buccaneers
+    "Tampa Bay Buccaneers": "Tampa Bay Buccaneers",
+
+    # Tennessee Titans franchise
+    "Houston Oilers": "Tennessee Titans",
+    "Tennessee Oilers": "Tennessee Titans",
+    "Tennessee Titans": "Tennessee Titans",
+
+    # Washington franchise
+    "Boston Braves": "Washington Commanders",
+    "Boston Redskins": "Washington Commanders",
+    "Washington Redskins": "Washington Commanders",
+    "Washington Football Team": "Washington Commanders",
+    "Washington Commanders": "Washington Commanders",
+}
+
 # Database
 # league type to db table mapping
 db_table_mapping = {
@@ -418,7 +539,7 @@ parsing_method = "http_request" # must be local_file, http_request, or playwrigh
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 #elo_date = "2025-06-01"  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
-pull_fixture_history = True
+pull_fixture_history = False
 fixtures_config = {
     "ENG": {
         "fixtures_url": ["https://fbref.com/en/comps/9/2025-2026/schedule/2025-2026-Premier-League-Scores-and-Fixtures"],
@@ -488,7 +609,7 @@ fixtures_history_config = {
         "NFL": {
         "fixtures_url": [
             f"https://www.pro-football-reference.com/years/{year}/games.htm"
-            for year in range(1966, 2025)
+            for year in range(1970, 2025)
         ],
         "table_id": ["games"],
     },
