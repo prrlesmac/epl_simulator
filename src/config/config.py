@@ -332,6 +332,18 @@ nfl_name_remap = {
     "Washington Commanders": "Washington Commanders",
 }
 
+nfl_expansion_elos = {
+
+    "Baltimore Ravens": 1500.0,
+    "Carolina Panthers": 1550.0,
+  #  "Cleveland Browns": 1350.0,
+    "Houston Texans": 1450.0,
+    "Jacksonville Jaguars": 1450.0,
+    "Tampa Bay Buccaneers": 1350.0,
+    "Seattle Seahawks": 1400.0
+
+}
+
 # Database
 # league type to db table mapping
 db_table_mapping = {

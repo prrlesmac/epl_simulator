@@ -3,17 +3,18 @@ import math
 
 # Elo calculator
 class EloCalculator:
-    def __init__(self, matches, elo_params, initial_rating=1600):
+    def __init__(self, matches, elo_params, expansion_elos=None, initial_rating=1600):
         self.matches = matches
         self.ratings = {}
         self.initial_rating = initial_rating
         self.k = elo_params['elo_kfactor']
         self.season_start_adj = elo_params['season_start_adj']
         self.home_adv = elo_params['home_advantage']
+        self.expansion_elos = expansion_elos
 
     def get_rating(self, team):
         # Return current rating or initial rating if team not rated yet
-        return self.ratings.get(team, self.initial_rating)
+        return self.ratings.get(team, self.expansion_elos.get(team, self.initial_rating))
     
     def adjust_season_start_elo(self):
         league_avg = sum(self.ratings.values()) / len(self.ratings)

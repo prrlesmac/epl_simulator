@@ -79,7 +79,7 @@ def run_elo_calc():
 
     print("Calculating Elos")
     # Initialize Elo Calculator
-    elo_calculator = EloCalculator(matches=matches, elo_params=elo_params)
+    elo_calculator = EloCalculator(matches=matches, elo_params=elo_params, expansion_elos=config.nfl_expansion_elos)
 
     # Calculate elos match by match
     elo_calculator.update_matches_elos()
