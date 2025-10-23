@@ -322,6 +322,7 @@ class TestProcessFixtures:
             "neutral",
             "round",
             "date",
+            "season",
             "notes",
         ]
         assert list(result.columns) == expected_columns
@@ -507,7 +508,12 @@ class TestProcessFixtures:
                 "Attend.": ["19,156", "18,997", "20,000", "30,000", "25,000"],
                 "LOG": ["2:04", "2:26", "2:04","2:11", "2:17"],
                 "Arena": ["TD Garden", "Crypto.com Arena", "TD Arena", "AA Arena", "AA Court"],
-                "Notes": ["", "NBA Cup","","Play-In Game",""]
+                "Notes": ["", "NBA Cup","","Play-In Game",""],
+                "url": ["https://www.basketball-reference.com/leagues/NBA_2025_games-october.html",
+                        "https://www.basketball-reference.com/leagues/NBA_2025_games-october.html",
+                        "https://www.basketball-reference.com/leagues/NBA_2025_games-october.html",
+                        "https://www.basketball-reference.com/leagues/NBA_2025_games-october.html",
+                        "https://www.basketball-reference.com/leagues/NBA_2025_games-october.html"]
             }
         )
 
@@ -521,10 +527,10 @@ class TestProcessFixtures:
                 "neutral": ["N", "N", "N", "N","N"],
                 "round": ["League","NBA Cup","League", "Play-in","Playoff"],
                 "date": pd.to_datetime(["2024-10-21", "2024-10-22","2024-10-23", "2024-10-24","2024-10-25"]),
+                "season": ["2025", "2025", "2025", "2025", "2025"],
                 "notes": ["", "NBA Cup","","Play-In Game",""]
             }
         )
-
         result = process_fixtures(fixtures, "NBA").reset_index(drop=True)
         pd.testing.assert_frame_equal(output, result, check_like=True, check_index_type=False)  # ignores column order
 
@@ -632,6 +638,7 @@ class TestProcessFixtures:
                 "neutral": ["N", "N"],
                 "round": ["League", "League"],
                 "date": ["2026-01-04", "2026-01-04"],
+                "season": ["2025", "2025"],
                 "notes": ["", ""]
             }
         )
@@ -648,7 +655,9 @@ class TestProcessFixtures:
                 "home": ["San Diego Padres", "Los Angeles Dodgers"],
                 "away_goals": [5, 15],
                 "home_goals": [2, 11],
-                "round": ["League","League"]
+                "round": ["League","League"],
+                "url": ["https://www.baseball-reference.com/leagues/majors/2024-schedule.shtml",
+                        "https://www.baseball-reference.com/leagues/majors/2024-schedule.shtml"]
             }
         )
 
@@ -662,6 +671,7 @@ class TestProcessFixtures:
                 "neutral": ["N", "N"],
                 "round": ["League", "League"],
                 "date": pd.to_datetime(["2024-03-20", "2024-03-21"]),
+                "season": ["2024", "2024"],
                 "notes": ["", ""]
             }
         )

@@ -211,6 +211,139 @@ club_name_mapping = {
     "Go Ahead Eagles": "Go Ahead Eag",
 }
 
+# NFL franchise name remaps
+nfl_name_remap = {
+    # Arizona Cardinals franchise
+    "Chicago Cardinals": "Arizona Cardinals",
+    "St. Louis Cardinals": "Arizona Cardinals",
+    "Phoenix Cardinals": "Arizona Cardinals",
+    "Arizona Cardinals": "Arizona Cardinals",
+
+    # Atlanta Falcons
+    "Atlanta Falcons": "Atlanta Falcons",
+
+    # Baltimore Ravens
+    "Baltimore Ravens": "Baltimore Ravens",
+
+    # Buffalo Bills
+    "Buffalo Bills": "Buffalo Bills",
+
+    # Carolina Panthers
+    "Carolina Panthers": "Carolina Panthers",
+
+    # Chicago Bears
+    "Decatur Staleys": "Chicago Bears",
+    "Chicago Staleys": "Chicago Bears",
+    "Chicago Bears": "Chicago Bears",
+
+    # Cincinnati Bengals
+    "Cincinnati Bengals": "Cincinnati Bengals",
+
+    # Cleveland Browns
+    "Cleveland Browns": "Cleveland Browns",
+
+    # Dallas Cowboys
+    "Dallas Cowboys": "Dallas Cowboys",
+
+    # Denver Broncos
+    "Denver Broncos": "Denver Broncos",
+
+    # Detroit Lions
+    "Portsmouth Spartans": "Detroit Lions",
+    "Detroit Lions": "Detroit Lions",
+
+    # Green Bay Packers
+    "Green Bay Packers": "Green Bay Packers",
+
+    # Houston Texans
+    "Houston Texans": "Houston Texans",
+
+    # Indianapolis Colts franchise
+    "Baltimore Colts": "Indianapolis Colts",
+    "Indianapolis Colts": "Indianapolis Colts",
+
+    # Jacksonville Jaguars
+    "Jacksonville Jaguars": "Jacksonville Jaguars",
+
+    # Kansas City Chiefs franchise
+    "Dallas Texans": "Kansas City Chiefs",
+    "Kansas City Chiefs": "Kansas City Chiefs",
+
+    # Las Vegas Raiders franchise
+    "Oakland Raiders": "Las Vegas Raiders",
+    "Los Angeles Raiders": "Las Vegas Raiders",
+    "Las Vegas Raiders": "Las Vegas Raiders",
+
+    # Los Angeles Chargers
+    "San Diego Chargers": "Los Angeles Chargers",
+    "Los Angeles Chargers": "Los Angeles Chargers",
+
+    # Los Angeles Rams franchise
+    "Cleveland Rams": "Los Angeles Rams",
+    "Los Angeles Rams": "Los Angeles Rams",
+    "St. Louis Rams": "Los Angeles Rams",
+
+    # Miami Dolphins
+    "Miami Dolphins": "Miami Dolphins",
+
+    # Minnesota Vikings
+    "Minnesota Vikings": "Minnesota Vikings",
+
+    # New England Patriots franchise
+    "Boston Patriots": "New England Patriots",
+    "New England Patriots": "New England Patriots",
+
+    # New Orleans Saints
+    "New Orleans Saints": "New Orleans Saints",
+
+    # New York Giants
+    "New York Giants": "New York Giants",
+
+    # New York Jets franchise
+    "New York Titans": "New York Jets",
+    "New York Jets": "New York Jets",
+
+    # Philadelphia Eagles
+    "Philadelphia Eagles": "Philadelphia Eagles",
+
+    # Pittsburgh Steelers
+    "Pittsburgh Pirates": "Pittsburgh Steelers",  # early name
+    "Pittsburgh Steelers": "Pittsburgh Steelers",
+
+    # San Francisco 49ers
+    "San Francisco 49ers": "San Francisco 49ers",
+
+    # Seattle Seahawks
+    "Seattle Seahawks": "Seattle Seahawks",
+
+    # Tampa Bay Buccaneers
+    "Tampa Bay Buccaneers": "Tampa Bay Buccaneers",
+
+    # Tennessee Titans franchise
+    "Houston Oilers": "Tennessee Titans",
+    "Tennessee Oilers": "Tennessee Titans",
+    "Tennessee Titans": "Tennessee Titans",
+
+    # Washington franchise
+    "Boston Braves": "Washington Commanders",
+    "Boston Redskins": "Washington Commanders",
+    "Washington Redskins": "Washington Commanders",
+    "Washington Football Team": "Washington Commanders",
+    "Washington Commanders": "Washington Commanders",
+}
+
+nfl_expansion_elos = {
+
+    "Baltimore Ravens": 1500.0,
+    "Carolina Panthers": 1550.0,
+  #  "Cleveland Browns": 1350.0,
+    "Houston Texans": 1450.0,
+    "Jacksonville Jaguars": 1450.0,
+    "Tampa Bay Buccaneers": 1350.0,
+    "Seattle Seahawks": 1400.0
+
+}
+
 # Database
 # league type to db table mapping
 db_table_mapping = {
@@ -232,6 +365,30 @@ db_table_definitions = {
             "updated_at": TIMESTAMP(),
         },
     },
+    "historic_elo_table": {
+        "name": "historic_elos",
+        "dtype": {
+            "home": VARCHAR(100),
+            "away": VARCHAR(100),
+            "home_goals": INTEGER(),
+            "away_goals": INTEGER(),
+            "played": VARCHAR(10),
+            "neutral": VARCHAR(10),
+            "round": VARCHAR(100),
+            "date": DATE(),
+            "round": VARCHAR(100),
+            "notes": VARCHAR(255),
+            "country": VARCHAR(100),
+            "result": VARCHAR(3),
+            "home_elo_before": FLOAT(),
+            "away_elo_before": FLOAT(),
+            "home_elo_after": FLOAT(),
+            "away_elo_after": FLOAT(),
+            "home_win_expectancy": FLOAT(),
+            "away_win_expectancy": FLOAT(),
+            "updated_at": TIMESTAMP(),
+        },
+    },
     "fixtures_table": {
         "name": "fixtures",
         "dtype": {
@@ -243,6 +400,7 @@ db_table_definitions = {
             "neutral": VARCHAR(10),
             "country": VARCHAR(100),
             "date": DATE(),
+            "season": VARCHAR(10),
             "round": VARCHAR(100),
             "notes": VARCHAR(255),
             "updated_at": TIMESTAMP(),
@@ -463,7 +621,7 @@ fixtures_history_config = {
         "NFL": {
         "fixtures_url": [
             f"https://www.pro-football-reference.com/years/{year}/games.htm"
-            for year in range(1966, 2025)
+            for year in range(1970, 2025)
         ],
         "table_id": ["games"],
     },
@@ -471,7 +629,6 @@ fixtures_history_config = {
 
 ## Simulation
 number_of_simulations = 10000
-home_advantage = 80
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
 played_cutoff_date = None
 schedule_cutoff_date = None
@@ -479,6 +636,7 @@ schedule_cutoff_date = None
 league_rules = {
     "ENG": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": False,
         "classification": {
             "league": [
@@ -497,6 +655,7 @@ league_rules = {
     },
     "ESP": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": False,
         "classification": {
             "league": [
@@ -515,6 +674,7 @@ league_rules = {
     },
     "ITA": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": False,
         "classification": {
             "league": [
@@ -534,6 +694,7 @@ league_rules = {
     },
     "GER": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": False,
         "classification": {
             "league": [
@@ -555,6 +716,7 @@ league_rules = {
     },
     "FRA": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": False,
         "classification": {
             "league": [
@@ -577,6 +739,7 @@ league_rules = {
     },
     "UCL": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "league": [
@@ -627,6 +790,7 @@ league_rules = {
     },
     "UEL": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "league": [
@@ -677,6 +841,7 @@ league_rules = {
     },
     "UECL": {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "league": [
@@ -728,6 +893,9 @@ league_rules = {
     },
     "NFL": {
         "sim_type": "winner",
+        "home_advantage": 50,
+        "elo_kfactor": 20,
+        "season_start_adj": 1/3,
         "has_knockout": True,
         "classification": {
             "division": ["win_loss_pct",
