@@ -3,7 +3,7 @@ import math
 
 # Elo calculator
 class EloCalculator:
-    def __init__(self, matches, elo_params, expansion_elos=None, initial_rating=1600):
+    def __init__(self, matches, elo_params, expansion_elos={}, initial_rating=1600):
         self.matches = matches
         self.ratings = {}
         self.initial_rating = initial_rating
