@@ -543,8 +543,14 @@ def process_nba_table(fixtures):
     fixtures["home_goals"] = pd.to_numeric(fixtures["home_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
     fixtures["away_goals"] = pd.to_numeric(fixtures["away_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
 
-    play_in_date_start = fixtures[fixtures["notes"]=="Play-In Game"]["date"].min()
-    play_in_date_end = fixtures[fixtures["notes"]=="Play-In Game"]["date"].max()
+    play_in_df = fixtures[fixtures["notes"]=="Play-In Game"]
+    if len(play_in_df) > 0:
+        play_in_date_start = play_in_df["date"].min()
+        play_in_date_end = play_in_df["date"].max()
+    else:
+        play_in_date_start = fixtures["date"].max() + pd.Timedelta(days=1)
+        play_in_date_end = fixtures["date"].max() + pd.Timedelta(days=1)
+
     fixtures["round"] = np.where(
         fixtures["date"] < play_in_date_start,
         np.where(
