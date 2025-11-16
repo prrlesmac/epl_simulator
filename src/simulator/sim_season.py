@@ -300,7 +300,10 @@ def load_league_data(league):
     engine = db_connect.get_postgres_engine()
 
     schedule = pd.read_sql(
-        f"SELECT * FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix} WHERE country = '{league}'",
+        f"""SELECT * FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix} 
+        WHERE country = '{league}'
+        {"AND round != 'NBA Cup'" if league=='NBA' else ''}
+        """,
         engine,
     )
 

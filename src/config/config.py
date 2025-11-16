@@ -536,6 +536,52 @@ db_table_definitions = {
             "updated_at": TIMESTAMP(),
         },
     },
+    "nba_sim_output_table": {
+        "name": "sim_standings_nba",
+        "dtype": {
+            "team": VARCHAR(100),
+            "Eastern 1": FLOAT(),
+            "Eastern 2": FLOAT(),
+            "Eastern 3": FLOAT(),
+            "Eastern 4": FLOAT(),
+            "Eastern 5": FLOAT(),
+            "Eastern 6": FLOAT(),
+            "Eastern 7": FLOAT(),
+            "Eastern 8": FLOAT(),
+            "Eastern 9": FLOAT(),
+            "Eastern 10": FLOAT(),
+            "Eastern 11": FLOAT(),
+            "Eastern 12": FLOAT(),
+            "Eastern 13": FLOAT(),
+            "Eastern 14": FLOAT(),
+            "Eastern 15": FLOAT(),
+            "Eastern 16": FLOAT(),
+            "Western 1": FLOAT(),
+            "Western 2": FLOAT(),
+            "Western 3": FLOAT(),
+            "Western 4": FLOAT(),
+            "Western 5": FLOAT(),
+            "Western 6": FLOAT(),
+            "Western 7": FLOAT(),
+            "Western 8": FLOAT(),
+            "Western 9": FLOAT(),
+            "Western 10": FLOAT(),
+            "Western 11": FLOAT(),
+            "Western 12": FLOAT(),
+            "Western 13": FLOAT(),
+            "Western 14": FLOAT(),
+            "Western 15": FLOAT(),
+            "Western 16": FLOAT(),
+            "po_play_in": FLOAT(),
+            "po_r16": FLOAT(),
+            "po_r8": FLOAT(),
+            "po_r4": FLOAT(),
+            "po_r2": FLOAT(),
+            "po_champion": FLOAT(),
+            "playoff": FLOAT(),
+            "updated_at": TIMESTAMP(),
+        },
+    },
     "divisions_table": {
         "name": "teams",
         "dtype": {
@@ -599,15 +645,15 @@ fixtures_config = {
     },
     "NBA": {
         "fixtures_url": [
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-october.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-november.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-december.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-january.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-february.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-march.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-april.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-may.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-june.html",            
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-october.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-november.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-december.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-january.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-february.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-march.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-april.html",
+           # "https://www.basketball-reference.com/leagues/NBA_2026_games-may.html",
+           # "https://www.basketball-reference.com/leagues/NBA_2026_games-june.html",            
             ],
         "table_id": ["schedule"],
     },
@@ -628,7 +674,7 @@ fixtures_history_config = {
 }
 
 ## Simulation
-number_of_simulations = 10000
+number_of_simulations = 1000
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
 played_cutoff_date = None
 schedule_cutoff_date = None
@@ -940,5 +986,54 @@ league_rules = {
         "knockout_draw_status": "no_draw",
         "knockout_draw": None,
         "knockout_reseeding": True
+    },
+    "NBA": {
+        "sim_type": "winner",
+        "home_advantage": 50,
+        "elo_kfactor": 20,
+        "season_start_adj": 1/3,
+        "has_knockout": True,
+        "classification": {
+            "division": ["win_loss_pct"
+                         ],
+            "conference": [
+                         "win_loss_pct",
+                         "h2h_win_loss_pct",
+                         "win_loss_pct_div_if_same_div",
+                         "win_loss_pct_conf",
+                         "win_loss_pct_playoff_teams_same_conf",
+                         "win_loss_pct_playoff_teams_other_conf",
+                         ],
+            "league": [
+                         "win_loss_pct",
+                         "h2h_win_loss_pct",
+                         "win_loss_pct_div",
+                         "win_loss_pct_conf",
+                         "win_loss_pct_playoff_teams_same_conf",
+                         "win_loss_pct_playoff_teams_other_conf",
+                         ],
+        },
+        "qualification": {
+            "playoff": [f"Eastern {i}" for i in range(1, 9)] + [f"Western {i}" for i in range(1, 8)]
+        },
+        "knockout_bracket": [
+            ("Eastern 1", "Eastern 8"),
+            ("Eastern 2", "Eastern 7"),
+            ("Eastern 3", "Eastern 6"),
+            ("Eastern 4", "Eastern 5"),
+            ("Western 1", "Western 8"),
+            ("Western 2", "Western 7"),
+            ("Western 3", "Western 6"),
+            ("Western 4", "Western 5"),
+        ],
+        "knockout_format": {
+            "po_r16": "single_game",
+            "po_r8": "single_game",
+            "po_r4": "single_game",
+            "po_r2": "single_game_neutral",
+        },
+        "knockout_draw_status": "no_draw",
+        "knockout_draw": None,
+        "knockout_reseeding": False
     },
 }
