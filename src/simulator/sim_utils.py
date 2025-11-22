@@ -385,7 +385,30 @@ def apply_playoff_tiebreaker(matches_df, tied_teams):
 
 
 def apply_win_loss_pct_same_div_tiebreaker(standings):
+    """
+    Apply the “same-division win-loss percentage” tiebreaker.
 
+    This function checks whether all teams in the provided standings belong to
+    the same division. If they do, it returns each team's win-loss percentage
+    within that division. If not, the tiebreaker is not applicable and all
+    teams receive a value of 0.
+
+    Parameters
+    ----------
+    standings : pandas.DataFrame
+        DataFrame containing at least:
+        - 'team' : team name  
+        - 'division' : division label  
+        - 'win_loss_pct_div' : win-loss percentage within the division
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame with columns:
+        - 'team'
+        - 'win_loss_pct_div_if_same_div' : division W-L percentage if all
+          teams share the same division; otherwise 0.
+    """
     standings_tied = standings.copy()
     same_division = standings_tied["division"].nunique() == 1
     if same_division:
@@ -734,9 +757,49 @@ def get_win_loss_pct_last_half(matches_df):
     return standings
 
 
-def get_win_loss_pct_playoff_teams(matches_df, win_loss_league, playoff_eligible_rank = 6):
+def get_win_loss_pct_playoff_teams(matches_df, win_loss_league, playoff_eligible_rank=6):
     """
+    Compute each team's win-loss percentage against playoff-eligible teams
+    (both within the same conference and in the other conference).
 
+    This function:
+    1. Determines each team's conference based on the match dataframe.
+    2. Computes conference rankings using overall win-loss percentage.
+    3. Identifies playoff-eligible teams (default: top 6 per conference).
+    4. For every team in the league, filters their matches against:
+         - Playoff teams from the same conference.
+         - Playoff teams from the other conference.
+    5. Calculates win-loss percentages in those subsets.
+
+    Parameters
+    ----------
+    matches_df : pandas.DataFrame
+        Match-level dataset containing at least:
+        - 'home', 'away' : team names  
+        - 'home_goals', 'away_goals' : integer match scores  
+        - 'home_conference', 'away_conference' : conference labels for each team
+
+    win_loss_league : pandas.DataFrame
+        Team-level standings containing:
+        - 'team' : team name  
+        - 'win_loss_pct' : overall win-loss percentage used for ranking
+
+    playoff_eligible_rank : int, optional (default = 6)
+        Number of top teams per conference considered playoff-eligible.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A dataframe with one row per team and columns:
+        - 'team'
+        - 'win_loss_pct_playoff_teams_same_conf'  : W-L percentage vs playoff teams in the same conference
+        - 'win_loss_pct_playoff_teams_other_conf' : W-L percentage vs playoff teams in the other conference
+
+    Notes
+    -----
+    - Teams with no matches against playoff teams in the other conference
+      receive a value of 0 for `win_loss_pct_playoff_teams_other_conf`.
+    - Ranking within conference uses `method="min"` so ties share the same rank.
     """
     divisions_home = matches_df[['home','home_conference']].drop_duplicates()
     divisions_home = divisions_home.rename(columns={'home': 'team', 'home_conference': 'conference'})
