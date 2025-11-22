@@ -674,7 +674,7 @@ fixtures_history_config = {
 }
 
 ## Simulation
-number_of_simulations = 1000
+number_of_simulations = 10000
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
 played_cutoff_date = None
 schedule_cutoff_date = None
@@ -1027,10 +1027,10 @@ league_rules = {
             ("Western 4", "Western 5"),
         ],
         "knockout_format": {
-            "po_r16": "single_game",
-            "po_r8": "single_game",
-            "po_r4": "single_game",
-            "po_r2": "single_game_neutral",
+            "po_r16": "best_of_7",
+            "po_r8": "best_of_7",
+            "po_r4": "best_of_7",
+            "po_r2": "best_of_7",
         },
         "knockout_draw_status": "no_draw",
         "knockout_draw": None,

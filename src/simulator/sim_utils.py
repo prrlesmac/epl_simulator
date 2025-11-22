@@ -127,6 +127,41 @@ def simulate_match_winner(proba):
 
     return result
 
+def simulate_series_winner(team1_elo, team2_elo, best_of):
+    """
+
+    """
+    team1_wins = 0
+    team2_wins = 0
+    for i in range(best_of):
+        if best_of == 3:
+            proba = calculate_win_probability(team1_elo, team2_elo)
+        else:
+            if (i+1) < (best_of / 2):
+                proba = 1 - calculate_win_probability(team2_elo, team1_elo)
+            else:
+                proba = calculate_win_probability(team1_elo, team2_elo)
+
+        random_sim = np.random.rand()
+
+        if random_sim <= proba:
+            team1_wins += 1
+        else:
+            team2_wins += 1
+        if team1_wins > (best_of / 2):
+            break
+        if team2_wins > (best_of / 2):
+            break
+    
+    if team1_wins > team2_wins:
+        result = 1
+    elif team2_wins > team1_wins:
+        result = 2
+    else:
+        raise(ValueError("Series simulation ended in tie"))
+
+    return result
+
 
 def simulate_matches_data_frame(matches_df, sim_type):
     """
@@ -1409,13 +1444,21 @@ def get_match_winner_from_playoff(
     team1_elo = elos_dict.get(team1, 1000)
     team2_elo = elos_dict.get(team2, 1000)
 
-    win_proba = calculate_win_probability(
-        team1_elo, team2_elo, matchup_type=round_format
-    )
     tie_matches = _get_tie_matches(team1, team2, playoff_schedule)
 
     if tie_matches.empty:
-        result = simulate_match_winner(win_proba)
+        if round_format in ('single_game_neutral', 'single_game', 'two-legged'):
+            win_proba = calculate_win_probability(
+                team1_elo, team2_elo, matchup_type=round_format
+            )
+            result = simulate_match_winner(win_proba)
+        elif round_format in ('best_of_3', 'best_of_5', 'best_of_7'):
+            best_of_num = int("".join(filter(str.isdigit, round_format)))
+            result = simulate_series_winner(team1_elo, team2_elo, best_of=best_of_num)
+        else:
+            raise ValueError(
+                "Invalid playoff matchup_type"
+            )
         return team1 if result == 1 else team2
 
     return _determine_winner_from_schedule(team1, team2, tie_matches, win_proba)
