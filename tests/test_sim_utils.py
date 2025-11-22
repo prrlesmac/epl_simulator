@@ -15,6 +15,8 @@ from simulator.sim_utils import (
     apply_playoff_tiebreaker,
     apply_common_games_tiebreaker,
     apply_break_division_tiebreaker,
+    apply_win_loss_pct_same_div_tiebreaker,
+    get_win_loss_pct_playoff_teams,
     get_standings_metrics_footy,
     get_standings_metrics_us,
     get_standings,
@@ -620,6 +622,35 @@ class TestBreakDivisionTies:
         assert result.loc[result["team"] == "B", "h2h_break_division_ties"].iloc[0] == 0
         assert result.loc[result["team"] == "C", "h2h_break_division_ties"].iloc[0] == 1
         assert result.loc[result["team"] == "D", "h2h_break_division_ties"].iloc[0] == 0
+
+
+class TestApplyWinLossPctSameDivTiebreaker:
+
+    def test_all_teams_same_division(self):
+        standings = pd.DataFrame({
+            "team": ["A", "B", "C", "D"],
+            "division": ["East", "East", "East", "East"],
+            "win_loss_pct_div": [0.7, 0.6, 0.5, 0.4],
+        })
+
+        result = apply_win_loss_pct_same_div_tiebreaker(standings)
+
+        assert result.loc[result["team"] == "A", "win_loss_pct_div_if_same_div"].iloc[0] == 0.7
+        assert result.loc[result["team"] == "B", "win_loss_pct_div_if_same_div"].iloc[0] == 0.6
+        assert result.loc[result["team"] == "C", "win_loss_pct_div_if_same_div"].iloc[0] == 0.5
+        assert result.loc[result["team"] == "D", "win_loss_pct_div_if_same_div"].iloc[0] == 0.4
+
+    def test_teams_in_different_divisions(self):
+        standings = pd.DataFrame({
+            "team": ["A", "B"],
+            "division": ["East", "West"],
+            "win_loss_pct_div": [0.7, 0.6],
+        })
+
+        result = apply_win_loss_pct_same_div_tiebreaker(standings)
+
+        assert result.loc[result["team"] == "A", "win_loss_pct_div_if_same_div"].iloc[0] == 0
+        assert result.loc[result["team"] == "B", "win_loss_pct_div_if_same_div"].iloc[0] == 0
 
 class TestApplyPlayoffTiebreaker:
 
