@@ -774,11 +774,13 @@ class TestGetStandingsMetrics:
             "wins": [4, 1, 3, 4],
             "ties": [0, 0, 0, 0],
             "played": [6, 6, 6, 6],
-            "win_loss_pct_conf": [0.667, 0.167, 0.500, 0.667],
-            "win_loss_pct_div": [0.5, 0.5, 0.5, 0.5],
-            "win_loss_pct_conference_last_half": [0.667, 0, 0.667, 0.667],
             "strength_of_schedule": [0.444, 0.611, 0.5, 0.444],
-            "strength_of_victory": [0.458, 0.667, 0.333, 0.375]
+            "strength_of_victory": [0.458, 0.667, 0.333, 0.375],
+            'win_loss_pct_playoff_teams_same_conf': [0.667, 0.167, 0.500, 0.667],
+            'win_loss_pct_playoff_teams_other_conf': [0, 0, 0, 0],
+            "win_loss_pct_conf": [0.667, 0.167, 0.500, 0.667],
+            "win_loss_pct_conference_last_half": [0.667, 0, 0.667, 0.667],
+            "win_loss_pct_div": [0.5, 0.5, 0.5, 0.5],
         })
 
         pd.testing.assert_frame_equal(result, expected, check_dtype=False)
