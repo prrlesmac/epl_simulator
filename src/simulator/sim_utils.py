@@ -738,8 +738,11 @@ def get_win_loss_pct_playoff_teams(matches_df, win_loss_league, playoff_eligible
     """
 
     """
-    divisions = matches_df[['home','home_conference']].drop_duplicates()
-    divisions = divisions.rename(columns={'home': 'team', 'home_conference': 'conference'})
+    divisions_home = matches_df[['home','home_conference']].drop_duplicates()
+    divisions_home = divisions_home.rename(columns={'home': 'team', 'home_conference': 'conference'})
+    divisions_away = matches_df[['away','away_conference']].drop_duplicates()
+    divisions_away = divisions_away.rename(columns={'away': 'team', 'away_conference': 'conference'})
+    divisions = pd.concat([divisions_home, divisions_away]).drop_duplicates()
     win_loss_league_w_div = win_loss_league.merge(
         divisions,
         how="left",
@@ -824,6 +827,7 @@ def get_win_loss_pct_playoff_teams(matches_df, win_loss_league, playoff_eligible
     standings = pd.DataFrame(standings)
 
     return standings
+
 
 def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
     """
