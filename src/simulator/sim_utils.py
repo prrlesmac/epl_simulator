@@ -202,6 +202,90 @@ def simulate_matches_data_frame(matches_df, sim_type):
     return pd.DataFrame(matches_df)
 
 
+def simulate_play_in_tourney(standings_df, playoff_schedule, elos):
+
+    play_in_schedule = playoff_schedule.copy()
+    play_in_schedule = play_in_schedule[play_in_schedule["round"] == "Play-In Game"]
+    play_in_seeds = []
+    # stage 1: play-in not in schedule
+    if len(play_in_schedule) == 0:
+        for conf, group in standings_df.groupby("conference"):
+            play_in_first_round = []
+            group = group.sort_values("conference_pos")
+            # 7 v 8
+            conf_play_in_1 = {
+                    "team1": group.iloc[6]["team"],
+                    "team2": group.iloc[7]["team"]
+            }
+            play_in_first_round.append(conf_play_in_1)
+            # 9 v 10
+            conf_play_in_2 = {
+                    "team1": group.iloc[8]["team"],
+                    "team2": group.iloc[9]["team"]
+            }
+            play_in_first_round.append(conf_play_in_2)
+            play_in_first_round = pd.DataFrame(play_in_first_round)
+            winner = _simulate_round(
+                play_in_first_round,
+                round_format="single_game",
+                elos_dict=elos,
+                playoff_schedule=play_in_schedule,
+                teams_progression={},
+                round_label="play_in_first_round"
+            )
+            seed_no_7 = {
+                "team": winner[0],
+                "playoff_pos_play_in": f"{conf} 7"
+            }
+            play_in_seeds.append(seed_no_7)
+            conf_play_in_2_loser = [v for k, v in conf_play_in_2.items() if v != winner[1]][0]
+            seed_no_10 = {
+                "team": conf_play_in_2_loser,
+                "playoff_pos_play_in": f"{conf} 10"
+            }
+            play_in_seeds.append(seed_no_10)
+
+            # 8 seed match
+            conf_play_in_1_loser = [v for k, v in conf_play_in_1.items() if v != winner[0]][0]
+            conf_play_in_3 = {
+                    "team1": conf_play_in_1_loser,
+                    "team2": winner[1]
+            }
+            play_in_second_round = pd.DataFrame([conf_play_in_3])
+            winner = _simulate_round(
+                play_in_second_round,
+                round_format="single_game",
+                elos_dict=elos,
+                playoff_schedule=play_in_schedule,
+                teams_progression={},
+                round_label="play_in_second_round"
+            )
+            seed_no_8 = {
+                "team": winner[0],
+                "playoff_pos_play_in": f"{conf} 8"
+            }
+            play_in_seeds.append(seed_no_8)
+
+            conf_play_in_3_loser = [v for k, v in conf_play_in_3.items() if v != winner[0]][0]
+            seed_no_9 = {
+                "team": conf_play_in_3_loser,
+                "playoff_pos_play_in": f"{conf} 9"
+            }
+            play_in_seeds.append(seed_no_9)
+
+    standings_df = pd.merge(standings_df,
+                            pd.DataFrame(play_in_seeds),
+                            how="left",
+                            on="team")
+    standings_df["playoff_pos"] = np.where(
+        standings_df["playoff_pos_play_in"].isna(),
+        standings_df["playoff_pos"],
+        standings_df["playoff_pos_play_in"]
+    )
+
+    return standings_df
+
+
 def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
     """
     Applies a head-to-head (H2H) tiebreaker rule to a group of tied teams based on their matches against each other.

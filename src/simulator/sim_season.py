@@ -1,5 +1,6 @@
 from simulator.sim_utils import (
     simulate_matches_data_frame,
+    simulate_play_in_tourney,
     get_standings,
     draw_from_pots,
     create_bracket_from_composition,
@@ -137,6 +138,14 @@ def single_simulation(
         playoff_schedule = pd.concat(
             [knockout_schedule_played, simulated_pending], ignore_index=True
         )
+        # TODO think of better ways to pull elos
+        elos = schedule_final.drop_duplicates(subset=["home"])[
+            ["home", "elo_home"]
+        ].rename(columns={"home": "team", "elo_home": "elo"})
+        league_rules["has_play_in"] = True
+        if league_rules["has_play_in"]:
+            standings_df = simulate_play_in_tourney(standings_df, playoff_schedule, elos)
+            breakpoint()
         if league_rules["knockout_draw_status"] == "pending_draw":
             draw = draw_from_pots(standings_df, pot_size=2)
             bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
@@ -153,10 +162,6 @@ def single_simulation(
             bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
         else:
             raise ValueError("Invalid knockout draw status selected")
-        # TODO think of better ways to pull elos
-        elos = schedule_final.drop_duplicates(subset=["home"])[
-            ["home", "elo_home"]
-        ].rename(columns={"home": "team", "elo_home": "elo"})
         playoff_df = simulate_playoff_bracket(
             bracket, league_rules["knockout_format"], elos, playoff_schedule, league_rules["knockout_reseeding"]
         )
