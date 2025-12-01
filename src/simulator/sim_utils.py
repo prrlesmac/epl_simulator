@@ -225,7 +225,6 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos):
         )
     )
     play_in_seeds = []
-    breakpoint()
     # stage 1: play-in not in schedule
     if len(play_in_schedule) == 0:
         for conf, group in standings_df.groupby("conference"):
@@ -302,7 +301,7 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos):
             group = group.sort_values("conference_pos")
             # 7 v 8
             conf_play_in_1 = group.iloc[6:8]["team"]
-            winner_7_8 = conf_play_in_1[conf_play_in_1.isin(winners)]
+            winner_7_8 = conf_play_in_1[conf_play_in_1.isin(winners)].values[0]
             seed_no_7 = {
                 "team": winner_7_8,
                 "playoff_pos_play_in": f"{conf} 7"
@@ -311,13 +310,14 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos):
 
             # second game
             conf_play_in_2 = group.iloc[8:10]["team"]
-            loser_7_8 = conf_play_in_1[conf_play_in_1.isin(losers)]
-            winner_9_10 = conf_play_in_2[conf_play_in_2.isin(winners)]
-            loser_9_10 = conf_play_in_2[conf_play_in_2.isin(losers)]
+            loser_7_8 = conf_play_in_1[conf_play_in_1.isin(losers)].values[0]
+            winner_9_10 = conf_play_in_2[conf_play_in_2.isin(winners)].values[0]
+            loser_9_10 = conf_play_in_2[conf_play_in_2.isin(losers)].values[0]
             seed_no_10 = {
                 "team": loser_9_10,
                 "playoff_pos_play_in": f"{conf} 10"
             }
+            play_in_seeds.append(seed_no_10)
             conf_play_in_3 = {
                     "team1": loser_7_8,
                     "team2": winner_9_10
@@ -350,7 +350,7 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos):
             losses = group['loser'].value_counts()
 
             # teams with one win and one played are 7th seed
-            seed_no_7 = wins[(wins == 1) & (~wins.index.isin(losses.index))].index.tolist()
+            seed_no_7 = wins[(wins == 1) & (~wins.index.isin(losses.index))].index.tolist()[0]
             seed_no_7 = {
                 "team": seed_no_7,
                 "playoff_pos_play_in": f"{conf} 7"
@@ -358,7 +358,7 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos):
             play_in_seeds.append(seed_no_7)
 
             # teams with one loss and one played are 10th seed
-            seed_no_10 = losses[(losses == 1) & (~losses.index.isin(wins.index))].index.tolist()
+            seed_no_10 = losses[(losses == 1) & (~losses.index.isin(wins.index))].index.tolist()[0]
             seed_no_10 = {
                 "team": seed_no_10,
                 "playoff_pos_play_in": f"{conf} 10"

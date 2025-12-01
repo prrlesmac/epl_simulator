@@ -145,7 +145,6 @@ def single_simulation(
         league_rules["has_play_in"] = True
         if league_rules["has_play_in"]:
             standings_df = simulate_play_in_tourney(standings_df, playoff_schedule, elos)
-            breakpoint()
         if league_rules["knockout_draw_status"] == "pending_draw":
             draw = draw_from_pots(standings_df, pot_size=2)
             bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])

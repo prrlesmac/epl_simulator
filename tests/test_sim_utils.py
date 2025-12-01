@@ -1425,6 +1425,388 @@ class TestSimulatePlayoffBracket:
         ), "Team1 did not advance to po_r8"
 
 
+
+class TestSimulatePlayInTourney:
+
+    @classmethod
+    def setup_class(cls):
+        standings_df = pd.DataFrame(
+            {
+                "team": [
+                    "East_Team1",
+                    "East_Team2",
+                    "East_Team3",
+                    "East_Team4",
+                    "East_Team5",
+                    "East_Team6",
+                    "East_Team7",
+                    "East_Team8",
+                    "East_Team9",
+                    "East_Team10",
+                    "East_Team11",
+                    "East_Team12",
+                    "East_Team13",
+                    "East_Team14",
+                    "East_Team15",
+                    "West_Team1",
+                    "West_Team2",
+                    "West_Team3",
+                    "West_Team4",
+                    "West_Team5",
+                    "West_Team6",
+                    "West_Team7",
+                    "West_Team8",
+                    "West_Team9",
+                    "West_Team10",
+                    "West_Team11",
+                    "West_Team12",
+                    "West_Team13",
+                    "West_Team14",
+                    "West_Team15"
+                ],
+                "conference": (
+                    ["Eastern"] * 15 + ["Western"] * 15
+                ),
+                "conference_pos": (
+                    list(range(1, 16)) + list(range(1, 16))
+                ),
+                "playoff_pos": list(range(1, 31))
+            }
+        )
+        standings_df["playoff_pos"] = standings_df["conference"] + " " + standings_df["conference_pos"].astype(str)
+        cls.standings_df = standings_df
+
+        cls.elos = pd.DataFrame(
+            {
+                "team": [
+                    "East_Team1",
+                    "East_Team2",
+                    "East_Team3",
+                    "East_Team4",
+                    "East_Team5",
+                    "East_Team6",
+                    "East_Team7",
+                    "East_Team8",
+                    "East_Team9",
+                    "East_Team10",
+                    "East_Team11",
+                    "East_Team12",
+                    "East_Team13",
+                    "East_Team14",
+                    "East_Team15",
+                    "West_Team1",
+                    "West_Team2",
+                    "West_Team3",
+                    "West_Team4",
+                    "West_Team5",
+                    "West_Team6",
+                    "West_Team7",
+                    "West_Team8",
+                    "West_Team9",
+                    "West_Team10",
+                    "West_Team11",
+                    "West_Team12",
+                    "West_Team13",
+                    "West_Team14",
+                    "West_Team15"
+                ],
+                "elo": [
+                    1600,
+                    1580,
+                    1550,
+                    1540,
+                    1500,
+                    1490,
+                    1480,
+                    1470,
+                    1450,
+                    1440,
+                    1430,
+                    1420,
+                    1400,
+                    1390,
+                    1380,
+                    1600,
+                    1580,
+                    1550,
+                    1540,
+                    1500,
+                    1490,
+                    1480,
+                    1470,
+                    1450,
+                    1440,
+                    1430,
+                    1420,
+                    1400,
+                    1390,
+                    1380,
+                ],
+            }
+        )
+
+    def test_play_in_case_1(self):
+
+        standings_df = self.standings_df
+        elos = self.elos
+        playoff_schedule = pd.DataFrame(
+            columns=["home","away","home_goals","away_goals","round"]
+        )
+        playoff_pos_values = standings_df['playoff_pos']
+        result = simulate_play_in_tourney(
+            standings_df, playoff_schedule, elos
+        )
+
+        # check playoff pos has same values than before
+        pd.testing.assert_series_equal(playoff_pos_values.sort_values().reset_index(drop=True),
+                                   result['playoff_pos'].sort_values().reset_index(drop=True))
+        # check 7 seed can only be 7 or 8 pos
+        seed_no_7_east = result.loc[result["playoff_pos"] == "Eastern 7", "conference_pos"].iloc[0]
+        assert seed_no_7_east in [7,8]
+        seed_no_7_west = result.loc[result["playoff_pos"] == "Western 7", "conference_pos"].iloc[0]
+        assert seed_no_7_west in [7,8]
+
+        # check 10 seed can only be 9 or 10
+        seed_no_10_east = result.loc[result["playoff_pos"] == "Eastern 10", "conference_pos"].iloc[0]
+        assert seed_no_10_east in [9,10]
+        seed_no_10_west = result.loc[result["playoff_pos"] == "Western 10", "conference_pos"].iloc[0]
+        assert seed_no_10_west in [9,10]
+
+        # check 7,8,9,10 seed can only be 7,8,9,10 conf pos
+        teams_in_playin = [
+            "Eastern 7",
+            "Eastern 8",
+            "Eastern 9",
+            "Eastern 10",
+            "Western 7",
+            "Western 8",
+            "Western 9",
+            "Western 10",
+        ]
+        ref_teams = result.loc[result["playoff_pos"].isin(teams_in_playin), "conference_pos"]
+        assert ref_teams.isin([7,8,9,10]).all()
+
+
+    def test_play_in_case_2(self):
+
+        standings_df = self.standings_df
+        elos = self.elos
+        playoff_schedule = pd.DataFrame(
+            {
+                "home": [
+                    "East_Team1",
+                    "East_Team7",
+                    "East_Team9",
+                    "West_Team7",
+                    "West_Team9"
+                ],
+                "away": [
+                    "East_Team2",
+                    "East_Team8",
+                    "East_Team10",
+                    "West_Team8",
+                    "West_Team10"
+                ],
+                "home_goals": [
+                    60,
+                    80,
+                    90,
+                    75,
+                    90
+                ],
+                "away_goals": [
+                    65,
+                    60,
+                    70,
+                    80,
+                    100
+                ],
+                "home_conference": [
+                    "Eastern",
+                    "Eastern",
+                    "Eastern",
+                    "Western",
+                    "Western"
+                ],
+               "away_conference": [
+                    "Eastern",
+                    "Eastern",
+                    "Eastern",
+                    "Western",
+                    "Western"
+                ],
+               "round": [
+                   "",
+                    "Play-In Game",
+                    "Play-In Game",
+                    "Play-In Game",
+                    "Play-In Game"
+                    ],
+            }
+        )
+        playoff_pos_values = standings_df['playoff_pos']
+        result = simulate_play_in_tourney(
+            standings_df, playoff_schedule, elos
+        )
+        # check playoff pos has same values than before
+        pd.testing.assert_series_equal(playoff_pos_values.sort_values().reset_index(drop=True),
+                                   result['playoff_pos'].sort_values().reset_index(drop=True))
+        # check 7 seed
+        seed_no_7_east = result.loc[result["playoff_pos"] == "Eastern 7", "conference_pos"].iloc[0]
+        assert seed_no_7_east == 7
+        seed_no_7_west = result.loc[result["playoff_pos"] == "Western 7", "conference_pos"].iloc[0]
+        assert seed_no_7_west == 8
+
+        # check 10 seed
+        seed_no_10_east = result.loc[result["playoff_pos"] == "Eastern 10", "conference_pos"].iloc[0]
+        assert seed_no_10_east == 10
+        seed_no_10_west = result.loc[result["playoff_pos"] == "Western 10", "conference_pos"].iloc[0]
+        assert seed_no_10_west == 9
+
+        # check 8 and 9 seeds
+        seed_no_8_9_east = result.loc[result["playoff_pos"].isin(["Eastern 8", "Eastern 9"]), "conference_pos"]
+        assert seed_no_8_9_east.isin([8,9]).all()
+        seed_no_8_9_west = result.loc[result["playoff_pos"].isin(["Western 8", "Western 9"]), "conference_pos"]
+        assert seed_no_8_9_west.isin([7, 10]).all()
+
+        # check 7,8,9,10 seed can only be 7,8,9,10 conf pos
+        teams_in_playin = [
+            "Eastern 7",
+            "Eastern 8",
+            "Eastern 9",
+            "Eastern 10",
+            "Western 7",
+            "Western 8",
+            "Western 9",
+            "Western 10",
+        ]
+        ref_teams = result.loc[result["playoff_pos"].isin(teams_in_playin), "conference_pos"]
+        assert ref_teams.isin([7,8,9,10]).all()
+
+    def test_play_in_case_3(self):
+
+        standings_df = self.standings_df
+        elos = self.elos
+        playoff_schedule = pd.DataFrame(
+            {
+                "home": [
+                    "East_Team1",
+                    "East_Team7",
+                    "East_Team9",
+                    "West_Team7",
+                    "West_Team9",
+                    "East_Team8",
+                    "West_Team7",
+                    "East_team3"
+                ],
+                "away": [
+                    "East_Team2",
+                    "East_Team8",
+                    "East_Team10",
+                    "West_Team8",
+                    "West_Team10",
+                    "East_Team9",
+                    "West_Team10",
+                    "East_Team5"
+                ],
+                "home_goals": [
+                    60,
+                    80,
+                    90,
+                    75,
+                    90,
+                    60,
+                    80,
+                    75
+                ],
+                "away_goals": [
+                    65,
+                    60,
+                    70,
+                    80,
+                    100,
+                    65,
+                    70,
+                    72
+                ],
+                "home_conference": [
+                    "Eastern",
+                    "Eastern",
+                    "Eastern",
+                    "Western",
+                    "Western",
+                    "Eastern",
+                    "Western",
+                    "Eastern"
+                ],
+               "away_conference": [
+                    "Eastern",
+                    "Eastern",
+                    "Eastern",
+                    "Western",
+                    "Western",
+                    "Eastern",
+                    "Western",
+                    "Eastern"
+                ],
+               "round": [
+                   "",
+                    "Play-In Game",
+                    "Play-In Game",
+                    "Play-In Game",
+                    "Play-In Game",  
+                    "Play-In Game",
+                    "Play-In Game",  
+                    ""
+                    ],
+            }
+        )
+        playoff_pos_values = standings_df['playoff_pos']
+        breakpoint()
+        result = simulate_play_in_tourney(
+            standings_df, playoff_schedule, elos
+        )
+        # check playoff pos has same values than before
+        pd.testing.assert_series_equal(playoff_pos_values.sort_values().reset_index(drop=True),
+                                   result['playoff_pos'].sort_values().reset_index(drop=True))
+        # check 7 seed
+        seed_no_7_east = result.loc[result["playoff_pos"] == "Eastern 7", "conference_pos"].iloc[0]
+        assert seed_no_7_east == 7
+        seed_no_7_west = result.loc[result["playoff_pos"] == "Western 7", "conference_pos"].iloc[0]
+        assert seed_no_7_west == 8
+
+        # check 8 seed
+        seed_no_8_east = result.loc[result["playoff_pos"] == "Eastern 8", "conference_pos"].iloc[0]
+        assert seed_no_8_east == 9
+        seed_no_8_west = result.loc[result["playoff_pos"] == "Western 8", "conference_pos"].iloc[0]
+        assert seed_no_8_west == 7
+
+        # check 9 seed
+        seed_no_9_east = result.loc[result["playoff_pos"] == "Eastern 9", "conference_pos"].iloc[0]
+        assert seed_no_9_east == 8
+        seed_no_9_west = result.loc[result["playoff_pos"] == "Western 9", "conference_pos"].iloc[0]
+        assert seed_no_9_west == 10
+
+        # check 10 seed
+        seed_no_10_east = result.loc[result["playoff_pos"] == "Eastern 10", "conference_pos"].iloc[0]
+        assert seed_no_10_east == 10
+        seed_no_10_west = result.loc[result["playoff_pos"] == "Western 10", "conference_pos"].iloc[0]
+        assert seed_no_10_west == 9
+
+        # check 7,8,9,10 seed can only be 7,8,9,10 conf pos
+        teams_in_playin = [
+            "Eastern 7",
+            "Eastern 8",
+            "Eastern 9",
+            "Eastern 10",
+            "Western 7",
+            "Western 8",
+            "Western 9",
+            "Western 10",
+        ]
+        ref_teams = result.loc[result["playoff_pos"].isin(teams_in_playin), "conference_pos"]
+        assert ref_teams.isin([7,8,9,10]).all()
+
 class TestPlayoffSimulation:
 
     def setup_method(self):
