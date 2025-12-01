@@ -10,6 +10,7 @@ from simulator.sim_utils import (
     simulate_match_winner,
     simulate_extra_time,
     simulate_matches_data_frame,
+    simulate_play_in_tourney,
     apply_h2h_tiebreaker,
     apply_h2h_sweep_tiebreaker,
     apply_playoff_tiebreaker,
@@ -1267,11 +1268,6 @@ class TestValidateBracket:
 
         # Should not raise even though 'Bye's present
         validate_bracket(bracket, knockout_format)
-
-
-import pandas as pd
-import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestSimulatePlayoffBracket:
