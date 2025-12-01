@@ -217,18 +217,18 @@ def run_simulation_parallel(
     """
     print(f"Running {num_simulations} simulations using multiprocessing...")
 
-    with Pool(processes=cpu_count()) as pool:
-        args = [
-            (
-                schedule_played,
-                schedule_pending,
-                elos,
-                divisions,
-                league_rules
-            )
-        ] * num_simulations
-        standings_list = pool.starmap(single_simulation, args)
-    #standings_list = [single_simulation(schedule_played, schedule_pending, elos, divisions, league_rules)]
+    # with Pool(processes=cpu_count()) as pool:
+    #     args = [
+    #         (
+    #             schedule_played,
+    #             schedule_pending,
+    #             elos,
+    #             divisions,
+    #             league_rules
+    #         )
+    #     ] * num_simulations
+    #     standings_list = pool.starmap(single_simulation, args)
+    standings_list = [single_simulation(schedule_played, schedule_pending, elos, divisions, league_rules)]
     # Aggregate position frequencies
     standings_all = pd.concat(standings_list)
     if league_rules["has_knockout"]:
