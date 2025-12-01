@@ -1656,6 +1656,9 @@ def get_match_winner_from_playoff(
             )
         return team1 if result == 1 else team2
 
+    win_proba = calculate_win_probability(
+        team1_elo, team2_elo, matchup_type=round_format
+    )
     return _determine_winner_from_schedule(team1, team2, tie_matches, win_proba)
 
 

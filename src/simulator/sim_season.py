@@ -111,6 +111,8 @@ def single_simulation(
             knockout_reseeding (boolean): True if re-seeding is done after each ko round,
                 False if not
                 Required if `has_knockout` is True.
+            has_play_in (boolean): True if regular season has play-in tourney for seeds
+                False if not, will assume no play-in if not populated
 
     Returns:
         pd.DataFrame: The standings DataFrame after simulating the pending matches and combining with played matches.
@@ -142,8 +144,7 @@ def single_simulation(
         elos = schedule_final.drop_duplicates(subset=["home"])[
             ["home", "elo_home"]
         ].rename(columns={"home": "team", "elo_home": "elo"})
-        league_rules["has_play_in"] = True
-        if league_rules["has_play_in"]:
+        if ("has_play_in" in league_rules) and (league_rules["has_play_in"]):
             standings_df = simulate_play_in_tourney(standings_df, playoff_schedule, elos)
         if league_rules["knockout_draw_status"] == "pending_draw":
             draw = draw_from_pots(standings_df, pot_size=2)

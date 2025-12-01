@@ -1302,7 +1302,7 @@ class TestSimulatePlayoffBracket:
             "po_r16": "two-legged",
             "po_r8": "two-legged",
             "po_r4": "two-legged",
-            "po_r2": "single-game",
+            "po_r2": "single_game",
         }
 
         elos = pd.DataFrame(
