@@ -1762,7 +1762,6 @@ class TestSimulatePlayInTourney:
             }
         )
         playoff_pos_values = standings_df['playoff_pos']
-        breakpoint()
         result = simulate_play_in_tourney(
             standings_df, playoff_schedule, elos
         )
