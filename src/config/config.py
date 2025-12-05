@@ -645,15 +645,15 @@ fixtures_config = {
     },
     "NBA": {
         "fixtures_url": [
-            "https://www.basketball-reference.com/leagues/NBA_2026_games-october.html",
-            "https://www.basketball-reference.com/leagues/NBA_2026_games-november.html",
-            "https://www.basketball-reference.com/leagues/NBA_2026_games-december.html",
-            "https://www.basketball-reference.com/leagues/NBA_2026_games-january.html",
-            "https://www.basketball-reference.com/leagues/NBA_2026_games-february.html",
-            "https://www.basketball-reference.com/leagues/NBA_2026_games-march.html",
-            "https://www.basketball-reference.com/leagues/NBA_2026_games-april.html",
-           # "https://www.basketball-reference.com/leagues/NBA_2026_games-may.html",
-           # "https://www.basketball-reference.com/leagues/NBA_2026_games-june.html",            
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-october.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-november.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-december.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-january.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-february.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-march.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-april.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-may.html",
+            "https://www.basketball-reference.com/leagues/NBA_2025_games-june.html",            
             ],
         "table_id": ["schedule"],
     },
@@ -1014,7 +1014,7 @@ league_rules = {
                          ],
         },
         "qualification": {
-            "playoff": [f"Eastern {i}" for i in range(1, 9)] + [f"Western {i}" for i in range(1, 8)]
+            "playoff": [f"Eastern {i}" for i in range(1, 9)] + [f"Western {i}" for i in range(1, 9)]
         },
         "knockout_bracket": [
             ("Eastern 1", "Eastern 8"),
@@ -1034,6 +1034,7 @@ league_rules = {
         },
         "knockout_draw_status": "no_draw",
         "knockout_draw": None,
-        "knockout_reseeding": False
+        "knockout_reseeding": False,
+        "has_play_in": True,
     },
 }
