@@ -356,8 +356,7 @@ def validate_league_configuration(schedule, league_rules):
         ValueError: If the configuration is inconsistent.
     """
     knockout_draw = league_rules.get("knockout_draw")
-
-    has_knockout_matches = not schedule[schedule["round"] != "League"].empty
+    has_knockout_matches = not schedule[~schedule["round"].isin(["League", "Play-in"])].empty
     has_pending_league_matches = not schedule[
         (schedule["round"] == "League") & (schedule["played"] == "N")
     ].empty
