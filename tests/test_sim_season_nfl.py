@@ -351,12 +351,12 @@ class TestSimulateLeague:
             )
         for rounds in ["playoff","po_r16"]:
             assert np.isclose(
-                result.loc[result["team"].isin(advanced_to_playoff)][rounds].all(),
+                (result.loc[result["team"].isin(advanced_to_playoff)][rounds]==1).all(),
                 1.0,
                 atol=1e-3,
             )
         assert np.isclose(
-            result.loc[result["team"].isin(first_round_bye)]["first_round_bye"].all(),
+            (result.loc[result["team"].isin(first_round_bye)]["first_round_bye"]==1).all(),
             1.0,
             atol=1e-3,
         )
@@ -403,18 +403,18 @@ class TestSimulateLeague:
             )
         for rounds in ["playoff","po_r16"]:
             assert np.isclose(
-                result.loc[result["team"].isin(advanced_to_playoff)][rounds].all(),
+                (result.loc[result["team"].isin(advanced_to_playoff)][rounds]==1).all(),
                 1.0,
                 atol=1e-3,
             )
         assert np.isclose(
-            result.loc[result["team"].isin(first_round_bye)]["first_round_bye"].all(),
+            (result.loc[result["team"].isin(first_round_bye)]["first_round_bye"]==1).all(),
             1.0,
             atol=1e-3,
         )
         for rounds in ["playoff","po_r16","po_r8"]:
             assert np.isclose(
-                result.loc[result["team"].isin(advanced_to_divisional)][rounds].all(),
+                (result.loc[result["team"].isin(advanced_to_divisional)][rounds]==1).all(),
                 1.0,
                 atol=1e-3,
             )
@@ -462,24 +462,24 @@ class TestSimulateLeague:
             )
         for rounds in ["playoff","po_r16"]:
             assert np.isclose(
-                result.loc[result["team"].isin(advanced_to_playoff)][rounds].all(),
+                (result.loc[result["team"].isin(advanced_to_playoff)][rounds]==1).all(),
                 1.0,
                 atol=1e-3,
             )
         assert np.isclose(
-            result.loc[result["team"].isin(first_round_bye)]["first_round_bye"].all(),
+            (result.loc[result["team"].isin(first_round_bye)]["first_round_bye"]==1).all(),
             1.0,
             atol=1e-3,
         )
         for rounds in ["playoff","po_r16","po_r8"]:
             assert np.isclose(
-                result.loc[result["team"].isin(advanced_to_divisional)][rounds].all(),
+                (result.loc[result["team"].isin(advanced_to_divisional)][rounds]==1).all(),
                 1.0,
                 atol=1e-3,
             )
         for rounds in ["playoff","po_r16","po_r8","po_r4"]:
             assert np.isclose(
-                result.loc[result["team"].isin(advanced_to_conference)][rounds].all(),
+                (result.loc[result["team"].isin(advanced_to_conference)][rounds]==1).all(),
                 1.0,
                 atol=1e-3,
             )
