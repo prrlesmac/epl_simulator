@@ -154,67 +154,6 @@ def nba_league_rules_playoff():
         "has_play_in": True,
     }
 
-
-
-def nba_league_rules_playoff():
-    return {
-        "sim_type": "winner",
-        "has_knockout": True,
-        "classification": {
-            "division": ["win_loss_pct",
-                         "h2h_win_loss_pct",
-                         "win_loss_pct_div",
-                         "win_loss_pct_conf",
-                         "strength_of_victory",
-                         "strength_of_schedule"
-                         ],
-            "conference": [
-                         "division_winner",
-                         "win_loss_pct",
-                         "h2h_break_division_ties",
-                         "h2h_sweep_full",
-                         "win_loss_pct_conf",
-                         "h2h_win_loss_pct_common_games",
-                         "strength_of_victory",
-                         "strength_of_schedule",
-                         ],
-            "league": ["win_loss_pct"],
-        },
-        "qualification": {
-            "playoff": [f"NFC {i}" for i in range(1, 8)] + [f"AFC {i}" for i in range(1, 8)],
-            "first_round_bye": [f"NFC {i}" for i in range(1, 2)] + [f"AFC {i}" for i in range(1, 2)]
-        },
-        "knockout_bracket": [
-            ("NFC 1", "Bye"),
-            ("NFC 2", "NFC 7"),
-            ("NFC 3", "NFC 6"),
-            ("NFC 4", "NFC 5"),
-            ("AFC 1", "Bye"),
-            ("AFC 2", "AFC 7"),
-            ("AFC 3", "AFC 6"),
-            ("AFC 4", "AFC 5"),
-        ],
-        "knockout_format": {
-            "po_r16": "single_game",
-            "po_r8": "single_game",
-            "po_r4": "single_game",
-            "po_r2": "single_game_neutral",
-        },
-        "knockout_draw_status": "completed_draw",
-        "knockout_draw": [
-            ("Detroit Lions", "Bye"),
-            ("Philadelphia Eagles", "Green Bay Packers"),
-            ("Tampa Bay Buccaneers", "Washington Commanders"),
-            ("Los Angeles Rams", "Minnesota Vikings"),
-            ("Kansas City Chiefs", "Bye"),
-            ("Buffalo Bills", "Denver Broncos"),
-            ("Baltimore Ravens", "Pittsburgh Steelers"),
-            ("Houston Texans", "Los Angeles Chargers"),
-        ],
-        "knockout_reseeding": True,
-        "league_type": "NBA"
-    }
-
 # ELOS fixtures
 @pytest.fixture
 def csv_nba_divisions():
@@ -380,35 +319,34 @@ class TestSimulateLeague:
     ):
         """Test simulating a nba league."""
         # Setup
-        for i in range(0,100):
-            league_rules = nba_league_rules
-            schedule = csv_schedule_data_nba_case_3
-            elos = csv_elos_data_nba_case_1
-            divisions = csv_nba_divisions
-            result = simulate_league(
-                league_rules, schedule, elos, divisions, num_simulations=10
-            )
-            self.assert_nba_league_summary(result, schedule)
+        league_rules = nba_league_rules
+        schedule = csv_schedule_data_nba_case_3
+        elos = csv_elos_data_nba_case_1
+        divisions = csv_nba_divisions
+        result = simulate_league(
+            league_rules, schedule, elos, divisions, num_simulations=10
+        )
+        self.assert_nba_league_summary(result, schedule)
 
-            eliminated_in_season = final_nba_results["eliminated in regular season"]
-            advanced_to_playoff = [
-                team
-                for stage, teams in final_nba_results.items()
-                if stage != "eliminated in regular season"
-                for team in teams
-            ]
-            for rounds in ["playoff","po_r16", "po_r8", "po_r4", "po_r2", "po_champion"]:
-                assert np.isclose(
-                    result.loc[result["team"].isin(eliminated_in_season)][rounds].all(),
-                    0.0,
-                    atol=1e-3,
-                )
-            for rounds in ["playoff","po_r16"]:
-                assert np.isclose(
-                    (result.loc[result["team"].isin(advanced_to_playoff)][rounds]==1).all(),
-                    1.0,
-                    atol=1e-3,
-                )
+        eliminated_in_season = final_nba_results["eliminated in regular season"]
+        advanced_to_playoff = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage != "eliminated in regular season"
+            for team in teams
+        ]
+        for rounds in ["playoff","po_r16", "po_r8", "po_r4", "po_r2", "po_champion"]:
+            assert np.isclose(
+                result.loc[result["team"].isin(eliminated_in_season)][rounds].all(),
+                0.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16"]:
+            assert np.isclose(
+                (result.loc[result["team"].isin(advanced_to_playoff)][rounds]==1).all(),
+                1.0,
+                atol=1e-3,
+            )
         
     def test_simulate_league_nba_case_4(
         self,

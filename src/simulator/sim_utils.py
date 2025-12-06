@@ -27,7 +27,7 @@ def calculate_win_probability(
     elif matchup_type == "single_game":
         rank_diff = elo_away - elo_home - home_adv
     else:
-        print(f"Unknown matchup type: {matchup_type}. Defaulting to single game.")
+        print(f"Unknown matchup type: {matchup_type}. Defaulting to single game for WE calculation.")
         rank_diff = elo_away - elo_home - home_adv
     we = 1 / (1 + 10 ** (rank_diff / 400))
     return we
@@ -205,7 +205,7 @@ def simulate_matches_data_frame(matches_df, sim_type):
 def simulate_play_in_tourney(standings_df, playoff_schedule, elos):
 
     play_in_schedule = playoff_schedule.copy()
-    play_in_schedule = play_in_schedule[play_in_schedule["round"] == "Play-In Game"]
+    play_in_schedule = play_in_schedule[play_in_schedule["round"] == "Play-in"]
     play_in_schedule['winner'] = np.where(
         play_in_schedule['home_goals'] > play_in_schedule['away_goals'],
         play_in_schedule['home'],
