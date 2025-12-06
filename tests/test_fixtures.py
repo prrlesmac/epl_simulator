@@ -525,7 +525,7 @@ class TestProcessFixtures:
                 "away_goals": pd.Series([109, 103, 110, 100, pd.NA], dtype="Int64"),
                 "played": ["Y", "Y", "Y", "Y","N"],
                 "neutral": ["N", "N", "N", "N","N"],
-                "round": ["League","NBA Cup","League", "Play-in","Playoff"],
+                "round": ["League","League","League", "Play-in","Playoff"],
                 "date": pd.to_datetime(["2024-10-21", "2024-10-22","2024-10-23", "2024-10-24","2024-10-25"]),
                 "season": ["2025", "2025", "2025", "2025", "2025"],
                 "notes": ["", "NBA Cup","","Play-In Game",""]

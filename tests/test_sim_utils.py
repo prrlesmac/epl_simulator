@@ -1637,10 +1637,10 @@ class TestSimulatePlayInTourney:
                 ],
                "round": [
                    "",
-                    "Play-In Game",
-                    "Play-In Game",
-                    "Play-In Game",
-                    "Play-In Game"
+                    "Play-in",
+                    "Play-in",
+                    "Play-in",
+                    "Play-in",
                     ],
             }
         )
@@ -1682,6 +1682,7 @@ class TestSimulatePlayInTourney:
         ]
         ref_teams = result.loc[result["playoff_pos"].isin(teams_in_playin), "conference_pos"]
         assert ref_teams.isin([7,8,9,10]).all()
+
 
     def test_play_in_case_3(self):
 
@@ -1751,12 +1752,12 @@ class TestSimulatePlayInTourney:
                 ],
                "round": [
                    "",
-                    "Play-In Game",
-                    "Play-In Game",
-                    "Play-In Game",
-                    "Play-In Game",  
-                    "Play-In Game",
-                    "Play-In Game",  
+                    "Play-in",
+                    "Play-in",
+                    "Play-in",
+                    "Play-in",
+                    "Play-in",
+                    "Play-in",
                     ""
                     ],
             }
