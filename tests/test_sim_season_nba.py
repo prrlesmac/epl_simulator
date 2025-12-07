@@ -24,16 +24,28 @@ def csv_schedule_data_nba_case_2():
     return read_schedule_csv("tests/data/schedules/schedule_nba_case_2.csv")
 
 @pytest.fixture
-def csv_schedule_data_nba_case_3():
-    return read_schedule_csv("tests/data/schedules/schedule_nba_case_3.csv")
+def csv_schedule_data_nba_case_3_1():
+    return read_schedule_csv("tests/data/schedules/schedule_nba_case_3_1.csv")
+
+@pytest.fixture
+def csv_schedule_data_nba_case_3_2():
+    return read_schedule_csv("tests/data/schedules/schedule_nba_case_3_2.csv")
+
+@pytest.fixture
+def csv_schedule_data_nba_case_3_3():
+    return read_schedule_csv("tests/data/schedules/schedule_nba_case_3_3.csv")
 
 @pytest.fixture
 def csv_schedule_data_nba_case_4():
     return read_schedule_csv("tests/data/schedules/schedule_nba_case_4.csv")
 
-# @pytest.fixture
-# def csv_schedule_data_nba_case_5():
-#     return read_schedule_csv("tests/data/schedules/schedule_nba_case_5.csv")
+@pytest.fixture
+def csv_schedule_data_nba_case_5():
+    return read_schedule_csv("tests/data/schedules/schedule_nba_case_5.csv")
+
+@pytest.fixture
+def csv_schedule_data_nba_case_6():
+    return read_schedule_csv("tests/data/schedules/schedule_nba_case_6.csv")
 
 # ELOS fixtures
 @pytest.fixture
@@ -70,13 +82,13 @@ def nba_league_rules():
         },
         "knockout_bracket": [
             ("Eastern 1", "Eastern 8"),
+            ("Eastern 4", "Eastern 5"),
             ("Eastern 2", "Eastern 7"),
             ("Eastern 3", "Eastern 6"),
-            ("Eastern 4", "Eastern 5"),
             ("Western 1", "Western 8"),
+            ("Western 4", "Western 5"),
             ("Western 2", "Western 7"),
             ("Western 3", "Western 6"),
-            ("Western 4", "Western 5"),
         ],
         "knockout_format": {
             "po_r16": "best_of_7",
@@ -122,13 +134,13 @@ def nba_league_rules_playoff():
         },
         "knockout_bracket": [
             ("Eastern 1", "Eastern 8"),
+            ("Eastern 4", "Eastern 5"),
             ("Eastern 2", "Eastern 7"),
             ("Eastern 3", "Eastern 6"),
-            ("Eastern 4", "Eastern 5"),
             ("Western 1", "Western 8"),
+            ("Western 4", "Western 5"),
             ("Western 2", "Western 7"),
             ("Western 3", "Western 6"),
-            ("Western 4", "Western 5"),
         ],
         "knockout_format": {
             "po_r16": "best_of_7",
@@ -163,20 +175,32 @@ def csv_nba_divisions():
 def final_nba_results():
     return {
     "eliminated in regular season": [
-        "Atlanta Hawks",
         "Brooklyn Nets",
         "Charlotte Hornets",
-        "Chicago Bulls",
         "Phoenix Suns",
         "Portland Trail Blazers",
-        "Sacramento Kings",
         "San Antonio Spurs",
         "New Orleans Pelicans",
         "Utah Jazz",
         "Toronto Raptors",
         "Washington Wizards",
         "Philadelphia 76ers",
+    ],
+    "eliminated in play in first round": [
+        "Chicago Bulls",
+        "Sacramento Kings",
+    ],
+    "eliminated in play in second round": [
+        "Atlanta Hawks",
         "Dallas Mavericks",
+    ],
+    "advanced in play in first round": [
+        "Orlando Magic",
+        "Golden State Warriors",
+    ],
+    "advanced in play in second round": [
+        "Miami Heat",
+        "Memphis Grizzlies",
     ],
     "eliminated in first round": [
         "Miami Heat",
@@ -309,9 +333,10 @@ class TestSimulateLeague:
         )
         self.assert_nba_league_summary(result, schedule)
 
-    def test_simulate_league_nba_case_3(
+
+    def test_simulate_league_nba_case_3_1(
         self,
-        csv_schedule_data_nba_case_3,
+        csv_schedule_data_nba_case_3_1,
         csv_elos_data_nba_case_1,
         nba_league_rules,
         csv_nba_divisions,
@@ -320,7 +345,7 @@ class TestSimulateLeague:
         """Test simulating a nba league."""
         # Setup
         league_rules = nba_league_rules
-        schedule = csv_schedule_data_nba_case_3
+        schedule = csv_schedule_data_nba_case_3_1
         elos = csv_elos_data_nba_case_1
         divisions = csv_nba_divisions
         result = simulate_league(
@@ -329,12 +354,125 @@ class TestSimulateLeague:
         self.assert_nba_league_summary(result, schedule)
 
         eliminated_in_season = final_nba_results["eliminated in regular season"]
+        advanced_to_play_in_and_playoff = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage not in ([
+                "eliminated in regular season"
+                ])
+            for team in teams
+        ]
+        advanced_to_play_in = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage in ([
+                "eliminated in play in first round",
+                "eliminated in play in second round",
+                "advanced in play in first round",
+                "advanced in play in second round",
+                ])
+            for team in teams
+        ]
+        advanced_to_playoff = [x for x in advanced_to_play_in_and_playoff if x not in advanced_to_play_in]
+
+        for rounds in ["playoff","po_r16", "po_r8", "po_r4", "po_r2", "po_champion"]:
+            assert np.isclose(
+                result.loc[result["team"].isin(eliminated_in_season)][rounds].all(),
+                0.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16"]:
+            assert np.isclose(
+                (result.loc[result["team"].isin(advanced_to_playoff)][rounds]==1).all(),
+                1.0,
+                atol=1e-3,
+            )
+        
+    def test_simulate_league_nba_case_3_2(
+        self,
+        csv_schedule_data_nba_case_3_2,
+        csv_elos_data_nba_case_1,
+        nba_league_rules,
+        csv_nba_divisions,
+        final_nba_results,
+    ):
+        """Test simulating a nba league."""
+        # Setup
+        league_rules = nba_league_rules
+        schedule = csv_schedule_data_nba_case_3_2
+        elos = csv_elos_data_nba_case_1
+        divisions = csv_nba_divisions
+        result = simulate_league(
+            league_rules, schedule, elos, divisions, num_simulations=10
+        )
+        self.assert_nba_league_summary(result, schedule)
+
+        eliminated_in_season = final_nba_results["eliminated in regular season"] + final_nba_results["eliminated in play in first round"]
+        advanced_to_play_in_and_playoff = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage not in ([
+                "eliminated in regular season",
+                "eliminated in play in first round"
+                ])
+            for team in teams
+        ]
+        advanced_to_play_in = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage in ([
+                "eliminated in play in second round",
+                "advanced in play in second round",
+                ])
+            for team in teams
+        ]
+        advanced_to_playoff = [x for x in advanced_to_play_in_and_playoff if x not in advanced_to_play_in]
+
+        for rounds in ["playoff","po_r16", "po_r8", "po_r4", "po_r2", "po_champion"]:
+            assert np.isclose(
+                result.loc[result["team"].isin(eliminated_in_season)][rounds].all(),
+                0.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16"]:
+            assert np.isclose(
+                (result.loc[result["team"].isin(advanced_to_playoff)][rounds]==1).all(),
+                1.0,
+                atol=1e-3,
+            )
+        
+    
+    def test_simulate_league_nba_case_3_3(
+        self,
+        csv_schedule_data_nba_case_3_3,
+        csv_elos_data_nba_case_1,
+        nba_league_rules,
+        csv_nba_divisions,
+        final_nba_results,
+    ):
+        """Test simulating a nba league."""
+        # Setup
+        league_rules = nba_league_rules
+        schedule = csv_schedule_data_nba_case_3_3
+        elos = csv_elos_data_nba_case_1
+        divisions = csv_nba_divisions
+        result = simulate_league(
+            league_rules, schedule, elos, divisions, num_simulations=10
+        )
+        self.assert_nba_league_summary(result, schedule)
+
+        eliminated_in_season = final_nba_results["eliminated in regular season"] + final_nba_results["eliminated in play in first round"] + final_nba_results["eliminated in play in second round"]
         advanced_to_playoff = [
             team
             for stage, teams in final_nba_results.items()
-            if stage != "eliminated in regular season"
+            if stage not in ([
+                "eliminated in regular season",
+                "eliminated in play in first round",
+                "eliminated in play in second round"
+                ])
             for team in teams
         ]
+
         for rounds in ["playoff","po_r16", "po_r8", "po_r4", "po_r2", "po_champion"]:
             assert np.isclose(
                 result.loc[result["team"].isin(eliminated_in_season)][rounds].all(),
@@ -367,11 +505,17 @@ class TestSimulateLeague:
         )
         self.assert_nba_league_summary(result, schedule)
 
-        eliminated_in_season = final_nba_results["eliminated in regular season"]
+        eliminated_in_season = final_nba_results["eliminated in regular season"] + final_nba_results["eliminated in play in first round"] + final_nba_results["eliminated in play in second round"]
         advanced_to_playoff = [
             team
             for stage, teams in final_nba_results.items()
-            if stage != "eliminated in regular season"
+            if stage not in (
+                [
+                    "eliminated in regular season",
+                    "eliminated in play in first round",
+                    "eliminated in play in second round",
+                ]
+            )
             for team in teams
         ]
         advanced_to_conf_semis = [
@@ -400,65 +544,170 @@ class TestSimulateLeague:
                 atol=1e-3,
             )
 
-    # def test_simulate_league_nba_case_5(
-    #     self,
-    #     csv_schedule_data_nba_case_5,
-    #     csv_elos_data_nba_case_1,
-    #     nba_league_rules_playoff,
-    #     csv_nba_divisions,
-    #     final_nba_results,
-    # ):
-    #     """Test simulating a nba league."""
-    #     # Setup
-    #     league_rules = nba_league_rules_playoff
-    #     schedule = csv_schedule_data_nba_case_5
-    #     elos = csv_elos_data_nba_case_1
-    #     divisions = csv_nba_divisions
-    #     result = simulate_league(
-    #         league_rules, schedule, elos, divisions, num_simulations=10
-    #     )
-    #     self.assert_nba_league_summary(result, schedule)
+    def test_simulate_league_nba_case_5(
+        self,
+        csv_schedule_data_nba_case_5,
+        csv_elos_data_nba_case_1,
+        nba_league_rules_playoff,
+        csv_nba_divisions,
+        final_nba_results,
+    ):
+        """Test simulating a nba league."""
+        # Setup
+        league_rules = nba_league_rules_playoff
+        schedule = csv_schedule_data_nba_case_5
+        elos = csv_elos_data_nba_case_1
+        divisions = csv_nba_divisions
+        result = simulate_league(
+            league_rules, schedule, elos, divisions, num_simulations=10
+        )
 
-    #     eliminated_in_season = final_nba_results["eliminated in regular season"]
-    #     advanced_to_playoff = [
-    #         team
-    #         for stage, teams in final_nba_results.items()
-    #         if stage != "eliminated in regular season"
-    #         for team in teams
-    #     ]
-    #     first_round_bye = final_nba_results["first round bye"]
-    #     advanced_to_divisional = [
-    #         team
-    #         for stage, teams in final_nba_results.items()
-    #         if stage in ["eliminated in divisional", "eliminated in conference", "runner-up", "champion"]
-    #         for team in teams
-    #     ]
-    #     advanced_to_conference = ["Washington Commanders","Kansas City Chiefs"]
+        self.assert_nba_league_summary(result, schedule)
+        eliminated_in_season = final_nba_results["eliminated in regular season"] + final_nba_results["eliminated in play in first round"] + final_nba_results["eliminated in play in second round"]
+        advanced_to_playoff = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage not in (
+                [
+                    "eliminated in regular season",
+                    "eliminated in play in first round",
+                    "eliminated in play in second round",
+                ]
+            )
+            for team in teams
+        ]
+        advanced_to_conf_semis = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage in ["eliminated in conference semifinals", "eliminated in conference finals", "runner-up", "champion"]
+            for team in teams
+        ]
+        advanced_to_conf_finals = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage in ["eliminated in conference finals", "runner-up", "champion"]
+            for team in teams
+        ]
 
-    #     for rounds in ["playoff","po_r16", "po_r8", "po_r4", "po_r2", "po_champion"]:
-    #         assert np.isclose(
-    #             result.loc[result["team"].isin(eliminated_in_season)][rounds].all(),
-    #             0.0,
-    #             atol=1e-3,
-    #         )
-    #     for rounds in ["playoff","po_r16"]:
-    #         assert np.isclose(
-    #             (result.loc[result["team"].isin(advanced_to_playoff)][rounds]==1).all(),
-    #             1.0,
-    #             atol=1e-3,
-    #         )
-    #     for rounds in ["playoff","po_r16","po_r8"]:
-    #         assert np.isclose(
-    #             (result.loc[result["team"].isin(advanced_to_divisional)][rounds]==1).all(),
-    #             1.0,
-    #             atol=1e-3,
-    #         )
-    #     for rounds in ["playoff","po_r16","po_r8","po_r4"]:
-    #         assert np.isclose(
-    #             (result.loc[result["team"].isin(advanced_to_conference)][rounds]==1).all(),
-    #             1.0,
-    #             atol=1e-3,
-    #         )
+        for rounds in ["playoff","po_r16", "po_r8", "po_r4", "po_r2", "po_champion"]:
+            assert np.isclose(
+                result.loc[result["team"].isin(eliminated_in_season)][rounds].all(),
+                0.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16"]:
+            assert np.isclose(
+                (result.loc[result["team"].isin(advanced_to_playoff)][rounds]==1).all(),
+                1.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16","po_r8"]:
+            assert np.isclose(
+                (result.loc[result["team"].isin(advanced_to_conf_semis)][rounds]==1).all(),
+                1.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16","po_r8","po_r4"]:
+            assert np.isclose(
+                (result.loc[result["team"].isin(advanced_to_conf_finals)][rounds]==1).all(),
+                1.0,
+                atol=1e-3,
+            )
+
+
+    def test_simulate_league_nba_case_6(
+        self,
+        csv_schedule_data_nba_case_6,
+        csv_elos_data_nba_case_1,
+        nba_league_rules_playoff,
+        csv_nba_divisions,
+        final_nba_results,
+    ):
+        """Test simulating a nba league."""
+        # Setup
+        league_rules = nba_league_rules_playoff
+        schedule = csv_schedule_data_nba_case_6
+        elos = csv_elos_data_nba_case_1
+        divisions = csv_nba_divisions
+        result = simulate_league(
+            league_rules, schedule, elos, divisions, num_simulations=10
+        )
+
+        self.assert_nba_league_summary(result, schedule)
+        eliminated_in_season = final_nba_results["eliminated in regular season"] + final_nba_results["eliminated in play in first round"] + final_nba_results["eliminated in play in second round"]
+        advanced_to_playoff = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage not in (
+                [
+                    "eliminated in regular season",
+                    "eliminated in play in first round",
+                    "eliminated in play in second round",
+                ]
+            )
+            for team in teams
+        ]
+        advanced_to_conf_semis = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage in ["eliminated in conference semifinals", "eliminated in conference finals", "runner-up", "champion"]
+            for team in teams
+        ]
+        advanced_to_conf_finals = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage in ["eliminated in conference finals", "runner-up", "champion"]
+            for team in teams
+        ]
+        advanced_to_finals = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage in ["runner-up", "champion"]
+            for team in teams
+        ]
+        champion = [
+            team
+            for stage, teams in final_nba_results.items()
+            if stage in ["champion"]
+            for team in teams
+        ]
+
+        for rounds in ["playoff","po_r16", "po_r8", "po_r4", "po_r2", "po_champion"]:
+            assert np.isclose(
+                result.loc[result["team"].isin(eliminated_in_season)][rounds].all(),
+                0.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16"]:
+            assert np.isclose(
+                (result.loc[result["team"].isin(advanced_to_playoff)][rounds]==1).all(),
+                1.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16","po_r8"]:
+            assert np.isclose(
+                (result.loc[result["team"].isin(advanced_to_conf_semis)][rounds]==1).all(),
+                1.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16","po_r8","po_r4"]:
+            assert np.isclose(
+                (result.loc[result["team"].isin(advanced_to_conf_finals)][rounds]==1).all(),
+                1.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16","po_r8","po_r4","po_r2"]:
+            assert np.isclose(
+                (result.loc[result["team"].isin(advanced_to_finals)][rounds]==1).all(),
+                1.0,
+                atol=1e-3,
+            )
+        for rounds in ["playoff","po_r16","po_r8","po_r4","po_r2","po_champion"]:
+            assert np.isclose(
+                (result.loc[result["team"].isin(champion)][rounds]==1).all(),
+                1.0,
+                atol=1e-3,
+            )
 
 if __name__ == "__main__":
     pytest.main([__file__])

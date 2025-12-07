@@ -1939,10 +1939,10 @@ class TestPlayoffSimulation:
 
     def test_determine_winner_from_schedule(self):
         tie_matches = _get_tie_matches("A", "B", self.playoff_schedule)
-        winner = _determine_winner_from_schedule("A", "B", tie_matches, 0.7)
+        winner = _determine_winner_from_schedule("A", "B", 1600, 1600, "single_game_neutral" ,tie_matches)
         assert winner == "A"
         tie_matches = _get_tie_matches("A", "B", self.playoff_schedule_partial)
-        winner = _determine_winner_from_schedule("A", "B", tie_matches, 0.7)
+        winner = _determine_winner_from_schedule("A", "B", 1600, 1600, "single_game_neutral" ,tie_matches)
         assert winner in ["A", "B"]
 
     def test_get_winner_from_completed_matches(self):
