@@ -8,38 +8,35 @@ from datetime import datetime
 
 def get_elos(url):
     """
-    Fetches Elo rating data from a CSV URL and returns it as a DataFrame.
+    Fetch Elo rating data from a CSV URL with a 60-second timeout.
 
-    Sends an HTTP GET request to the specified URL, reads the CSV content from the response,
-    and loads it into a Pandas DataFrame.
+    Sends an HTTP GET request to the specified URL, reads the CSV content from 
+    the response, and loads it into a Pandas DataFrame. The request is cancelled 
+    automatically if no response is received within 60 seconds.
 
     Args:
         url (str): URL pointing to the CSV file containing Elo ratings.
 
     Returns:
-        pandas.DataFrame: A DataFrame containing Elo rating data if the request is successful.
-        If the request fails, an error message is printed and the return value may be undefined.
+        pandas.DataFrame or None: DataFrame containing Elo rating data if successful,
+        otherwise None.
 
     Raises:
-        requests.exceptions.RequestException: If an error occurs during the HTTP request.
+        requests.exceptions.RequestException: If an error occurs or request times out.
     """
-
+    print("Fetching elos...")
     try:
-        # Make the GET request
-        response = requests.get(url)
+        # Add a timeout of 60 seconds
+        response = requests.get(url, timeout=60)
 
         # Check if the request was successful
-        if response.status_code == 200:
-            # Read the CSV data into a Pandas DataFrame
-            print("Fetching elos...")
-            csv_data = response.text
-            return pd.read_csv(StringIO(csv_data))
+        response.raise_for_status()  # Raises an error for non-200 responses
+        return pd.read_csv(StringIO(response.text))
 
-        else:
-            print(f"Failed to fetch data. Status code: {response.status_code}")
-            print("Response:", response.text)
+    except requests.exceptions.Timeout:
+        print("Request timed out after 60 seconds.")
     except requests.exceptions.RequestException as e:
-        print("An error occurred:", e)
+        print("An error occurred while fetching data:", e)
 
     return None
 
@@ -81,6 +78,9 @@ def filter_elos(elos, country, level):
 def main_elos():
     engine = db_connect.get_postgres_engine()
     elos = get_elos(config.elo_rating_url)
+    if elos is None:
+        raise RuntimeError("Elo fetch failed — aborting update.")
+
     elos = filter_elos(elos, None, None)
     elos["club"] = elos["club"].replace(config.club_name_mapping)
     elos["updated_at"] = datetime.now()
