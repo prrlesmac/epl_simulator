@@ -3,6 +3,7 @@ from simulator.sim_utils import (
     get_standings,
     draw_from_pots,
     create_bracket_from_composition,
+    extract_positions_from_bracket,
     simulate_playoff_bracket,
 )
 import pandas as pd
@@ -139,6 +140,11 @@ def single_simulation(
         )
         if league_rules["knockout_draw_status"] == "pending_draw":
             draw = draw_from_pots(standings_df, pot_size=2)
+            bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
+        elif league_rules["knockout_draw_status"] == "pending_uefa_second_draw":
+            top_draw = draw_from_pots(standings_df, pot_size=2)
+            bottom_draw = extract_positions_from_bracket(league_rules["knockout_draw"], league_rules["knockout_bracket"])
+            draw = pd.concat([top_draw[top_draw["draw_order"]<=8], bottom_draw[bottom_draw["draw_order"]>8]])
             bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
         elif league_rules["knockout_draw_status"] == "completed_draw":
             if league_rules["knockout_reseeding"]:
