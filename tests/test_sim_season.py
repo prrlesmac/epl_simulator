@@ -133,10 +133,76 @@ def continental_league_rules_group_stage():
         "league_type": "UEFA"
     }
 
-
-# UCL league rules after draw has been done
+# UCL league rules after first draw has been done
 @pytest.fixture
-def continental_league_rules_knockout_stage():
+def continental_league_rules_knockout_stage_first_draw():
+    return {
+        "sim_type": "goals",
+        "has_knockout": True,
+        "classification": {
+            "league": [
+            "points",
+            "goal_difference",
+            "goals_for",
+            "away_goals_for"
+            ]
+        },
+        "qualification": {
+            "direct_to_round_of_16": list(range(1, 9)),
+            "playoff": list(range(9, 25)),
+        },
+        "knockout_bracket": [
+            (1, "Bye"),
+            (16, 17),
+            (8, "Bye"),
+            (9, 24),
+            (4, "Bye"),
+            (13, 20),
+            (5, "Bye"),
+            (12, 21),
+            (2, "Bye"),
+            (15, 18),
+            (7, "Bye"),
+            (10, 23),
+            (3, "Bye"),
+            (14, 19),
+            (6, "Bye"),
+            (11, 22),
+        ],
+        "knockout_format": {
+            "po_r32": "two-legged",
+            "po_r16": "two-legged",
+            "po_r8": "two-legged",
+            "po_r4": "two-legged",
+            "po_r2": "single_game_neutral",
+        },
+        "knockout_draw_status": "pending_uefa_second_draw",
+        "knockout_draw": [
+            ("Liverpool", "Bye"),
+            ("Paris S-G", "Brest"),
+            ("Aston Villa", "Bye"),
+            ("Atalanta", "Club Brugge"),
+            ("Arsenal", "Bye"),
+            ("PSV Eindhoven", "Juventus"),
+            ("Atlético Madrid", "Bye"),
+            ("Real Madrid", "Manchester City"),
+            ("Barcelona", "Bye"),
+            ("Benfica", "Monaco"),
+            ("Lille", "Bye"),
+            ("Dortmund", "Sporting CP"),
+            ("Inter", "Bye"),
+            ("Milan", "Feyenoord"),
+            ("Leverkusen", "Bye"),
+            ("Bayern Munich", "Celtic"),
+        ],
+        "knockout_reseeding": False,
+        "league_type": "UEFA",
+    }
+
+
+# UCL league rules after second draw has been done
+@pytest.fixture
+def continental_league_rules_knockout_stage_second_draw():
     return {
         "sim_type": "goals",
         "has_knockout": True,
@@ -699,12 +765,12 @@ class TestSimulateLeague:
         self,
         csv_schedule_data_continental_case_3_4,
         csv_elos_data_continental,
-        continental_league_rules_knockout_stage,
+        continental_league_rules_knockout_stage_first_draw,
         final_ucl_results,
     ):
         """Test simulating a continental league."""
         # Setup
-        league_rules = continental_league_rules_knockout_stage
+        league_rules = continental_league_rules_knockout_stage_first_draw
         mock_schedule = csv_schedule_data_continental_case_3_4
         mock_elos = csv_elos_data_continental
         result = simulate_league(
@@ -752,12 +818,12 @@ class TestSimulateLeague:
         self,
         csv_schedule_data_continental_case_5,
         csv_elos_data_continental,
-        continental_league_rules_knockout_stage,
+        continental_league_rules_knockout_stage_second_draw,
         final_ucl_results,
     ):
         """Test simulating a continental league."""
         # Setup
-        league_rules = continental_league_rules_knockout_stage
+        league_rules = continental_league_rules_knockout_stage_second_draw
         mock_schedule = csv_schedule_data_continental_case_5
         mock_elos = csv_elos_data_continental
         result = simulate_league(
@@ -803,12 +869,12 @@ class TestSimulateLeague:
         self,
         csv_schedule_data_continental_case_6,
         csv_elos_data_continental,
-        continental_league_rules_knockout_stage,
+        continental_league_rules_knockout_stage_second_draw,
         final_ucl_results,
     ):
         """Test simulating a continental league."""
         # Setup
-        league_rules = continental_league_rules_knockout_stage
+        league_rules = continental_league_rules_knockout_stage_second_draw
         mock_schedule = csv_schedule_data_continental_case_6
         mock_elos = csv_elos_data_continental
         result = simulate_league(
@@ -854,12 +920,12 @@ class TestSimulateLeague:
         self,
         csv_schedule_data_continental_case_7,
         csv_elos_data_continental,
-        continental_league_rules_knockout_stage,
+        continental_league_rules_knockout_stage_second_draw,
         final_ucl_results,
     ):
         """Test simulating a continental league."""
         # Setup
-        league_rules = continental_league_rules_knockout_stage
+        league_rules = continental_league_rules_knockout_stage_second_draw
         mock_schedule = csv_schedule_data_continental_case_7
         mock_elos = csv_elos_data_continental
         result = simulate_league(
@@ -1119,7 +1185,7 @@ class TestSingleSimulation:
         self,
         csv_schedule_data_continental_case_3_4,
         csv_elos_data_continental,
-        continental_league_rules_knockout_stage,
+        continental_league_rules_knockout_stage_first_draw,
     ):
         """Test simulating a domestic league."""
         # Prepare data for simulation
@@ -1131,7 +1197,7 @@ class TestSingleSimulation:
             schedule_pending,
             csv_elos_data_continental,
             divisions=None,
-            league_rules=continental_league_rules_knockout_stage,
+            league_rules=continental_league_rules_knockout_stage_first_draw,
         )
         assert isinstance(result, pd.DataFrame)
         assert set(["league_pos", "team", "points"]).issubset(result.columns)

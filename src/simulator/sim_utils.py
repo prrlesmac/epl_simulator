@@ -1557,3 +1557,50 @@ def create_bracket_from_composition(df_with_draw, knockout_bracket):
         pairs.append((team1, team2, pos1, pos2))
 
     return pd.DataFrame(pairs, columns=["team1", "team2", "seed1", "seed2"])
+
+
+def extract_positions_from_bracket(knockout_draw, knockout_bracket):
+    """
+    Extract team positions from a knockout bracket and draw.
+
+    This function aligns a knockout draw with its corresponding bracket positions
+    and returns a tidy DataFrame mapping each team to its assigned position.
+    Entries marked as "Bye" are excluded.
+
+    Parameters
+    ----------
+    knockout_draw : list of tuple
+        Ordered list of matchup tuples containing team names or "Bye".
+        Example: [("Liverpool", "Bye"), ("Paris S-G", "Brest"), ...]
+
+    knockout_bracket : list of tuple
+        Ordered list of position tuples corresponding to the knockout draw.
+        Example: [(1, "Bye"), (16, 17), ...]
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with one row per team and the following columns:
+        - team : str
+            Team name.
+        - draw_order : int
+            Position (seed) assigned in the knockout bracket.
+
+    Notes
+    -----
+    - The function assumes `knockout_draw` and `knockout_bracket` have the same
+      length and ordering.
+    - Rows where the team is "Bye" are ignored.
+    """
+    rows = []
+
+    for (team1, team2), (pos1, pos2) in zip(knockout_draw, knockout_bracket):
+        if team1 != "Bye":
+            rows.append({"draw_order": pos1, "team": team1})
+        if team2 != "Bye":
+            rows.append({"draw_order": pos2, "team": team2})
+
+    draw_pos = pd.DataFrame(rows)
+
+    return draw_pos
+

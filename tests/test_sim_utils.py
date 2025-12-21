@@ -33,6 +33,7 @@ from simulator.sim_utils import (
     _build_results_dataframe,
     draw_from_pots,
     create_bracket_from_composition,
+    extract_positions_from_bracket,
 )
 
 
@@ -1712,6 +1713,51 @@ class TestCreateBracketFromComposition:
         expected = pd.DataFrame({"team1": ["Team C"], "team2": ["Team A"],
                                  "seed1": [3], "seed2": [1]})
         pd.testing.assert_frame_equal(result, expected)
+
+
+class TestExtractPositionsFromBracket:
+
+    def test_basic_creation(self):
+        knockout_bracket = [
+            (1, 8),
+            (4, 5),
+            (2, 7),
+            (3, 6),
+        ]
+        knockout_draw = [
+            ("Team 1", "Team 8"),
+            ("Team 4", "Team 5"),
+            ("Team 2", "Team 7"),
+            ("Team 3", "Team 6"),
+        ]
+        result = extract_positions_from_bracket(knockout_draw, knockout_bracket)
+        result = result.sort_values(by='draw_order')
+        expected = pd.DataFrame({
+            "draw_order": list(range(1, 9)),
+            "team": [f"Team {i}" for i in range(1, 9)],
+        })
+        pd.testing.assert_frame_equal(result.reset_index(drop=True), expected.reset_index(drop=True))
+
+    def test_creation_with_bye_slot(self):
+        knockout_bracket = [
+            (1, "Bye"),
+            (4, 5),
+            (2, "Bye"),
+            (3, 6),
+        ]
+        knockout_draw = [
+            ("Team 1", "Bye"),
+            ("Team 4", "Team 5"),
+            ("Team 2", "Bye"),
+            ("Team 3", "Team 6"),
+        ]
+        result = extract_positions_from_bracket(knockout_draw, knockout_bracket)
+        result = result.sort_values(by='draw_order')
+        expected = pd.DataFrame({
+            "draw_order": list(range(1, 7)),
+            "team": [f"Team {i}" for i in range(1, 7)],
+        })
+        pd.testing.assert_frame_equal(result.reset_index(drop=True), expected.reset_index(drop=True))
 
 
 if __name__ == "__main__":
