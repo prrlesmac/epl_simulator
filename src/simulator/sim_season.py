@@ -1,5 +1,6 @@
 from simulator.sim_utils import (
     simulate_matches_data_frame,
+    simulate_play_in_tourney,
     get_standings,
     draw_from_pots,
     create_bracket_from_composition,
@@ -95,6 +96,7 @@ def single_simulation(
             classification (list): Rules used to compute standings/classification.
             sim_type (str): either "goals" or "winner"
                 Used to specify whether the sinulation returns goal or simply the winner
+            home_advantage (float): adjustment to home team elo
             has_knockout (bool, optional): If True, includes knockout stage simulation.
                 Default is False, meaning only league standings are simulated.
             knockout_bracket (list, optional): List of tuples defining the knockout
@@ -111,6 +113,8 @@ def single_simulation(
             knockout_reseeding (boolean): True if re-seeding is done after each ko round,
                 False if not
                 Required if `has_knockout` is True.
+            has_play_in (boolean): True if regular season has play-in tourney for seeds
+                False if not, will assume no play-in if not populated
 
     Returns:
         pd.DataFrame: The standings DataFrame after simulating the pending matches and combining with played matches.
@@ -121,7 +125,7 @@ def single_simulation(
     league_schedule_pending = schedule_pending[
         schedule_pending["round"] == "League"
     ].copy()
-    simulated_pending = simulate_matches_data_frame(league_schedule_pending, league_rules["sim_type"])
+    simulated_pending = simulate_matches_data_frame(league_schedule_pending, league_rules["sim_type"], league_rules["home_advantage"])
     schedule_final = pd.concat(
         [league_schedule_played, simulated_pending], ignore_index=True
     )
@@ -134,10 +138,16 @@ def single_simulation(
         knockout_schedule_pending = schedule_pending[
             schedule_pending["round"] != "League"
         ].copy()
-        simulated_pending = simulate_matches_data_frame(knockout_schedule_pending, league_rules["sim_type"])
+        simulated_pending = simulate_matches_data_frame(knockout_schedule_pending, league_rules["sim_type"], league_rules["home_advantage"])
         playoff_schedule = pd.concat(
             [knockout_schedule_played, simulated_pending], ignore_index=True
         )
+        # TODO think of better ways to pull elos
+        elos = schedule_final.drop_duplicates(subset=["home"])[
+            ["home", "elo_home"]
+        ].rename(columns={"home": "team", "elo_home": "elo"})
+        if ("has_play_in" in league_rules) and (league_rules["has_play_in"]):
+            standings_df = simulate_play_in_tourney(standings_df, playoff_schedule, elos, league_rules["home_advantage"])
         if league_rules["knockout_draw_status"] == "pending_draw":
             draw = draw_from_pots(standings_df, pot_size=2)
             bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
@@ -159,12 +169,8 @@ def single_simulation(
             bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
         else:
             raise ValueError("Invalid knockout draw status selected")
-        # TODO think of better ways to pull elos
-        elos = schedule_final.drop_duplicates(subset=["home"])[
-            ["home", "elo_home"]
-        ].rename(columns={"home": "team", "elo_home": "elo"})
         playoff_df = simulate_playoff_bracket(
-            bracket, league_rules["knockout_format"], elos, playoff_schedule, league_rules["knockout_reseeding"]
+            bracket, league_rules["knockout_format"], elos, playoff_schedule, league_rules["knockout_reseeding"], league_rules["home_advantage"]
         )
         standings_df = standings_df.merge(playoff_df, how="left", on="team")
 
@@ -306,7 +312,10 @@ def load_league_data(league):
     engine = db_connect.get_postgres_engine()
 
     schedule = pd.read_sql(
-        f"SELECT * FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix} WHERE country = '{league}'",
+        f"""SELECT * FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix} 
+        WHERE country = '{league}'
+        {"AND round != 'NBA Cup'" if league=='NBA' else ''}
+        """,
         engine,
     )
 
@@ -354,8 +363,7 @@ def validate_league_configuration(schedule, league_rules):
         ValueError: If the configuration is inconsistent.
     """
     knockout_draw = league_rules.get("knockout_draw")
-
-    has_knockout_matches = not schedule[schedule["round"] != "League"].empty
+    has_knockout_matches = not schedule[~schedule["round"].isin(["League", "Play-in"])].empty
     has_pending_league_matches = not schedule[
         (schedule["round"] == "League") & (schedule["played"] == "N")
     ].empty

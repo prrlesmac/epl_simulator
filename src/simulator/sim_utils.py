@@ -27,7 +27,7 @@ def calculate_win_probability(
     elif matchup_type == "single_game":
         rank_diff = elo_away - elo_home - home_adv
     else:
-        print(f"Unknown matchup type: {matchup_type}. Defaulting to single game.")
+        print(f"Unknown matchup type: {matchup_type}. Defaulting to single game for WE calculation.")
         rank_diff = elo_away - elo_home - home_adv
     we = 1 / (1 + 10 ** (rank_diff / 400))
     return we
@@ -127,13 +127,121 @@ def simulate_match_winner(proba):
 
     return result
 
+def simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches=None, best_of=7, home_adv=80):
+    """
+    Simulate the winner of a playoff series using Elo-based win probabilities. 
+    
+    The function first checks if any games have already been played (`tie_matches`). 
+    If so, it counts the number of wins each team has based on observed results. 
+    If one team has already reached the required number of wins for the series 
+    (best-of-N format), that team is returned as the winner.
+    
+    If the series is not yet decided, the function simulates the remaining games 
+    using an Elo-based win probability model. The simulation continues until one 
+    team reaches the required number of wins or all games have been played.
+    
+    Parameters
+    ----------
+    team1 : str
+        Name of the first team in the series.
+    team2 : str
+        Name of the second team in the series.
+    team1_elo : float
+        Elo rating of `team1`.
+    team2_elo : float
+        Elo rating of `team2`.
+    tie_matches : pandas.DataFrame, optional
+        DataFrame containing previously played matches in the series.
+        Must include the columns:
+        - "home"
+        - "away"
+        - "home_goals"
+        - "away_goals"
+        
+        If None or empty, the series is assumed to have no prior results.
+    best_of : int, optional
+        Length of the playoff series (default = 7). 
+        Must be an odd integer (e.g., 1, 3, 5, 7).
+    home_advantage: float, optional
+        Elo adjustment for home team
 
-def simulate_matches_data_frame(matches_df, sim_type):
+    Returns
+    -------
+    int
+        `1` if team1 wins the series.
+        `2` if team2 wins the series.
+
+    Raises
+    ------
+    ValueError
+        If the simulated series ends with an equal number of wins for both teams 
+        (which should not occur in a best-of-N format).
+    
+    Notes
+    -----
+    - Win probabilities are computed using `calculate_win_probability()`, which 
+      must be defined in the same module.
+    - For best-of-7 and best-of-5 formats, early games may use reversed Elo 
+      probabilities depending on game order (home advantage logic).
+    - Simulation uses `numpy.random.rand()` to determine each game’s outcome.
+
+    """
+    if tie_matches is not None and not tie_matches.empty:
+        tie_matches["winner"] = tie_matches.apply(
+            lambda row: row["home"] if row["home_goals"] > row["away_goals"] else row["away"],
+            axis=1
+        )
+        team1_wins = (tie_matches["winner"] == team1).sum()
+        team2_wins = (tie_matches["winner"] == team2).sum()
+        if team1_wins > (best_of / 2):
+            return 1
+        if team2_wins > (best_of / 2):
+            return 2
+    else:
+        team1_wins = 0
+        team2_wins = 0
+    
+    remaining_matches = best_of - team1_wins - team2_wins
+
+    for i in range(remaining_matches):
+        if best_of == 3:
+            proba = calculate_win_probability(team1_elo, team2_elo, home_adv=home_adv)
+        else:
+            if (i+1) < (best_of / 2):
+                proba = 1 - calculate_win_probability(team2_elo, team1_elo, home_adv=home_adv)
+            else:
+                proba = calculate_win_probability(team1_elo, team2_elo, home_adv=home_adv)
+
+        random_sim = np.random.rand()
+
+        if random_sim <= proba:
+            team1_wins += 1
+        else:
+            team2_wins += 1
+        if team1_wins > (best_of / 2):
+            break
+        if team2_wins > (best_of / 2):
+            break
+    
+    if team1_wins > team2_wins:
+        result = 1
+    elif team2_wins > team1_wins:
+        result = 2
+    else:
+        raise(ValueError("Series simulation ended in tie"))
+
+    return result
+
+
+def simulate_matches_data_frame(matches_df, sim_type, home_advantage):
     """
     Simulate matches and determine winners.
 
     Parameters:
         matches_df (pd.DataFrame): DataFrame containing matches to simulate
+        sim_type (str): "goals" if we need to simulate match goals outcome
+                        "wunner" if we only simulate win/lose outcome
+        home_advantage (float): adjustment to home team's elo
 
     Returns:
         pd.DataFrame: DataFrame with simulation results
@@ -141,7 +249,7 @@ def simulate_matches_data_frame(matches_df, sim_type):
 
     for index, match in matches_df.iterrows():
 
-        home_advantage = 80 if match["neutral"] == "N" else 0
+        home_advantage = home_advantage if match["neutral"] == "N" else 0
         elo_home = match["elo_home"]
         elo_away = match["elo_away"]
 
@@ -165,6 +273,256 @@ def simulate_matches_data_frame(matches_df, sim_type):
             raise(ValueError("Invalid sim type in simulate_matches_data_frame"))
             
     return pd.DataFrame(matches_df)
+
+
+def simulate_play_in_tourney(standings_df, playoff_schedule, elos, home_advantage):
+    """
+    Simulate the NBA Play-In Tournament and assign final playoff seeds (7-10)
+    for each conference.
+
+    This function supports three scenarios depending on the availability of
+    play-in game results in `playoff_schedule`:
+        1. No play-in games present: all play-in games are fully simulated.
+        2. First-round play-in games present: remaining games are simulated.
+        3. All play-in games present: results are read directly from the schedule.
+
+    For each conference, teams finishing 7th-10th in the regular-season standings
+    are processed through the play-in format:
+        - Game 1: 7 vs 8 (winner gets 7th seed)
+        - Game 2: 9 vs 10 (loser gets 10th seed)
+        - Game 3: loser of 7/8 vs winner of 9/10 (winner gets 8th seed)
+
+    The function updates the final playoff positions and returns an updated
+    standings DataFrame.
+
+    Args:
+        standings_df (pd.DataFrame):
+            Regular-season standings containing at least the following columns:
+            - 'team': Team name
+            - 'conference': Conference identifier (e.g. 'East', 'West')
+            - 'conference_pos': Regular-season conference rank
+            - 'playoff_pos': Initial playoff position label
+
+        playoff_schedule (pd.DataFrame):
+            Playoff schedule and results. Must include:
+            - 'round' (with value 'Play-in' for play-in games)
+            - 'home', 'away'
+            - 'home_goals', 'away_goals'
+            - 'home_conference'
+            If results are present, they are used directly; otherwise games
+            are simulated.
+
+        elos (dict):
+            Mapping of team name to Elo rating, used when simulating games.
+
+        home_advantage (float):
+            Elo adjustment applied to the home team when simulating a game.
+
+    Returns:
+        pd.DataFrame:
+            Updated standings DataFrame with final playoff seeds applied.
+            Includes:
+            - 'playoff_pos_play_in': Play-in derived seed (if applicable)
+            - 'playoff_pos': Final playoff position after play-in resolution
+
+    Raises:
+        ValueError:
+            If the play-in schedule contains an invalid number of games.
+    """
+    play_in_schedule = playoff_schedule.copy()
+    play_in_schedule = play_in_schedule[play_in_schedule["round"] == "Play-in"]
+    play_in_schedule['winner'] = np.where(
+        play_in_schedule['home_goals'] > play_in_schedule['away_goals'],
+        play_in_schedule['home'],
+        np.where(
+            play_in_schedule['home_goals'] < play_in_schedule['away_goals'],
+            play_in_schedule['away'],
+            'tie'
+        )
+    )
+    play_in_schedule['loser'] = np.where(
+        play_in_schedule['home_goals'] < play_in_schedule['away_goals'],
+        play_in_schedule['home'],
+        np.where(
+            play_in_schedule['home_goals'] > play_in_schedule['away_goals'],
+            play_in_schedule['away'],
+            'tie'
+        )
+    )
+    play_in_seeds = []
+    # stage 1: play-in not in schedule
+    if len(play_in_schedule) == 0:
+        for conf, group in standings_df.groupby("conference"):
+            play_in_first_round = []
+            group = group.sort_values("conference_pos")
+            # 7 v 8
+            conf_play_in_1 = {
+                    "team1": group.iloc[6]["team"],
+                    "team2": group.iloc[7]["team"]
+            }
+            play_in_first_round.append(conf_play_in_1)
+            # 9 v 10
+            conf_play_in_2 = {
+                    "team1": group.iloc[8]["team"],
+                    "team2": group.iloc[9]["team"]
+            }
+            play_in_first_round.append(conf_play_in_2)
+            play_in_first_round = pd.DataFrame(play_in_first_round)
+            winner = _simulate_round(
+                play_in_first_round,
+                round_format="single_game",
+                elos_dict=elos,
+                playoff_schedule=play_in_schedule,
+                teams_progression={},
+                round_label="play_in_first_round",
+                home_advantage=home_advantage
+            )
+            seed_no_7 = {
+                "team": winner[0],
+                "playoff_pos_play_in": f"{conf} 7"
+            }
+            play_in_seeds.append(seed_no_7)
+            conf_play_in_2_loser = [v for k, v in conf_play_in_2.items() if v != winner[1]][0]
+            seed_no_10 = {
+                "team": conf_play_in_2_loser,
+                "playoff_pos_play_in": f"{conf} 10"
+            }
+            play_in_seeds.append(seed_no_10)
+
+            # 8 seed match
+            conf_play_in_1_loser = [v for k, v in conf_play_in_1.items() if v != winner[0]][0]
+            conf_play_in_3 = {
+                    "team1": conf_play_in_1_loser,
+                    "team2": winner[1]
+            }
+            play_in_second_round = pd.DataFrame([conf_play_in_3])
+            winner = _simulate_round(
+                play_in_second_round,
+                round_format="single_game",
+                elos_dict=elos,
+                playoff_schedule=play_in_schedule,
+                teams_progression={},
+                round_label="play_in_second_round",
+                home_advantage=home_advantage,
+            )
+            seed_no_8 = {
+                "team": winner[0],
+                "playoff_pos_play_in": f"{conf} 8"
+            }
+            play_in_seeds.append(seed_no_8)
+
+            conf_play_in_3_loser = [v for k, v in conf_play_in_3.items() if v != winner[0]][0]
+            seed_no_9 = {
+                "team": conf_play_in_3_loser,
+                "playoff_pos_play_in": f"{conf} 9"
+            }
+            play_in_seeds.append(seed_no_9)
+
+    # stage 2: play-in first round only in schedule
+    elif len(play_in_schedule) == 4:
+        winners = play_in_schedule['winner'].tolist()
+        losers = play_in_schedule['loser'].tolist()
+
+        # find winners in 7-8
+        for conf, group in standings_df.groupby("conference"):
+            group = group.sort_values("conference_pos")
+            # 7 v 8
+            conf_play_in_1 = group.iloc[6:8]["team"]
+            winner_7_8 = conf_play_in_1[conf_play_in_1.isin(winners)].values[0]
+            seed_no_7 = {
+                "team": winner_7_8,
+                "playoff_pos_play_in": f"{conf} 7"
+            }
+            play_in_seeds.append(seed_no_7)
+
+            # second game
+            conf_play_in_2 = group.iloc[8:10]["team"]
+            loser_7_8 = conf_play_in_1[conf_play_in_1.isin(losers)].values[0]
+            winner_9_10 = conf_play_in_2[conf_play_in_2.isin(winners)].values[0]
+            loser_9_10 = conf_play_in_2[conf_play_in_2.isin(losers)].values[0]
+            seed_no_10 = {
+                "team": loser_9_10,
+                "playoff_pos_play_in": f"{conf} 10"
+            }
+            play_in_seeds.append(seed_no_10)
+            conf_play_in_3 = {
+                    "team1": loser_7_8,
+                    "team2": winner_9_10
+            }
+            play_in_second_round = pd.DataFrame([conf_play_in_3])
+            winner = _simulate_round(
+                play_in_second_round,
+                round_format="single_game",
+                elos_dict=elos,
+                playoff_schedule=play_in_schedule,
+                teams_progression={},
+                round_label="play_in_second_round",
+                home_advantage=home_advantage,
+            )
+            seed_no_8 = {
+                "team": winner[0],
+                "playoff_pos_play_in": f"{conf} 8"
+            }
+            play_in_seeds.append(seed_no_8)
+            conf_play_in_3_loser = [v for k, v in conf_play_in_3.items() if v != winner[0]][0]
+            seed_no_9 = {
+                "team": conf_play_in_3_loser,
+                "playoff_pos_play_in": f"{conf} 9"
+            }
+            play_in_seeds.append(seed_no_9)
+
+    # stage 3: all play-in games have result
+    elif len(play_in_schedule) == 6:
+        for conf, group in play_in_schedule.groupby("home_conference"):
+            wins = group['winner'].value_counts()
+            losses = group['loser'].value_counts()
+
+            # teams with one win and one played are 7th seed
+            seed_no_7 = wins[(wins == 1) & (~wins.index.isin(losses.index))].index.tolist()[0]
+            seed_no_7 = {
+                "team": seed_no_7,
+                "playoff_pos_play_in": f"{conf} 7"
+            }
+            play_in_seeds.append(seed_no_7)
+
+            # teams with one loss and one played are 10th seed
+            seed_no_10 = losses[(losses == 1) & (~losses.index.isin(wins.index))].index.tolist()[0]
+            seed_no_10 = {
+                "team": seed_no_10,
+                "playoff_pos_play_in": f"{conf} 10"
+            }
+            play_in_seeds.append(seed_no_10)
+
+            # teams who won last game are 8th seed
+            seed_no_8 = group.iloc[-1]["winner"]
+            seed_no_8 = {
+                "team": seed_no_8,
+                "playoff_pos_play_in": f"{conf} 8"
+            }
+            play_in_seeds.append(seed_no_8)
+
+            # teams who lost last game are 9th seed
+            seed_no_9 = group.iloc[-1]["loser"]
+            seed_no_9 = {
+                "team": seed_no_9,
+                "playoff_pos_play_in": f"{conf} 9"
+            }
+            play_in_seeds.append(seed_no_9)
+
+    else:
+        raise(ValueError("Invalid data for NBA play-in simulation"))
+
+    standings_df = pd.merge(standings_df,
+                            pd.DataFrame(play_in_seeds),
+                            how="left",
+                            on="team")
+    standings_df["playoff_pos"] = np.where(
+        standings_df["playoff_pos_play_in"].isna(),
+        standings_df["playoff_pos"],
+        standings_df["playoff_pos_play_in"]
+    )
+
+    return standings_df
 
 
 def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
@@ -384,6 +742,43 @@ def apply_playoff_tiebreaker(matches_df, tied_teams):
     return standings_tied
 
 
+def apply_win_loss_pct_same_div_tiebreaker(standings):
+    """
+    Apply the “same-division win-loss percentage” tiebreaker.
+
+    This function checks whether all teams in the provided standings belong to
+    the same division. If they do, it returns each team's win-loss percentage
+    within that division. If not, the tiebreaker is not applicable and all
+    teams receive a value of 0.
+
+    Parameters
+    ----------
+    standings : pandas.DataFrame
+        DataFrame containing at least:
+        - 'team' : team name  
+        - 'division' : division label  
+        - 'win_loss_pct_div' : win-loss percentage within the division
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame with columns:
+        - 'team'
+        - 'win_loss_pct_div_if_same_div' : division W-L percentage if all
+          teams share the same division; otherwise 0.
+    """
+    standings_tied = standings.copy()
+    same_division = standings_tied["division"].nunique() == 1
+    if same_division:
+        standings_tied["win_loss_pct_div_if_same_div"] = standings_tied["win_loss_pct_div"]
+    else:
+        standings_tied["win_loss_pct_div_if_same_div"] = 0
+
+    standings_tied = standings_tied[["team","win_loss_pct_div_if_same_div"]]
+
+    return standings_tied
+    
+
 def get_standings_metrics_footy(matches_df):
     """
     Calculates basic league standings metrics for each team based on match results.
@@ -520,31 +915,44 @@ def get_standings_metrics_us(matches_df):
           interpreting opponents' aggregated win-loss records.
     """
     win_loss_league = get_win_loss_pct(matches_df)
-    matches_df_conf = matches_df[matches_df["home_conference"]==matches_df["away_conference"]].copy()
-    win_loss_conf = get_win_loss_pct(matches_df_conf)
-    matches_df_div = matches_df[matches_df["home_division"]==matches_df["away_division"]].copy()
-    win_loss_div = get_win_loss_pct(matches_df_div)
-    win_loss_last_half_conf = get_win_loss_pct_last_half(matches_df_conf)
+    win_loss_playoff_teams = get_win_loss_pct_playoff_teams(matches_df, win_loss_league)
     strength_of_victory = get_opponents_strength(matches_df, win_loss_league, strength_of="schedule")
     strength_of_schedule = get_opponents_strength(matches_df, win_loss_league, strength_of="victory")
 
-    win_loss_conf = (
-        win_loss_conf[["team","win_loss_pct"]]
-        .rename(columns= {"win_loss_pct": "win_loss_pct_conf"})
-    )
-    win_loss_div = (
-        win_loss_div[["team","win_loss_pct"]]
-        .rename(columns= {"win_loss_pct": "win_loss_pct_div"})
-    )
     standings = (
         win_loss_league
-        .merge(win_loss_conf, how="left", on="team")
-        .merge(win_loss_div, how="left", on="team")
-        .merge(win_loss_last_half_conf, how="left", on="team")
         .merge(strength_of_victory, how="left", on="team")
         .merge(strength_of_schedule, how="left", on="team")
+        .merge(win_loss_playoff_teams, how="left", on="team")
     )
 
+    matches_df_conf = matches_df[matches_df["home_conference"]==matches_df["away_conference"]].copy()
+    matches_df_div = matches_df[matches_df["home_division"]==matches_df["away_division"]].copy()
+
+    if len(matches_df_conf) > 0:
+        win_loss_conf = get_win_loss_pct(matches_df_conf)
+        win_loss_last_half_conf = get_win_loss_pct_last_half(matches_df_conf)
+        win_loss_conf = (
+            win_loss_conf[["team","win_loss_pct"]]
+            .rename(columns= {"win_loss_pct": "win_loss_pct_conf"})
+        )
+        standings = (
+            standings
+            .merge(win_loss_conf, how="left", on="team")
+            .merge(win_loss_last_half_conf, how="left", on="team")
+        )
+
+    if len(matches_df_div) > 0:
+        win_loss_div = get_win_loss_pct(matches_df_div)
+        win_loss_div = (
+            win_loss_div[["team","win_loss_pct"]]
+            .rename(columns= {"win_loss_pct": "win_loss_pct_div"})
+        )
+        standings = (
+            standings
+            .merge(win_loss_div, how="left", on="team")
+        )
+        
     return standings
 
 
@@ -707,6 +1115,141 @@ def get_win_loss_pct_last_half(matches_df):
     return standings
 
 
+def get_win_loss_pct_playoff_teams(matches_df, win_loss_league, playoff_eligible_rank=6):
+    """
+    Compute each team's win-loss percentage against playoff-eligible teams
+    (both within the same conference and in the other conference).
+
+    This function:
+    1. Determines each team's conference based on the match dataframe.
+    2. Computes conference rankings using overall win-loss percentage.
+    3. Identifies playoff-eligible teams (default: top 6 per conference).
+    4. For every team in the league, filters their matches against:
+         - Playoff teams from the same conference.
+         - Playoff teams from the other conference.
+    5. Calculates win-loss percentages in those subsets.
+
+    Parameters
+    ----------
+    matches_df : pandas.DataFrame
+        Match-level dataset containing at least:
+        - 'home', 'away' : team names  
+        - 'home_goals', 'away_goals' : integer match scores  
+        - 'home_conference', 'away_conference' : conference labels for each team
+
+    win_loss_league : pandas.DataFrame
+        Team-level standings containing:
+        - 'team' : team name  
+        - 'win_loss_pct' : overall win-loss percentage used for ranking
+
+    playoff_eligible_rank : int, optional (default = 6)
+        Number of top teams per conference considered playoff-eligible.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A dataframe with one row per team and columns:
+        - 'team'
+        - 'win_loss_pct_playoff_teams_same_conf'  : W-L percentage vs playoff teams in the same conference
+        - 'win_loss_pct_playoff_teams_other_conf' : W-L percentage vs playoff teams in the other conference
+
+    Notes
+    -----
+    - Teams with no matches against playoff teams in the other conference
+      receive a value of 0 for `win_loss_pct_playoff_teams_other_conf`.
+    - Ranking within conference uses `method="min"` so ties share the same rank.
+    """
+    divisions_home = matches_df[['home','home_conference']].drop_duplicates()
+    divisions_home = divisions_home.rename(columns={'home': 'team', 'home_conference': 'conference'})
+    divisions_away = matches_df[['away','away_conference']].drop_duplicates()
+    divisions_away = divisions_away.rename(columns={'away': 'team', 'away_conference': 'conference'})
+    divisions = pd.concat([divisions_home, divisions_away]).drop_duplicates()
+    win_loss_league_w_div = win_loss_league.merge(
+        divisions,
+        how="left",
+        on="team"
+    )
+    win_loss_league_w_div["conf_rank"] = (
+    win_loss_league_w_div.groupby("conference")["win_loss_pct"]
+      .rank(method="min", ascending=False)
+      .astype(int)
+    )
+    playoff_teams_df = win_loss_league_w_div[win_loss_league_w_div["conf_rank"] <= playoff_eligible_rank][["team","conference"]]
+
+    list_of_teams = set(matches_df["home"].tolist() + matches_df["away"].tolist())
+    standings = []
+    for sel_team in list_of_teams:
+
+        same_conf = win_loss_league_w_div.loc[win_loss_league_w_div["team"] == sel_team, "conference"].unique()[0]
+        list_of_playoff_teams_same_conf = playoff_teams_df.loc[playoff_teams_df["conference"]==same_conf,'team'].tolist()
+        list_of_playoff_teams_other_conf = playoff_teams_df.loc[playoff_teams_df["conference"]!=same_conf,'team'].tolist()
+        matches_vs_po_teams = matches_df.copy()
+        matches_vs_po_teams = matches_vs_po_teams[(
+            (matches_vs_po_teams["home"] == sel_team)
+            | (matches_vs_po_teams["away"] == sel_team)
+        )]
+        matches_vs_po_teams_same_conf = matches_vs_po_teams[(
+            (matches_vs_po_teams["home"].isin(list_of_playoff_teams_same_conf))
+            | (matches_vs_po_teams["away"].isin(list_of_playoff_teams_same_conf))
+        )].copy()    
+        matches_vs_po_teams_other_conf = matches_vs_po_teams[(
+            (matches_vs_po_teams["home"].isin(list_of_playoff_teams_other_conf))
+            | (matches_vs_po_teams["away"].isin(list_of_playoff_teams_other_conf))
+        )].copy()
+        matches_vs_po_teams_same_conf["home_wins"] = np.where(
+            (matches_vs_po_teams_same_conf["home_goals"] > matches_vs_po_teams_same_conf["away_goals"])
+            & (matches_vs_po_teams_same_conf["home"]==sel_team),
+            1,
+            0
+        )
+        matches_vs_po_teams_same_conf["away_wins"] = np.where(
+            (matches_vs_po_teams_same_conf["away_goals"] > matches_vs_po_teams_same_conf["home_goals"])
+            & (matches_vs_po_teams_same_conf["away"]==sel_team),
+            1,
+            0
+        )
+        matches_vs_po_teams_same_conf["away_wins"] = np.where(
+            matches_vs_po_teams_same_conf["away_goals"] > matches_vs_po_teams_same_conf["home_goals"],
+            1,
+            0
+        )
+        home_wins = matches_vs_po_teams_same_conf[matches_vs_po_teams_same_conf['home']==sel_team]["home_wins"].sum()
+        away_wins = matches_vs_po_teams_same_conf[matches_vs_po_teams_same_conf['away']==sel_team]["away_wins"].sum()
+        played = len(matches_vs_po_teams_same_conf)
+        win_loss_pct_same_conf = round((home_wins + away_wins) / played, 3)
+        # other conf
+        matches_vs_po_teams_other_conf["home_wins"] = np.where(
+            (matches_vs_po_teams_other_conf["home_goals"] > matches_vs_po_teams_other_conf["away_goals"])
+            & (matches_vs_po_teams_other_conf["home"]==sel_team),
+            1,
+            0
+        )
+        matches_vs_po_teams_other_conf["away_wins"] = np.where(
+            (matches_vs_po_teams_other_conf["away_goals"] > matches_vs_po_teams_other_conf["home_goals"])
+            & (matches_vs_po_teams_other_conf["away"]==sel_team),
+            1,
+            0
+        )
+        matches_vs_po_teams_other_conf["away_wins"] = np.where(
+            matches_vs_po_teams_other_conf["away_goals"] > matches_vs_po_teams_other_conf["home_goals"],
+            1,
+            0
+        )
+        home_wins = matches_vs_po_teams_other_conf[matches_vs_po_teams_other_conf['home']==sel_team]["home_wins"].sum()
+        away_wins = matches_vs_po_teams_other_conf[matches_vs_po_teams_other_conf['away']==sel_team]["away_wins"].sum()
+        played = len(matches_vs_po_teams_other_conf)
+        if played > 0:
+            win_loss_pct_other_conf = round((home_wins + away_wins) / played, 3)
+        else:
+            win_loss_pct_other_conf = 0
+        standings.append({"team": sel_team,
+                          "win_loss_pct_playoff_teams_same_conf": win_loss_pct_same_conf,
+                          "win_loss_pct_playoff_teams_other_conf": win_loss_pct_other_conf})
+    standings = pd.DataFrame(standings)
+
+    return standings
+
+
 def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
     """
     Generate team standings and apply classification rules for league and subgroup rankings.
@@ -863,7 +1406,7 @@ def apply_classification_rules(matches_df, classif_rules, standings):
         elif rule == "division_winner":
             standings[rule] = np.where(standings["division_pos"] == 1, 1, 0)
 
-        elif is_h2h_rule or is_playoff:
+        elif is_h2h_rule or is_playoff or rule == 'win_loss_pct_div_if_same_div':
             # tiebreakers previous to current h2h one
             tb_applied = classif_rules[:i]
             # apply rank function to see who is tied
@@ -911,6 +1454,10 @@ def apply_classification_rules(matches_df, classif_rules, standings):
                         substed_tied_standings = apply_playoff_tiebreaker(
                             matches_df, tied_teams
                         )
+                    elif rule == 'win_loss_pct_div_if_same_div':
+                        substed_tied_standings = apply_win_loss_pct_same_div_tiebreaker(
+                                subset_of_tied
+                            )
 
                     subset_of_tied = subset_of_tied.merge(
                         substed_tied_standings, on="team", how="left"
@@ -1116,7 +1663,7 @@ def validate_bracket(bracket_df, knockout_format):
         )
 
 
-def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule, has_reseeding):
+def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule, has_reseeding, home_advantage):
     """
     Simulates a knockout playoff bracket using ELO ratings.
 
@@ -1127,6 +1674,7 @@ def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule
         elos: DataFrame with columns ['team', 'elo'] representing team ELO ratings
         playoff_schedule: DataFrame with pending matches to simulate
         has_reseeding (boolean): True/False if playoff has re-seeding after each round
+        home_advantage (float): Elo adjustment to home team
 
     Returns:
         Wide-format DataFrame with one row per team and binary indicators for each round
@@ -1150,6 +1698,7 @@ def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule
             playoff_schedule,
             teams_progression,
             round_label,
+            home_advantage,
         )
 
         current_round = _prepare_next_round(winners, bracket_df, has_reseeding)
@@ -1164,6 +1713,7 @@ def _simulate_round(
     playoff_schedule,
     teams_progression,
     round_label,
+    home_advantage,
 ):
     """
     Simulate all matches in a single playoff round and update team progression.
@@ -1173,8 +1723,9 @@ def _simulate_round(
         round_format (str): Format of the round (e.g., "single", "home_and_away").
         elos_dict (dict): Dictionary mapping team names to their ELO ratings.
         playoff_schedule (pd.DataFrame): Schedule of actual matches, used if available.
-        teams_progression (dict): Dictionary tracking each team’s progress through the tournament.
+        teams_progression (dict): Dictionary tracking each team's progress through the tournament.
         round_label (str): Label indicating which round is being simulated.
+        home_advantage (float): adjustment to home team's elo
 
     Returns:
         list: A list of team names that won their respective matchups in this round.
@@ -1185,7 +1736,7 @@ def _simulate_round(
         team1, team2 = row["team1"], row["team2"]
 
         winner = get_match_winner_from_playoff(
-            team1, team2, round_format, elos_dict, playoff_schedule
+            team1, team2, round_format, elos_dict, playoff_schedule, home_advantage
         )
         winners.append(winner)
 
@@ -1197,7 +1748,7 @@ def _simulate_round(
 
 
 def get_match_winner_from_playoff(
-    team1, team2, round_format, elos_dict, playoff_schedule
+    team1, team2, round_format, elos_dict, playoff_schedule, home_advantage
 ):
     """
     Simulate a single playoff match between two teams.
@@ -1208,6 +1759,7 @@ def get_match_winner_from_playoff(
         round_format (str): Format of the round.
         elos_dict (dict): Dictionary of ELO ratings.
         playoff_schedule (pd.DataFrame): Schedule of real matches, if available.
+        home_advantage (float): elo adjustment to home team
 
     Returns:
         str: Name of the winning team.
@@ -1220,16 +1772,24 @@ def get_match_winner_from_playoff(
     team1_elo = elos_dict.get(team1, 1000)
     team2_elo = elos_dict.get(team2, 1000)
 
-    win_proba = calculate_win_probability(
-        team1_elo, team2_elo, matchup_type=round_format
-    )
     tie_matches = _get_tie_matches(team1, team2, playoff_schedule)
 
     if tie_matches.empty:
-        result = simulate_match_winner(win_proba)
+        if round_format in ('single_game_neutral', 'single_game', 'two-legged'):
+            win_proba = calculate_win_probability(
+                team1_elo, team2_elo, matchup_type=round_format, home_adv=home_advantage
+            )
+            result = simulate_match_winner(win_proba)
+        elif round_format in ('best_of_3', 'best_of_5', 'best_of_7'):
+            best_of_num = int("".join(filter(str.isdigit, round_format)))
+            result = simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches=None, best_of=best_of_num, home_adv=home_advantage)
+        else:
+            raise ValueError(
+                "Invalid playoff matchup_type"
+            )
         return team1 if result == 1 else team2
 
-    return _determine_winner_from_schedule(team1, team2, tie_matches, win_proba)
+    return _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_format, tie_matches, home_adv=home_advantage)
 
 
 def _get_tie_matches(team1, team2, playoff_schedule):
@@ -1250,26 +1810,76 @@ def _get_tie_matches(team1, team2, playoff_schedule):
     ].copy()
 
 
-def _determine_winner_from_schedule(team1, team2, tie_matches, win_proba):
+def _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_format, tie_matches, home_adv):
     """
-    Determine the winner based on match schedule data.
+    Determine the winner of a matchup or playoff series based on the scheduled
+    matches between two teams and the round format.
 
-    Args:
-        team1 (str): First team.
-        team2 (str): Second team.
-        tie_matches (pd.DataFrame): Subset of schedule with matches between the teams.
-        win_proba (float): Probability of team1 winning.
+    The function supports several competition formats:
+    - Single-game formats: ``"single_game"``, ``"single_game_neutral"``, 
+      ``"two-legged"``.
+    - Best-of-N series: formats beginning with ``"best"``, e.g. ``"best_of_3"``,
+      ``"best_of_7"``.
 
-    Returns:
-        str: Name of the winning team.
+    If matches have already been played (based on the ``played`` column),
+    the function determines the winner from completed or partially completed games.
+    If matches remain unplayed, it simulates the outcome using Elo-based win
+    probabilities.
+
+    Parameters
+    ----------
+    team1 : str
+        Name of the first team.
+    team2 : str
+        Name of the second team.
+    team1_elo : float
+        Elo rating of `team1`.
+    team2_elo : float
+        Elo rating of `team2`.
+    round_format : str
+        Format of the round. Examples:
+        - `"single_game"`
+        - `"single_game_neutral"`
+        - `"two-legged"`
+        - `"best_of_3"`, `"best_of_5"`, `"best_of_7"`
+    tie_matches : pandas.DataFrame
+        DataFrame containing only the matches between `team1` and `team2`.
+        Must include:
+        - `"played"`: `"Y"` for played games, `"N"` for unplayed.
+        - `"home"`, `"away"`
+        - `"home_goals"`, `"away_goals"` (for completed games)
+    home_adv: float
+        Elo adjustment to home team
+
+    Returns
+    -------
+    str
+        The name of the winning team.
+
+    Raises
+    ------
+    ValueError
+        If the round format is not recognized or supported.
     """
-    if all(tie_matches["played"] == "Y"):
-        return _get_winner_from_completed_matches(team1, team2, tie_matches)
-    elif any(tie_matches["played"] == "Y"):
-        return _get_winner_from_partial_matches(team1, team2, tie_matches, win_proba)
-    else:
-        result = simulate_match_winner(win_proba)
-        return team1 if result == 1 else team2
+    if round_format in (['single_game','single_game_neutral','two-legged']):
+        win_proba = calculate_win_probability(
+            team1_elo, team2_elo, matchup_type=round_format, home_adv=home_adv
+        )
+        if all(tie_matches["played"] == "Y"):
+            winner = _get_winner_from_completed_matches(team1, team2, tie_matches)
+        elif any(tie_matches["played"] == "Y"):
+            winner = _get_winner_from_partial_matches(team1, team2, tie_matches, win_proba)
+        else:
+            result = simulate_match_winner(win_proba)
+            winner = team1 if result == 1 else team2
+    elif round_format.startswith("best"):
+        best_of_num = int("".join(filter(str.isdigit, round_format)))
+        result = simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches, best_of_num, home_adv)
+        winner = team1 if result == 1 else team2
+    else: 
+        raise ValueError("Invalid round format for simulation")
+
+    return winner
 
 
 def _get_winner_from_completed_matches(team1, team2, tie_matches):

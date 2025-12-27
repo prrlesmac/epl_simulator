@@ -1,0 +1,31 @@
+team,division,conference
+Boston Celtics,Atlantic,Eastern
+Brooklyn Nets,Atlantic,Eastern
+New York Knicks,Atlantic,Eastern
+Philadelphia 76ers,Atlantic,Eastern
+Toronto Raptors,Atlantic,Eastern
+Chicago Bulls,Central,Eastern
+Cleveland Cavaliers,Central,Eastern
+Detroit Pistons,Central,Eastern
+Indiana Pacers,Central,Eastern
+Milwaukee Bucks,Central,Eastern
+Atlanta Hawks,Southeast,Eastern
+Charlotte Hornets,Southeast,Eastern
+Miami Heat,Southeast,Eastern
+Orlando Magic,Southeast,Eastern
+Washington Wizards,Southeast,Eastern
+Denver Nuggets,Northwest,Western
+Minnesota Timberwolves,Northwest,Western
+Oklahoma City Thunder,Northwest,Western
+Portland Trail Blazers,Northwest,Western
+Utah Jazz,Northwest,Western
+Golden State Warriors,Pacific,Western
+Los Angeles Clippers,Pacific,Western
+Los Angeles Lakers,Pacific,Western
+Phoenix Suns,Pacific,Western
+Sacramento Kings,Pacific,Western
+Dallas Mavericks,Southwest,Western
+Houston Rockets,Southwest,Western
+Memphis Grizzlies,Southwest,Western
+New Orleans Pelicans,Southwest,Western
+San Antonio Spurs,Southwest,Western

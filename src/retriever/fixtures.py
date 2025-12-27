@@ -543,15 +543,17 @@ def process_nba_table(fixtures):
     fixtures["home_goals"] = pd.to_numeric(fixtures["home_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
     fixtures["away_goals"] = pd.to_numeric(fixtures["away_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
 
-    play_in_date_start = fixtures[fixtures["notes"]=="Play-In Game"]["date"].min()
-    play_in_date_end = fixtures[fixtures["notes"]=="Play-In Game"]["date"].max()
+    play_in_df = fixtures[fixtures["notes"]=="Play-In Game"]
+    if len(play_in_df) > 0:
+        play_in_date_start = play_in_df["date"].min()
+        play_in_date_end = play_in_df["date"].max()
+    else:
+        play_in_date_start = fixtures["date"].max() + pd.Timedelta(days=1)
+        play_in_date_end = fixtures["date"].max() + pd.Timedelta(days=1)
+
     fixtures["round"] = np.where(
         fixtures["date"] < play_in_date_start,
-        np.where(
-            fixtures["notes"] == "NBA Cup",
-            "NBA Cup",
-            "League"
-        ),
+        "League",
         np.where(
             fixtures["date"] > play_in_date_end,
             "Playoff",
@@ -567,6 +569,37 @@ def process_nba_table(fixtures):
     fixtures["neutral"] = "N"
 
     return fixtures
+
+
+def post_process_nba_table(fixtures):
+    """
+    Post-processes an NBA fixtures DataFrame by labeling the NBA Cup Final.
+
+    This function searches for all rows where the `"notes"` column equals
+    `"NBA Cup"`, identifies the 67th occurrence, and sets its `"round"` value
+    to `"NBA Cup Final"`. This is based on the structure of the NBA In-Season
+    Tournament schedule, where the 67th NBA Cup game corresponds to the final.
+
+    Parameters
+    ----------
+    fixtures : pandas.DataFrame
+        A DataFrame containing NBA fixtures with at least the columns
+        `"notes"` and `"round"`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The updated DataFrame with the NBA Cup Final correctly labeled.
+    """
+    #flag NBA Cup Final as 67th game
+    fixtures = fixtures.reset_index()
+    mask = fixtures["notes"] == "NBA Cup"
+    matches = fixtures.index[mask]
+    if len(matches) >= 67:
+        fixtures.loc[matches[66], "round"] = "NBA Cup Final"
+
+    return fixtures
+
 
 def process_mlb_table(fixtures):
     """
@@ -676,6 +709,8 @@ def main_fixtures():
         fixtures["updated_at"] = datetime.now()
         fixtures_all.append(fixtures)
     fixtures_all = pd.concat(fixtures_all)
+    if league_name == "NBA":
+        fixtures_all = post_process_nba_table(fixtures_all)
     table_name = f"{config.db_table_definitions['fixtures_table']['name']}_{league_name.lower()}{'_history' if config.pull_fixture_history else ''}"
     engine = db_connect.get_postgres_engine()
     fixtures_all.to_sql(
