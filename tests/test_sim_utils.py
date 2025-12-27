@@ -2008,6 +2008,46 @@ class TestPlayoffSimulation:
         assert len(next_round) == 1
         pd.testing.assert_frame_equal(next_round, mock_next_round)
 
+    def test_prepare_next_round_reseed(self):
+        bracket_df = pd.DataFrame(
+            [
+                {"team1": "A", "seed1": "AFC 1", "team2": "B", "seed2": "AFC 8"},
+                {"team1": "C", "seed1": "AFC 4", "team2": "D", "seed2": "AFC 5"},
+                {"team1": "E", "seed1": "AFC 2", "team2": "F", "seed2": "AFC 7"},
+                {"team1": "G", "seed1": "AFC 3", "team2": "H", "seed2": "AFC 6"},
+            ]
+        )
+        winners_sc1 = ["A", "C", "E", "G"]
+        winners_sc2 = ["B", "D", "F", "G"]
+        winners_sc3 = ["A", "C", "F", "G"]
+
+        next_round_sc1 = _prepare_next_round(winners_sc1, bracket_df=bracket_df, has_reseeding=True)
+        mock_next_round_sc1 = pd.DataFrame(
+            [
+                {"team1": "A", "team2": "C"},
+                {"team1": "E", "team2": "G"},
+            ]
+        )
+        pd.testing.assert_frame_equal(next_round_sc1, mock_next_round_sc1)
+
+        next_round_sc2 = _prepare_next_round(winners_sc2, bracket_df=bracket_df, has_reseeding=True)
+        mock_next_round_sc2 = pd.DataFrame(
+            [
+                {"team1": "G", "team2": "B"},
+                {"team1": "D", "team2": "F"},
+            ]
+        )
+        pd.testing.assert_frame_equal(next_round_sc2, mock_next_round_sc2)
+
+        next_round_sc3 = _prepare_next_round(winners_sc3, bracket_df=bracket_df, has_reseeding=True)
+        mock_next_round_sc3 = pd.DataFrame(
+            [
+                {"team1": "A", "team2": "F"},
+                {"team1": "G", "team2": "C"},
+            ]
+        )
+        pd.testing.assert_frame_equal(next_round_sc3, mock_next_round_sc3)
+
     def test_build_results_dataframe(self):
         progress = {
             "A": {"po_r4": 1.0, "po_r2": 1.0, "po_champion": 1.0},
