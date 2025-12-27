@@ -22,43 +22,59 @@ class TestGetElos:
     @patch("requests.get")
     def test_get_elos_success(self, mock_get):
         """Test successful data fetch and CSV parsing."""
-        # Mock response
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.text = (
             "club,country,level,elo\nBarcelona,ESP,1,2150\nReal Madrid,ESP,1,2100"
         )
+
+        # Must mock raise_for_status to NOT raise
+        mock_response.raise_for_status = Mock()
+
         mock_get.return_value = mock_response
 
-        # Call function
         result = get_elos("http://example.com/elos.csv")
 
-        # Assertions
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 2
         assert list(result.columns) == ["club", "country", "level", "elo"]
         assert result.iloc[0]["club"] == "Barcelona"
         assert result.iloc[0]["elo"] == 2150
-        mock_get.assert_called_once_with("http://example.com/elos.csv")
+
+        # timeout must now be included
+        mock_get.assert_called_once_with("http://example.com/elos.csv", timeout=60)
 
     @patch("requests.get")
     def test_get_elos_http_error(self, mock_get):
         """Test handling of HTTP error responses."""
-        # Mock 404 response
         mock_response = Mock()
         mock_response.status_code = 404
         mock_response.text = "Not Found"
+
+        # raise_for_status should now raise an HTTPError
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("404")
+
         mock_get.return_value = mock_response
 
-        # Call function and capture output
         with patch("builtins.print") as mock_print:
             result = get_elos("http://example.com/nonexistent.csv")
 
-        # Assertions
-        mock_print.assert_any_call("Failed to fetch data. Status code: 404")
-        mock_print.assert_any_call("Response:", "Not Found")
-        # Note: The function has a bug - it returns df even when request fails
-        # In a real scenario, you'd want to fix this bug
+        # verify function returns None
+        assert result is None
+
+        # verify printed error
+        mock_print.assert_any_call("An error occurred while fetching data:", mock_response.raise_for_status.side_effect)
+
+    @patch("requests.get")
+    def test_get_elos_timeout(self, mock_get):
+        """Test request timeout handling."""
+        mock_get.side_effect = requests.exceptions.Timeout
+
+        with patch("builtins.print") as mock_print:
+            result = get_elos("http://example.com/slow.csv")
+
+        assert result is None
+        mock_print.assert_any_call("Request timed out after 60 seconds.")
 
     @patch("requests.get")
     def test_get_elos_empty_csv(self, mock_get):
