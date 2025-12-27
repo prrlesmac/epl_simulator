@@ -597,7 +597,7 @@ parsing_method = "http_request" # must be local_file, http_request, or playwrigh
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 #elo_date = "2025-06-01"  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
-pull_fixture_history = False
+pull_fixture_history = True
 fixtures_config = {
     "ENG": {
         "fixtures_url": ["https://fbref.com/en/comps/9/2025-2026/schedule/2025-2026-Premier-League-Scores-and-Fixtures"],
@@ -664,12 +664,20 @@ fixtures_config = {
 }
 
 fixtures_history_config = {
-        "NFL": {
+    "NFL": {
         "fixtures_url": [
             f"https://www.pro-football-reference.com/years/{year}/games.htm"
             for year in range(1970, 2025)
         ],
         "table_id": ["games"],
+    },
+    "NBA": {
+        "fixtures_url": [
+            f"https://www.basketball-reference.com/leagues/NBA_{year}_games-{month}.html"
+            for year in range(2022, 2025)
+            for month in ["october", "november", "december", "january", "february", "march", "april", "may", "june"]
+        ],
+        "table_id": ["schedule"],
     },
 }
 
