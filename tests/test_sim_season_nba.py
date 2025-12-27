@@ -56,6 +56,7 @@ def csv_elos_data_nba_case_1():
 def nba_league_rules():
     return {
         "sim_type": "winner",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "division": ["win_loss_pct"
@@ -108,6 +109,7 @@ def nba_league_rules():
 def nba_league_rules_playoff():
     return {
         "sim_type": "winner",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "division": ["win_loss_pct"

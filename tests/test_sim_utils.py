@@ -240,8 +240,8 @@ class TestSimulateMatchesDataFrame:
 
     def test_function_signature_and_return_type(self, sample_matches_df):
         """Test that function accepts correct parameters and returns DataFrame."""
-        result1 = simulate_matches_data_frame(sample_matches_df, sim_type='goals')
-        result2 = simulate_matches_data_frame(sample_matches_df, sim_type='winner')
+        result1 = simulate_matches_data_frame(sample_matches_df, sim_type='goals', home_advantage=80)
+        result2 = simulate_matches_data_frame(sample_matches_df, sim_type='winner', home_advantage=80)
 
         assert isinstance(result1, pd.DataFrame)
         assert len(result1) == len(sample_matches_df)
@@ -252,8 +252,8 @@ class TestSimulateMatchesDataFrame:
         """Test that original DataFrame columns are preserved."""
 
         original_columns = set(sample_matches_df.columns)
-        result1 = simulate_matches_data_frame(sample_matches_df, sim_type='goals')
-        result2 = simulate_matches_data_frame(sample_matches_df, sim_type='winner')
+        result1 = simulate_matches_data_frame(sample_matches_df, sim_type='goals', home_advantage=80)
+        result2 = simulate_matches_data_frame(sample_matches_df, sim_type='winner', home_advantage=80)
 
         # Check that all original columns are preserved
         for col in original_columns:
@@ -267,7 +267,7 @@ class TestSimulateMatchesDataFrame:
     def test_raise_error(self, sample_matches_df):
         """Test that value error raised when sim_type invalid."""
         with pytest.raises(ValueError) as exc_info:
-            simulate_matches_data_frame(sample_matches_df, sim_type="home_and_away")
+            simulate_matches_data_frame(sample_matches_df, sim_type="home_and_away", home_advantage=80)
 
         # Optional: check the error message
         assert "Invalid sim type in simulate_matches_data_frame" in str(exc_info.value)
@@ -1401,7 +1401,7 @@ class TestSimulatePlayoffBracket:
         )
 
         result = simulate_playoff_bracket(
-            bracket_df, knockout_format, elos, playoff_schedule, has_reseeding=False
+            bracket_df, knockout_format, elos, playoff_schedule, has_reseeding=False, home_advantage=80
         )
         # Check result dataframe shape and columns
         assert isinstance(result, pd.DataFrame)
@@ -1555,7 +1555,7 @@ class TestSimulatePlayInTourney:
         )
         playoff_pos_values = standings_df['playoff_pos']
         result = simulate_play_in_tourney(
-            standings_df, playoff_schedule, elos
+            standings_df, playoff_schedule, elos, home_advantage=80
         )
 
         # check playoff pos has same values than before
@@ -1647,7 +1647,7 @@ class TestSimulatePlayInTourney:
         )
         playoff_pos_values = standings_df['playoff_pos']
         result = simulate_play_in_tourney(
-            standings_df, playoff_schedule, elos
+            standings_df, playoff_schedule, elos, home_advantage=80
         )
         # check playoff pos has same values than before
         pd.testing.assert_series_equal(playoff_pos_values.sort_values().reset_index(drop=True),
@@ -1765,7 +1765,7 @@ class TestSimulatePlayInTourney:
         )
         playoff_pos_values = standings_df['playoff_pos']
         result = simulate_play_in_tourney(
-            standings_df, playoff_schedule, elos
+            standings_df, playoff_schedule, elos, home_advantage=80
         )
         # check playoff pos has same values than before
         pd.testing.assert_series_equal(playoff_pos_values.sort_values().reset_index(drop=True),
@@ -1911,6 +1911,7 @@ class TestPlayoffSimulation:
             self.playoff_schedule,
             self.teams_progression,
             "po_r4",
+            home_advantage=80
         )
         assert winners == ["A"]
 
@@ -1940,10 +1941,10 @@ class TestPlayoffSimulation:
 
     def test_determine_winner_from_schedule(self):
         tie_matches = _get_tie_matches("A", "B", self.playoff_schedule)
-        winner = _determine_winner_from_schedule("A", "B", 1600, 1600, "single_game_neutral" ,tie_matches)
+        winner = _determine_winner_from_schedule("A", "B", 1600, 1600, "single_game_neutral" ,tie_matches, home_adv=80)
         assert winner == "A"
         tie_matches = _get_tie_matches("A", "B", self.playoff_schedule_partial)
-        winner = _determine_winner_from_schedule("A", "B", 1600, 1600, "single_game_neutral" ,tie_matches)
+        winner = _determine_winner_from_schedule("A", "B", 1600, 1600, "single_game_neutral" ,tie_matches, home_adv=80)
         assert winner in ["A", "B"]
 
     def test_get_winner_from_completed_matches(self):

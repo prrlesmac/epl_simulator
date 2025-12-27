@@ -96,6 +96,7 @@ def single_simulation(
             classification (list): Rules used to compute standings/classification.
             sim_type (str): either "goals" or "winner"
                 Used to specify whether the sinulation returns goal or simply the winner
+            home_advantage (float): adjustment to home team elo
             has_knockout (bool, optional): If True, includes knockout stage simulation.
                 Default is False, meaning only league standings are simulated.
             knockout_bracket (list, optional): List of tuples defining the knockout
@@ -124,7 +125,7 @@ def single_simulation(
     league_schedule_pending = schedule_pending[
         schedule_pending["round"] == "League"
     ].copy()
-    simulated_pending = simulate_matches_data_frame(league_schedule_pending, league_rules["sim_type"])
+    simulated_pending = simulate_matches_data_frame(league_schedule_pending, league_rules["sim_type"], league_rules["home_advantage"])
     schedule_final = pd.concat(
         [league_schedule_played, simulated_pending], ignore_index=True
     )
@@ -137,7 +138,7 @@ def single_simulation(
         knockout_schedule_pending = schedule_pending[
             schedule_pending["round"] != "League"
         ].copy()
-        simulated_pending = simulate_matches_data_frame(knockout_schedule_pending, league_rules["sim_type"])
+        simulated_pending = simulate_matches_data_frame(knockout_schedule_pending, league_rules["sim_type"], league_rules["home_advantage"])
         playoff_schedule = pd.concat(
             [knockout_schedule_played, simulated_pending], ignore_index=True
         )
@@ -146,7 +147,7 @@ def single_simulation(
             ["home", "elo_home"]
         ].rename(columns={"home": "team", "elo_home": "elo"})
         if ("has_play_in" in league_rules) and (league_rules["has_play_in"]):
-            standings_df = simulate_play_in_tourney(standings_df, playoff_schedule, elos)
+            standings_df = simulate_play_in_tourney(standings_df, playoff_schedule, elos, league_rules["home_advantage"])
         if league_rules["knockout_draw_status"] == "pending_draw":
             draw = draw_from_pots(standings_df, pot_size=2)
             bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
@@ -169,7 +170,7 @@ def single_simulation(
         else:
             raise ValueError("Invalid knockout draw status selected")
         playoff_df = simulate_playoff_bracket(
-            bracket, league_rules["knockout_format"], elos, playoff_schedule, league_rules["knockout_reseeding"]
+            bracket, league_rules["knockout_format"], elos, playoff_schedule, league_rules["knockout_reseeding"], league_rules["home_advantage"]
         )
         standings_df = standings_df.merge(playoff_df, how="left", on="team")
 

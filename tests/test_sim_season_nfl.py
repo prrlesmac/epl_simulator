@@ -44,6 +44,7 @@ def csv_elos_data_nfl_case_1():
 def nfl_league_rules():
     return {
         "sim_type": "winner",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "division": ["win_loss_pct",
@@ -95,6 +96,7 @@ def nfl_league_rules():
 def nfl_league_rules_playoff():
     return {
         "sim_type": "winner",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "division": ["win_loss_pct",

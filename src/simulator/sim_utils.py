@@ -127,7 +127,7 @@ def simulate_match_winner(proba):
 
     return result
 
-def simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches=None, best_of=7):
+def simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches=None, best_of=7, home_adv=80):
     """
     Simulate the winner of a playoff series using Elo-based win probabilities. 
     
@@ -162,6 +162,8 @@ def simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches=None,
     best_of : int, optional
         Length of the playoff series (default = 7). 
         Must be an odd integer (e.g., 1, 3, 5, 7).
+    home_advantage: float, optional
+        Elo adjustment for home team
 
     Returns
     -------
@@ -203,12 +205,12 @@ def simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches=None,
 
     for i in range(remaining_matches):
         if best_of == 3:
-            proba = calculate_win_probability(team1_elo, team2_elo)
+            proba = calculate_win_probability(team1_elo, team2_elo, home_adv=home_adv)
         else:
             if (i+1) < (best_of / 2):
-                proba = 1 - calculate_win_probability(team2_elo, team1_elo)
+                proba = 1 - calculate_win_probability(team2_elo, team1_elo, home_adv=home_adv)
             else:
-                proba = calculate_win_probability(team1_elo, team2_elo)
+                proba = calculate_win_probability(team1_elo, team2_elo, home_adv=home_adv)
 
         random_sim = np.random.rand()
 
@@ -231,12 +233,15 @@ def simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches=None,
     return result
 
 
-def simulate_matches_data_frame(matches_df, sim_type):
+def simulate_matches_data_frame(matches_df, sim_type, home_advantage):
     """
     Simulate matches and determine winners.
 
     Parameters:
         matches_df (pd.DataFrame): DataFrame containing matches to simulate
+        sim_type (str): "goals" if we need to simulate match goals outcome
+                        "wunner" if we only simulate win/lose outcome
+        home_advantage (float): adjustment to home team's elo
 
     Returns:
         pd.DataFrame: DataFrame with simulation results
@@ -244,7 +249,7 @@ def simulate_matches_data_frame(matches_df, sim_type):
 
     for index, match in matches_df.iterrows():
 
-        home_advantage = 80 if match["neutral"] == "N" else 0
+        home_advantage = home_advantage if match["neutral"] == "N" else 0
         elo_home = match["elo_home"]
         elo_away = match["elo_away"]
 
@@ -270,7 +275,7 @@ def simulate_matches_data_frame(matches_df, sim_type):
     return pd.DataFrame(matches_df)
 
 
-def simulate_play_in_tourney(standings_df, playoff_schedule, elos):
+def simulate_play_in_tourney(standings_df, playoff_schedule, elos, home_advantage):
 
     play_in_schedule = playoff_schedule.copy()
     play_in_schedule = play_in_schedule[play_in_schedule["round"] == "Play-in"]
@@ -317,7 +322,8 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos):
                 elos_dict=elos,
                 playoff_schedule=play_in_schedule,
                 teams_progression={},
-                round_label="play_in_first_round"
+                round_label="play_in_first_round",
+                home_advantage=home_advantage
             )
             seed_no_7 = {
                 "team": winner[0],
@@ -344,7 +350,8 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos):
                 elos_dict=elos,
                 playoff_schedule=play_in_schedule,
                 teams_progression={},
-                round_label="play_in_second_round"
+                round_label="play_in_second_round",
+                home_advantage=home_advantage,
             )
             seed_no_8 = {
                 "team": winner[0],
@@ -397,7 +404,8 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos):
                 elos_dict=elos,
                 playoff_schedule=play_in_schedule,
                 teams_progression={},
-                round_label="play_in_second_round"
+                round_label="play_in_second_round",
+                home_advantage=home_advantage,
             )
             seed_no_8 = {
                 "team": winner[0],
@@ -1603,7 +1611,7 @@ def validate_bracket(bracket_df, knockout_format):
         )
 
 
-def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule, has_reseeding):
+def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule, has_reseeding, home_advantage):
     """
     Simulates a knockout playoff bracket using ELO ratings.
 
@@ -1614,6 +1622,7 @@ def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule
         elos: DataFrame with columns ['team', 'elo'] representing team ELO ratings
         playoff_schedule: DataFrame with pending matches to simulate
         has_reseeding (boolean): True/False if playoff has re-seeding after each round
+        home_advantage (float): Elo adjustment to home team
 
     Returns:
         Wide-format DataFrame with one row per team and binary indicators for each round
@@ -1637,6 +1646,7 @@ def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule
             playoff_schedule,
             teams_progression,
             round_label,
+            home_advantage,
         )
 
         current_round = _prepare_next_round(winners, bracket_df, has_reseeding)
@@ -1651,6 +1661,7 @@ def _simulate_round(
     playoff_schedule,
     teams_progression,
     round_label,
+    home_advantage,
 ):
     """
     Simulate all matches in a single playoff round and update team progression.
@@ -1660,8 +1671,9 @@ def _simulate_round(
         round_format (str): Format of the round (e.g., "single", "home_and_away").
         elos_dict (dict): Dictionary mapping team names to their ELO ratings.
         playoff_schedule (pd.DataFrame): Schedule of actual matches, used if available.
-        teams_progression (dict): Dictionary tracking each team’s progress through the tournament.
+        teams_progression (dict): Dictionary tracking each team's progress through the tournament.
         round_label (str): Label indicating which round is being simulated.
+        home_advantage (float): adjustment to home team's elo
 
     Returns:
         list: A list of team names that won their respective matchups in this round.
@@ -1672,7 +1684,7 @@ def _simulate_round(
         team1, team2 = row["team1"], row["team2"]
 
         winner = get_match_winner_from_playoff(
-            team1, team2, round_format, elos_dict, playoff_schedule
+            team1, team2, round_format, elos_dict, playoff_schedule, home_advantage
         )
         winners.append(winner)
 
@@ -1684,7 +1696,7 @@ def _simulate_round(
 
 
 def get_match_winner_from_playoff(
-    team1, team2, round_format, elos_dict, playoff_schedule
+    team1, team2, round_format, elos_dict, playoff_schedule, home_advantage
 ):
     """
     Simulate a single playoff match between two teams.
@@ -1695,6 +1707,7 @@ def get_match_winner_from_playoff(
         round_format (str): Format of the round.
         elos_dict (dict): Dictionary of ELO ratings.
         playoff_schedule (pd.DataFrame): Schedule of real matches, if available.
+        home_advantage (float): elo adjustment to home team
 
     Returns:
         str: Name of the winning team.
@@ -1712,19 +1725,19 @@ def get_match_winner_from_playoff(
     if tie_matches.empty:
         if round_format in ('single_game_neutral', 'single_game', 'two-legged'):
             win_proba = calculate_win_probability(
-                team1_elo, team2_elo, matchup_type=round_format
+                team1_elo, team2_elo, matchup_type=round_format, home_adv=home_advantage
             )
             result = simulate_match_winner(win_proba)
         elif round_format in ('best_of_3', 'best_of_5', 'best_of_7'):
             best_of_num = int("".join(filter(str.isdigit, round_format)))
-            result = simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches=None, best_of=best_of_num)
+            result = simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches=None, best_of=best_of_num, home_adv=home_advantage)
         else:
             raise ValueError(
                 "Invalid playoff matchup_type"
             )
         return team1 if result == 1 else team2
 
-    return _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_format, tie_matches)
+    return _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_format, tie_matches, home_adv=home_advantage)
 
 
 def _get_tie_matches(team1, team2, playoff_schedule):
@@ -1745,7 +1758,7 @@ def _get_tie_matches(team1, team2, playoff_schedule):
     ].copy()
 
 
-def _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_format, tie_matches):
+def _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_format, tie_matches, home_adv):
     """
     Determine the winner of a matchup or playoff series based on the scheduled
     matches between two teams and the round format.
@@ -1783,6 +1796,8 @@ def _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_fo
         - `"played"`: `"Y"` for played games, `"N"` for unplayed.
         - `"home"`, `"away"`
         - `"home_goals"`, `"away_goals"` (for completed games)
+    home_adv: float
+        Elo adjustment to home team
 
     Returns
     -------
@@ -1796,7 +1811,7 @@ def _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_fo
     """
     if round_format in (['single_game','single_game_neutral','two-legged']):
         win_proba = calculate_win_probability(
-            team1_elo, team2_elo, matchup_type=round_format
+            team1_elo, team2_elo, matchup_type=round_format, home_adv=home_adv
         )
         if all(tie_matches["played"] == "Y"):
             winner = _get_winner_from_completed_matches(team1, team2, tie_matches)
@@ -1807,7 +1822,7 @@ def _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_fo
             winner = team1 if result == 1 else team2
     elif round_format.startswith("best"):
         best_of_num = int("".join(filter(str.isdigit, round_format)))
-        result = simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches, best_of_num)
+        result = simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches, best_of_num, home_adv)
         winner = team1 if result == 1 else team2
     else: 
         raise ValueError("Invalid round format for simulation")

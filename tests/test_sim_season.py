@@ -89,6 +89,7 @@ def csv_elos_data_continental():
 def continental_league_rules_group_stage():
     return {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "league": [
@@ -138,6 +139,7 @@ def continental_league_rules_group_stage():
 def continental_league_rules_knockout_stage_first_draw():
     return {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "league": [
@@ -205,6 +207,7 @@ def continental_league_rules_knockout_stage_first_draw():
 def continental_league_rules_knockout_stage_second_draw():
     return {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": True,
         "classification": {
             "league": [
@@ -271,6 +274,7 @@ def continental_league_rules_knockout_stage_second_draw():
 def domestic_league_rules():
     return {
         "sim_type": "goals",
+        "home_advantage": 80,
         "has_knockout": False,
         "classification": {
             "league": [
