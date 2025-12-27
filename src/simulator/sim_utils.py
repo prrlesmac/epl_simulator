@@ -276,7 +276,59 @@ def simulate_matches_data_frame(matches_df, sim_type, home_advantage):
 
 
 def simulate_play_in_tourney(standings_df, playoff_schedule, elos, home_advantage):
+    """
+    Simulate the NBA Play-In Tournament and assign final playoff seeds (7-10)
+    for each conference.
 
+    This function supports three scenarios depending on the availability of
+    play-in game results in `playoff_schedule`:
+        1. No play-in games present: all play-in games are fully simulated.
+        2. First-round play-in games present: remaining games are simulated.
+        3. All play-in games present: results are read directly from the schedule.
+
+    For each conference, teams finishing 7th-10th in the regular-season standings
+    are processed through the play-in format:
+        - Game 1: 7 vs 8 (winner gets 7th seed)
+        - Game 2: 9 vs 10 (loser gets 10th seed)
+        - Game 3: loser of 7/8 vs winner of 9/10 (winner gets 8th seed)
+
+    The function updates the final playoff positions and returns an updated
+    standings DataFrame.
+
+    Args:
+        standings_df (pd.DataFrame):
+            Regular-season standings containing at least the following columns:
+            - 'team': Team name
+            - 'conference': Conference identifier (e.g. 'East', 'West')
+            - 'conference_pos': Regular-season conference rank
+            - 'playoff_pos': Initial playoff position label
+
+        playoff_schedule (pd.DataFrame):
+            Playoff schedule and results. Must include:
+            - 'round' (with value 'Play-in' for play-in games)
+            - 'home', 'away'
+            - 'home_goals', 'away_goals'
+            - 'home_conference'
+            If results are present, they are used directly; otherwise games
+            are simulated.
+
+        elos (dict):
+            Mapping of team name to Elo rating, used when simulating games.
+
+        home_advantage (float):
+            Elo adjustment applied to the home team when simulating a game.
+
+    Returns:
+        pd.DataFrame:
+            Updated standings DataFrame with final playoff seeds applied.
+            Includes:
+            - 'playoff_pos_play_in': Play-in derived seed (if applicable)
+            - 'playoff_pos': Final playoff position after play-in resolution
+
+    Raises:
+        ValueError:
+            If the play-in schedule contains an invalid number of games.
+    """
     play_in_schedule = playoff_schedule.copy()
     play_in_schedule = play_in_schedule[play_in_schedule["round"] == "Play-in"]
     play_in_schedule['winner'] = np.where(
