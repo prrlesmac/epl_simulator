@@ -597,7 +597,7 @@ parsing_method = "http_request" # must be local_file, http_request, or playwrigh
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 #elo_date = "2025-06-01"  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
-pull_fixture_history = True
+pull_fixture_history = False
 fixtures_config = {
     "ENG": {
         "fixtures_url": ["https://fbref.com/en/comps/9/2025-2026/schedule/2025-2026-Premier-League-Scores-and-Fixtures"],
@@ -645,15 +645,13 @@ fixtures_config = {
     },
     "NBA": {
         "fixtures_url": [
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-october.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-november.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-december.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-january.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-february.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-march.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-april.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-may.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-june.html",            
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-october.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-november.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-december.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-january.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-february.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-march.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-april.html",          
             ],
         "table_id": ["schedule"],
     },
@@ -674,7 +672,7 @@ fixtures_history_config = {
     "NBA": {
         "fixtures_url": [
             f"https://www.basketball-reference.com/leagues/NBA_{year}_games-{month}.html"
-            for year in range(2022, 2025)
+            for year in range(2022, 2026)
             for month in ["october", "november", "december", "january", "february", "march", "april", "may", "june"]
         ],
         "table_id": ["schedule"],
@@ -682,7 +680,7 @@ fixtures_history_config = {
 }
 
 ## Simulation
-number_of_simulations = 10000
+number_of_simulations = 100
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
 played_cutoff_date = None
 schedule_cutoff_date = None
@@ -1026,13 +1024,13 @@ league_rules = {
         },
         "knockout_bracket": [
             ("Eastern 1", "Eastern 8"),
+            ("Eastern 4", "Eastern 5"),
             ("Eastern 2", "Eastern 7"),
             ("Eastern 3", "Eastern 6"),
-            ("Eastern 4", "Eastern 5"),
             ("Western 1", "Western 8"),
+            ("Western 4", "Western 5"),
             ("Western 2", "Western 7"),
             ("Western 3", "Western 6"),
-            ("Western 4", "Western 5"),
         ],
         "knockout_format": {
             "po_r16": "best_of_7",
