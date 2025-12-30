@@ -76,6 +76,7 @@ def run_elo_calc():
     name_remap = config.nfl_name_remap
     matches = load_matches_data(league, name_remap)
     elo_params = config.league_rules[league]
+    elo_params['league'] = league
 
     print("Calculating Elos")
     # Initialize Elo Calculator

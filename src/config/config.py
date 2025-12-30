@@ -995,9 +995,9 @@ league_rules = {
     },
     "NBA": {
         "sim_type": "winner",
-        "home_advantage": 50,
+        "home_advantage": 100,
         "elo_kfactor": 20,
-        "season_start_adj": 1/3,
+        "season_start_adj": 1/4,
         "has_knockout": True,
         "classification": {
             "division": ["win_loss_pct"
