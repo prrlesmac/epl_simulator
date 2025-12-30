@@ -92,7 +92,7 @@ def run_elo_calc():
     current_ratings["updated_at"] = datetime.now()
 
     print("Saving to DB")
-    save_elos_to_database(matches_elos, current_ratings, os.getenv("LEAGUES_TO_SIM"))
+    save_elos_to_database(matches_elos, current_ratings, league)
 
 
 if __name__ == "__main__":
