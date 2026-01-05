@@ -73,14 +73,24 @@ def run_elo_calc():
 
     print("Loading historical matches")
     league = os.getenv("LEAGUES_TO_SIM")
-    name_remap = config.nfl_name_remap
+    if league == "NFL":
+        name_remap = config.nfl_name_remap
+        expansion_elos = config.nfl_expansion_elos
+    elif league == "NBA":
+        name_remap = config.nba_name_remap
+        expansion_elos = config.nba_expansion_elos
+    elif league == "MLB":
+        name_remap = {}
+        expansion_elos = {}
+    else:
+        raise(ValueError, "Invalid league")
     matches = load_matches_data(league, name_remap)
     elo_params = config.league_rules[league]
     elo_params['league'] = league
 
     print("Calculating Elos")
     # Initialize Elo Calculator
-    elo_calculator = EloCalculator(matches=matches, elo_params=elo_params, expansion_elos=config.nfl_expansion_elos)
+    elo_calculator = EloCalculator(matches=matches, elo_params=elo_params, expansion_elos=expansion_elos)
 
     # Calculate elos match by match
     elo_calculator.update_matches_elos()
