@@ -10,7 +10,8 @@ def sample_elo_params():
     return {
         'elo_kfactor': 20,
         'season_start_adj': 0.25,
-        'home_advantage': 0
+        'home_advantage': 0,
+        'league': 'NFL'
     }
 
 
