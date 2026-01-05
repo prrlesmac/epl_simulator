@@ -344,6 +344,134 @@ nfl_expansion_elos = {
 
 }
 
+# NBA franchise name remaps
+nba_name_remap = {
+    # Atlanta Hawks
+    "Tri-Cities Blackhawks": "Atlanta Hawks",
+    "Milwaukee Hawks": "Atlanta Hawks",
+    "St. Louis Hawks": "Atlanta Hawks",
+    "Atlanta Hawks": "Atlanta Hawks",
+
+    # Boston Celtics
+    "Boston Celtics": "Boston Celtics",
+
+    # Brooklyn Nets
+    "New Jersey Americans": "Brooklyn Nets",
+    "New York Nets": "Brooklyn Nets",
+    "New Jersey Nets": "Brooklyn Nets",
+    "Brooklyn Nets": "Brooklyn Nets",
+
+    # Charlotte Hornets
+    "Charlotte Bobcats": "Charlotte Hornets",
+    "Charlotte Hornets": "Charlotte Hornets",
+
+    # Chicago Bulls
+    "Chicago Bulls": "Chicago Bulls",
+
+    # Cleveland Cavaliers
+    "Cleveland Cavaliers": "Cleveland Cavaliers",
+
+    # Dallas Mavericks
+    "Dallas Mavericks": "Dallas Mavericks",
+
+    # Denver Nuggets
+    "Denver Rockets": "Denver Nuggets",
+    "Denver Nuggets": "Denver Nuggets",
+
+    # Detroit Pistons
+    "Fort Wayne Pistons": "Detroit Pistons",
+    "Detroit Pistons": "Detroit Pistons",
+
+    # Golden State Warriors
+    "Philadelphia Warriors": "Golden State Warriors",
+    "San Francisco Warriors": "Golden State Warriors",
+    "Golden State Warriors": "Golden State Warriors",
+
+    # Houston Rockets
+    "San Diego Rockets": "Houston Rockets",
+    "Houston Rockets": "Houston Rockets",
+
+    # Indiana Pacers
+    "Indiana Pacers": "Indiana Pacers",
+
+    # Los Angeles Clippers
+    "Buffalo Braves": "Los Angeles Clippers",
+    "San Diego Clippers": "Los Angeles Clippers",
+    "Los Angeles Clippers": "Los Angeles Clippers",
+
+    # Los Angeles Lakers
+    "Minneapolis Lakers": "Los Angeles Lakers",
+    "Los Angeles Lakers": "Los Angeles Lakers",
+
+    # Memphis Grizzlies
+    "Vancouver Grizzlies": "Memphis Grizzlies",
+    "Memphis Grizzlies": "Memphis Grizzlies",
+
+    # Miami Heat
+    "Miami Heat": "Miami Heat",
+
+    # Milwaukee Bucks
+    "Milwaukee Bucks": "Milwaukee Bucks",
+
+    # Minnesota Timberwolves
+    "Minnesota Timberwolves": "Minnesota Timberwolves",
+
+    # New Orleans Pelicans
+    #"Charlotte Hornets (1988–2002)": "New Orleans Pelicans",
+    "New Orleans Hornets": "New Orleans Pelicans",
+    "New Orleans/Oklahoma City Hornets": "New Orleans Pelicans",
+    "New Orleans Pelicans": "New Orleans Pelicans",
+
+    # New York Knicks
+    "New York Knicks": "New York Knicks",
+
+    # Oklahoma City Thunder
+    "Seattle SuperSonics": "Oklahoma City Thunder",
+    "Oklahoma City Thunder": "Oklahoma City Thunder",
+
+    # Orlando Magic
+    "Orlando Magic": "Orlando Magic",
+
+    # Philadelphia 76ers
+    "Syracuse Nationals": "Philadelphia 76ers",
+    "Philadelphia 76ers": "Philadelphia 76ers",
+
+    # Phoenix Suns
+    "Phoenix Suns": "Phoenix Suns",
+
+    # Portland Trail Blazers
+    "Portland Trail Blazers": "Portland Trail Blazers",
+
+    # Sacramento Kings
+    "Rochester Royals": "Sacramento Kings",
+    "Cincinnati Royals": "Sacramento Kings",
+    "Kansas City Royals": "Sacramento Kings",
+    "Kansas City-Omaha Kings": "Sacramento Kings",
+    "Sacramento Kings": "Sacramento Kings",
+
+    # San Antonio Spurs
+    "Dallas Chaparrals": "San Antonio Spurs",
+    "Texas Chaparrals": "San Antonio Spurs",
+    "San Antonio Spurs": "San Antonio Spurs",
+
+    # Toronto Raptors
+    "Toronto Raptors": "Toronto Raptors",
+
+    # Utah Jazz
+    "New Orleans Jazz": "Utah Jazz",
+    "Utah Jazz": "Utah Jazz",
+
+    # Washington Wizards
+    "Chicago Packers": "Washington Wizards",
+    "Chicago Zephyrs": "Washington Wizards",
+   # "Baltimore Bullets (1963–1973)": "Washington Wizards",
+    "Capital Bullets": "Washington Wizards",
+    "Washington Bullets": "Washington Wizards",
+    "Washington Wizards": "Washington Wizards",
+}
+
+nba_expansion_elos = {}
+
 # Database
 # league type to db table mapping
 db_table_mapping = {
@@ -645,15 +773,13 @@ fixtures_config = {
     },
     "NBA": {
         "fixtures_url": [
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-october.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-november.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-december.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-january.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-february.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-march.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-april.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-may.html",
-            "https://www.basketball-reference.com/leagues/NBA_2025_games-june.html",            
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-october.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-november.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-december.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-january.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-february.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-march.html",
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-april.html",          
             ],
         "table_id": ["schedule"],
     },
@@ -664,12 +790,51 @@ fixtures_config = {
 }
 
 fixtures_history_config = {
-        "NFL": {
+    "NFL": {
         "fixtures_url": [
             f"https://www.pro-football-reference.com/years/{year}/games.htm"
             for year in range(1970, 2025)
         ],
         "table_id": ["games"],
+    },
+    "NBA": {
+        "fixtures_url": 
+        [
+            f"https://www.basketball-reference.com/leagues/NBA_{year}_games-{month}.html"
+            for year in range(2007, 2012)
+            for month in ["october", "november", "december", "january", "february", "march", "april", "may", "june"]
+        ]
+        +
+        [
+            f"https://www.basketball-reference.com/leagues/NBA_{year}_games-{month}.html"
+            for year in range(2012, 2013)
+            for month in ["december", "january", "february", "march", "april", "may", "june"]
+        ]
+        +
+        [
+            f"https://www.basketball-reference.com/leagues/NBA_{year}_games-{month}.html"
+            for year in range(2013, 2020)
+            for month in ["october", "november", "december", "january", "february", "march", "april", "may", "june"]
+        ]
+        +
+        [
+            f"https://www.basketball-reference.com/leagues/NBA_{year}_games-{month}.html"
+            for year in range(2020,2021)
+            for month in ["october-2019", "november", "december", "january", "february", "march", "july", "august", "september", "october-2020"]
+        ]
+        +
+        [
+            f"https://www.basketball-reference.com/leagues/NBA_{year}_games-{month}.html"
+            for year in range(2021,2022)
+            for month in ["december", "january", "february", "march", "april", "may", "june", "july"]
+        ]
+        +
+        [
+            f"https://www.basketball-reference.com/leagues/NBA_{year}_games-{month}.html"
+            for year in range(2022, 2026)
+            for month in ["october", "november", "december", "january", "february", "march", "april", "may", "june"]
+        ],
+        "table_id": ["schedule"],
     },
 }
 
@@ -989,9 +1154,9 @@ league_rules = {
     },
     "NBA": {
         "sim_type": "winner",
-        "home_advantage": 50,
+        "home_advantage": 100,
         "elo_kfactor": 20,
-        "season_start_adj": 1/3,
+        "season_start_adj": 1/4,
         "has_knockout": True,
         "classification": {
             "division": ["win_loss_pct"
@@ -1018,13 +1183,13 @@ league_rules = {
         },
         "knockout_bracket": [
             ("Eastern 1", "Eastern 8"),
+            ("Eastern 4", "Eastern 5"),
             ("Eastern 2", "Eastern 7"),
             ("Eastern 3", "Eastern 6"),
-            ("Eastern 4", "Eastern 5"),
             ("Western 1", "Western 8"),
+            ("Western 4", "Western 5"),
             ("Western 2", "Western 7"),
             ("Western 3", "Western 6"),
-            ("Western 4", "Western 5"),
         ],
         "knockout_format": {
             "po_r16": "best_of_7",

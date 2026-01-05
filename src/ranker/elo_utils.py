@@ -11,6 +11,7 @@ class EloCalculator:
         self.season_start_adj = elo_params['season_start_adj']
         self.home_adv = elo_params['home_advantage']
         self.expansion_elos = expansion_elos
+        self.league = elo_params['league']
 
     def get_rating(self, team):
         # Return current rating or initial rating if team not rated yet
@@ -39,6 +40,17 @@ class EloCalculator:
                 mov_mult = math.log(winner_point_diff + 1) * (2.2 / (winner_elo_diff * 0.001 + 2.2)) 
             return mov_mult
         
+        def nba_mov_multiplier(winner_point_diff, winner_elo_diff):
+            """
+            Calculate the Margin of Victory (MOV) multiplier used in Elo ratings.
+            
+            Formula:
+                MOV = (winner point differential + 3)^0.8 / (7.5 + 0.006 * winner Elo difference)
+            """
+            mov_mult = ((winner_point_diff + 3) ** 0.8) / (7.5 + 0.006 * winner_elo_diff)
+
+            return mov_mult
+        
         # Calculate expected scores
         expected_a = 1 / (1 + 10 ** ((rating_b - rating_a) / 400))
         expected_b = 1 - expected_a
@@ -58,7 +70,12 @@ class EloCalculator:
 
         # Update ratings
         winner_point_diff = abs(goals_a - goals_b)
-        mov_multiplier = nfl_mov_multiplier(winner_point_diff, winner_elo_diff)
+        if self.league == "NFL":
+            mov_multiplier = nfl_mov_multiplier(winner_point_diff, winner_elo_diff)
+        elif self.league == "NBA":
+            mov_multiplier = nba_mov_multiplier(winner_point_diff, winner_elo_diff)
+        else:
+            raise(ValueError, "Invalid league for Elo calc")
         new_rating_a = rating_a + self.k * mov_multiplier * (actual_a - expected_a)
         new_rating_b = rating_b + self.k * mov_multiplier * (actual_b - expected_b)
 
