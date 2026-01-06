@@ -9,6 +9,7 @@ from db import db_connect
 from datetime import datetime
 import time
 import os
+from sqlalchemy import text
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -713,10 +714,12 @@ def main_fixtures():
         fixtures_all = post_process_nba_table(fixtures_all)
     table_name = f"{config.db_table_definitions['fixtures_table']['name']}_{league_name.lower()}{'_history' if config.pull_fixture_history else ''}"
     engine = db_connect.get_postgres_engine()
+    with engine.begin() as conn:
+        conn.execute(text(f"TRUNCATE TABLE {table_name}"))
     fixtures_all.to_sql(
         table_name,
         engine,
-        if_exists="replace",
+        if_exists="append",
         index=False,
         dtype=config.db_table_definitions["fixtures_table"]["dtype"],
     )
