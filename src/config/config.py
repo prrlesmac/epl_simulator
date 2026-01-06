@@ -839,7 +839,7 @@ fixtures_history_config = {
 }
 
 ## Simulation
-number_of_simulations = 10000
+number_of_simulations = 100
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
 played_cutoff_date = None
 schedule_cutoff_date = None
@@ -1112,6 +1112,7 @@ league_rules = {
             "division": ["win_loss_pct",
                          "h2h_win_loss_pct",
                          "win_loss_pct_div",
+                         "h2h_win_loss_pct_common_games",
                          "win_loss_pct_conf",
                          "strength_of_victory",
                          "strength_of_schedule"
@@ -1149,7 +1150,16 @@ league_rules = {
             "po_r2": "single_game_neutral",
         },
         "knockout_draw_status": "no_draw",
-        "knockout_draw": None,
+        "knockout_draw": [
+            ("Seattle Seahawks", "Bye"),
+            ("Chicago Bears", "Green Bay Packers"),
+            ("Philadelphia Eagles", "San Francisco 49ers"),
+            ("Carolina Panthers", "Los Angeles Rams"),
+            ("Denver Broncos", "Bye"),
+            ("New England Patriots", "Los Angeles Chargers"),
+            ("Jacksonville Jaguars", "Buffalo Bills"),
+            ("Pittsburgh Steelers", "Houston Texans"),
+        ],
         "knockout_reseeding": True
     },
     "NBA": {
