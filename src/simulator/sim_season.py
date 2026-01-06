@@ -80,6 +80,7 @@ def split_and_merge_schedule(schedule, elos, divisions=None):
 def single_simulation(
     schedule_played,
     schedule_pending,
+    current_standings_df,
     elos,
     divisions,
     league_rules,
@@ -90,6 +91,7 @@ def single_simulation(
     Args:
         schedule_played (pd.DataFrame): DataFrame containing matches already played.
         schedule_pending (pd.DataFrame): DataFrame containing matches yet to be played.
+        current_standings_df (pd.DataFrame): DataFrame containing standings if all league games played, else None
         elos (pd.DataFrame): DataFrame containing elo ratings for each team
         divisions (pd.DataFrame): DataFrame containing the divisions for each team in the league.
         league_rules (Dict): dictionary containing the following keys
@@ -129,8 +131,10 @@ def single_simulation(
     schedule_final = pd.concat(
         [league_schedule_played, simulated_pending], ignore_index=True
     )
-    standings_df = get_standings(schedule_final, league_rules["classification"], league_rules["league_type"], divisions)
-
+    if current_standings_df is None:
+        standings_df = get_standings(schedule_final, league_rules["classification"], league_rules["league_type"], divisions)   
+    else:
+        standings_df = current_standings_df.copy()
     if league_rules["has_knockout"]:
         knockout_schedule_played = schedule_played[
             schedule_played["round"] != "League"
@@ -224,18 +228,26 @@ def run_simulation_parallel(
     """
     print(f"Running {num_simulations} simulations using multiprocessing...")
 
+    if len(schedule_pending[schedule_pending["round"]=="League"]) == 0:
+        league_schedule = schedule_played.copy()
+        league_schedule = league_schedule[league_schedule["round"]=="League"]
+        current_standings_df = get_standings(league_schedule, league_rules["classification"], league_rules["league_type"], divisions)
+    else:
+        current_standings_df = None
+
     with Pool(processes=cpu_count()) as pool:
         args = [
             (
                 schedule_played,
                 schedule_pending,
+                current_standings_df,
                 elos,
                 divisions,
                 league_rules
             )
         ] * num_simulations
         standings_list = pool.starmap(single_simulation, args)
-    #standings_list = [single_simulation(schedule_played, schedule_pending, elos, divisions, league_rules)]
+    #standings_list = [single_simulation(schedule_played, schedule_pending, current_standings_df, elos, divisions, league_rules)]
     # Aggregate position frequencies
     standings_all = pd.concat(standings_list)
     if league_rules["has_knockout"]:

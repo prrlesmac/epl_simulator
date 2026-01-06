@@ -1134,6 +1134,7 @@ class TestSingleSimulation:
         result = single_simulation(
             schedule_played,
             schedule_pending,
+            None,
             csv_elos_data_domestic_case_1,
             divisions=None,
             league_rules=domestic_league_rules,
@@ -1165,6 +1166,7 @@ class TestSingleSimulation:
         result = single_simulation(
             schedule_played,
             schedule_pending,
+            None,
             csv_elos_data_continental,
             divisions=None,
             league_rules=continental_league_rules_group_stage,
@@ -1199,6 +1201,7 @@ class TestSingleSimulation:
         result = single_simulation(
             schedule_played,
             schedule_pending,
+            None,
             csv_elos_data_continental,
             divisions=None,
             league_rules=continental_league_rules_knockout_stage_first_draw,
