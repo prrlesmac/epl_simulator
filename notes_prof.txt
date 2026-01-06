@@ -1,0 +1,3 @@
+pip install line_profiler
+add #@profile decorator to function
+in cmd : kernprof -l -v src/simulator/sim_season.py > output.txt

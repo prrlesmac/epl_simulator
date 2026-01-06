@@ -76,7 +76,7 @@ def split_and_merge_schedule(schedule, elos, divisions=None):
 
     return schedule_played, schedule_pending
 
-
+#@profile
 def single_simulation(
     schedule_played,
     schedule_pending,
@@ -384,7 +384,7 @@ def validate_league_configuration(schedule, league_rules):
             "Please remove the bracket draw."
         )
 
-
+#@profile
 def simulate_league(league_rules, schedule, elos, divisions, num_simulations=1000):
     """
     Simulate a single league and return the results.
@@ -480,6 +480,7 @@ def save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko, league_typ
             dtype=output_table_def,
         )
 
+#@profile
 def run_all_simulations():
     """
     Main function to run simulations for all configured leagues.

@@ -876,7 +876,7 @@ def get_standings_metrics_footy(matches_df):
 
     return standings
 
-
+#@profile
 def get_standings_metrics_us(matches_df):
     """
     Calculate team standings metrics for a U.S.-style sports league.
@@ -1114,7 +1114,7 @@ def get_win_loss_pct_last_half(matches_df):
 
     return standings
 
-
+#@profile
 def get_win_loss_pct_playoff_teams(matches_df, win_loss_league, playoff_eligible_rank=6):
     """
     Compute each team's win-loss percentage against playoff-eligible teams
@@ -1159,11 +1159,26 @@ def get_win_loss_pct_playoff_teams(matches_df, win_loss_league, playoff_eligible
       receive a value of 0 for `win_loss_pct_playoff_teams_other_conf`.
     - Ranking within conference uses `method="min"` so ties share the same rank.
     """
-    divisions_home = matches_df[['home','home_conference']].drop_duplicates()
-    divisions_home = divisions_home.rename(columns={'home': 'team', 'home_conference': 'conference'})
-    divisions_away = matches_df[['away','away_conference']].drop_duplicates()
-    divisions_away = divisions_away.rename(columns={'away': 'team', 'away_conference': 'conference'})
-    divisions = pd.concat([divisions_home, divisions_away]).drop_duplicates()
+    matches_df_home = matches_df.copy()
+    matches_df_home["team"] = matches_df_home["home"]
+    matches_df_home["conference"] = matches_df_home["home_conference"]
+    matches_df_home["opp_conference"] = matches_df_home["away_conference"]
+    matches_df_home["win"] = np.where(
+            (matches_df_home["home_goals"] > matches_df_home["away_goals"]),
+            1,
+            0
+        )
+    matches_df_away= matches_df.copy()
+    matches_df_away["team"] = matches_df_away["away"]
+    matches_df_away["conference"] = matches_df_away["away_conference"]
+    matches_df_away["opp_conference"] = matches_df_away["home_conference"]
+    matches_df_away["win"] = np.where(
+            (matches_df_away["away_goals"] > matches_df_away["home_goals"]),
+            1,
+            0
+        )
+    matches_df_full = pd.concat([matches_df_home, matches_df_away])
+    divisions = matches_df_full[['team','conference']].drop_duplicates()
     win_loss_league_w_div = win_loss_league.merge(
         divisions,
         how="left",
@@ -1174,82 +1189,43 @@ def get_win_loss_pct_playoff_teams(matches_df, win_loss_league, playoff_eligible
       .rank(method="min", ascending=False)
       .astype(int)
     )
-    playoff_teams_df = win_loss_league_w_div[win_loss_league_w_div["conf_rank"] <= playoff_eligible_rank][["team","conference"]]
+    playoff_teams_df = win_loss_league_w_div.loc[win_loss_league_w_div["conf_rank"] <= playoff_eligible_rank,["team","conference"]]
+    playoff_teams_df["is_playoff_team"] = True
 
-    list_of_teams = set(matches_df["home"].tolist() + matches_df["away"].tolist())
-    standings = []
-    for sel_team in list_of_teams:
+    matches_df_full = (
+        matches_df_full
+        .merge(playoff_teams_df[["team","is_playoff_team"]], how="left", on="team")
+    )
+    matches_df_full["is_playoff_team"] = matches_df_full["is_playoff_team"].fillna(False)
+    matches_df_full["same_conference"] = (matches_df_full["conference"] == matches_df_full["opp_conference"])
 
-        same_conf = win_loss_league_w_div.loc[win_loss_league_w_div["team"] == sel_team, "conference"].unique()[0]
-        list_of_playoff_teams_same_conf = playoff_teams_df.loc[playoff_teams_df["conference"]==same_conf,'team'].tolist()
-        list_of_playoff_teams_other_conf = playoff_teams_df.loc[playoff_teams_df["conference"]!=same_conf,'team'].tolist()
-        matches_vs_po_teams = matches_df.copy()
-        matches_vs_po_teams = matches_vs_po_teams[(
-            (matches_vs_po_teams["home"] == sel_team)
-            | (matches_vs_po_teams["away"] == sel_team)
-        )]
-        matches_vs_po_teams_same_conf = matches_vs_po_teams[(
-            (matches_vs_po_teams["home"].isin(list_of_playoff_teams_same_conf))
-            | (matches_vs_po_teams["away"].isin(list_of_playoff_teams_same_conf))
-        )].copy()    
-        matches_vs_po_teams_other_conf = matches_vs_po_teams[(
-            (matches_vs_po_teams["home"].isin(list_of_playoff_teams_other_conf))
-            | (matches_vs_po_teams["away"].isin(list_of_playoff_teams_other_conf))
-        )].copy()
-        matches_vs_po_teams_same_conf["home_wins"] = np.where(
-            (matches_vs_po_teams_same_conf["home_goals"] > matches_vs_po_teams_same_conf["away_goals"])
-            & (matches_vs_po_teams_same_conf["home"]==sel_team),
-            1,
-            0
-        )
-        matches_vs_po_teams_same_conf["away_wins"] = np.where(
-            (matches_vs_po_teams_same_conf["away_goals"] > matches_vs_po_teams_same_conf["home_goals"])
-            & (matches_vs_po_teams_same_conf["away"]==sel_team),
-            1,
-            0
-        )
-        matches_vs_po_teams_same_conf["away_wins"] = np.where(
-            matches_vs_po_teams_same_conf["away_goals"] > matches_vs_po_teams_same_conf["home_goals"],
-            1,
-            0
-        )
-        home_wins = matches_vs_po_teams_same_conf[matches_vs_po_teams_same_conf['home']==sel_team]["home_wins"].sum()
-        away_wins = matches_vs_po_teams_same_conf[matches_vs_po_teams_same_conf['away']==sel_team]["away_wins"].sum()
-        played = len(matches_vs_po_teams_same_conf)
-        win_loss_pct_same_conf = round((home_wins + away_wins) / played, 3)
-        # other conf
-        matches_vs_po_teams_other_conf["home_wins"] = np.where(
-            (matches_vs_po_teams_other_conf["home_goals"] > matches_vs_po_teams_other_conf["away_goals"])
-            & (matches_vs_po_teams_other_conf["home"]==sel_team),
-            1,
-            0
-        )
-        matches_vs_po_teams_other_conf["away_wins"] = np.where(
-            (matches_vs_po_teams_other_conf["away_goals"] > matches_vs_po_teams_other_conf["home_goals"])
-            & (matches_vs_po_teams_other_conf["away"]==sel_team),
-            1,
-            0
-        )
-        matches_vs_po_teams_other_conf["away_wins"] = np.where(
-            matches_vs_po_teams_other_conf["away_goals"] > matches_vs_po_teams_other_conf["home_goals"],
-            1,
-            0
-        )
-        home_wins = matches_vs_po_teams_other_conf[matches_vs_po_teams_other_conf['home']==sel_team]["home_wins"].sum()
-        away_wins = matches_vs_po_teams_other_conf[matches_vs_po_teams_other_conf['away']==sel_team]["away_wins"].sum()
-        played = len(matches_vs_po_teams_other_conf)
-        if played > 0:
-            win_loss_pct_other_conf = round((home_wins + away_wins) / played, 3)
-        else:
-            win_loss_pct_other_conf = 0
-        standings.append({"team": sel_team,
-                          "win_loss_pct_playoff_teams_same_conf": win_loss_pct_same_conf,
-                          "win_loss_pct_playoff_teams_other_conf": win_loss_pct_other_conf})
-    standings = pd.DataFrame(standings)
+    win_loss_pct_po_teams_same_conf = (
+        matches_df_full.loc[
+            (matches_df_full['same_conference']==True)
+            & (matches_df_full['is_playoff_team']==True)]
+        .groupby("team", sort=False, as_index=False)["win"]
+        .mean()
+        .rename(columns={"win": "win_loss_pct_playoff_teams_same_conf"})
+    )
+    win_loss_pct_po_teams_other_conf = (
+        matches_df_full.loc[
+            (matches_df_full['same_conference']==False)
+            & (matches_df_full['is_playoff_team']==True)]
+        .groupby("team", sort=False, as_index=False)["win"]
+        .mean()
+        .rename(columns={"win": "win_loss_pct_playoff_teams_other_conf"})
+    )
+
+    standings = pd.merge(
+        win_loss_pct_po_teams_same_conf,
+        win_loss_pct_po_teams_other_conf,
+        how='outer',
+        on='team'
+    )
 
     return standings
 
-
+#@profile
 def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
     """
     Generate team standings and apply classification rules for league and subgroup rankings.
@@ -1344,7 +1320,7 @@ def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
 
     return standings
 
-
+#@profile
 def apply_classification_rules(matches_df, classif_rules, standings):
     """
     Apply classification and tie-breaking rules to rank teams in a standings table.
