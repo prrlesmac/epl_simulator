@@ -839,7 +839,7 @@ fixtures_history_config = {
 }
 
 ## Simulation
-number_of_simulations = 100
+number_of_simulations = 10000
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
 played_cutoff_date = None
 schedule_cutoff_date = None

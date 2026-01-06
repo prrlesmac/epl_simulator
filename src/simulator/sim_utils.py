@@ -1222,6 +1222,7 @@ def get_win_loss_pct_playoff_teams(matches_df, win_loss_league, playoff_eligible
         how='outer',
         on='team'
     )
+    standings[["win_loss_pct_playoff_teams_same_conf","win_loss_pct_playoff_teams_other_conf"]] = standings[["win_loss_pct_playoff_teams_same_conf","win_loss_pct_playoff_teams_other_conf"]].fillna(0).round(3)
 
     return standings
 
