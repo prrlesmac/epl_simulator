@@ -552,7 +552,7 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
     ]
     # TODO move away from using standings metrics and instead just call a win loss h2h function
     if rule=="h2h_win_loss_pct":
-        standings_tied = get_standings_metrics_us(tied_matches_df)
+        standings_tied = get_win_loss_pct(tied_matches_df)
     else:
         standings_tied = get_standings_metrics_footy(tied_matches_df)
     # add h2h prefix to metrics
@@ -668,7 +668,7 @@ def apply_common_games_tiebreaker(matches_df, tied_teams):
             | (matches_df["home"].isin(common_opponents) & matches_df["away"].isin(tied_teams))
         ]
 
-        standings_tied = get_standings_metrics_us(common_matches_df)
+        standings_tied = get_win_loss_pct(common_matches_df)
         standings_tied = standings_tied.rename(columns={"win_loss_pct": "h2h_win_loss_pct_common_games"})
         standings_tied = standings_tied[["team", "h2h_win_loss_pct_common_games"]]
         standings_tied = standings_tied[standings_tied["team"].isin(tied_teams)]
@@ -877,7 +877,7 @@ def get_standings_metrics_footy(matches_df):
     return standings
 
 #@profile
-def get_standings_metrics_us(matches_df):
+def get_standings_metrics_us(matches_df, metrics):
     """
     Calculate team standings metrics for a U.S.-style sports league.
 
@@ -893,6 +893,7 @@ def get_standings_metrics_us(matches_df):
             - "home_goals", "away_goals": scores for each match
             - "home_conference", "away_conference": conference identifiers
             - "home_division", "away_division": division identifiers
+        metrics (list): List of metrics to compute
 
     Returns:
         pd.DataFrame: A DataFrame of team standings with the following columns:
@@ -914,44 +915,61 @@ def get_standings_metrics_us(matches_df):
         - The "strength_of_victory" and "strength_of_schedule" metrics depend on 
           interpreting opponents' aggregated win-loss records.
     """
-    win_loss_league = get_win_loss_pct(matches_df)
-    win_loss_playoff_teams = get_win_loss_pct_playoff_teams(matches_df, win_loss_league)
-    strength_of_victory = get_opponents_strength(matches_df, win_loss_league, strength_of="schedule")
-    strength_of_schedule = get_opponents_strength(matches_df, win_loss_league, strength_of="victory")
+    standings = get_win_loss_pct(matches_df)
 
-    standings = (
-        win_loss_league
-        .merge(strength_of_victory, how="left", on="team")
-        .merge(strength_of_schedule, how="left", on="team")
-        .merge(win_loss_playoff_teams, how="left", on="team")
-    )
-
-    matches_df_conf = matches_df[matches_df["home_conference"]==matches_df["away_conference"]].copy()
-    matches_df_div = matches_df[matches_df["home_division"]==matches_df["away_division"]].copy()
-
-    if len(matches_df_conf) > 0:
-        win_loss_conf = get_win_loss_pct(matches_df_conf)
-        win_loss_last_half_conf = get_win_loss_pct_last_half(matches_df_conf)
-        win_loss_conf = (
-            win_loss_conf[["team","win_loss_pct"]]
-            .rename(columns= {"win_loss_pct": "win_loss_pct_conf"})
-        )
+    if "strength_of_victory" in metrics:
+        strength_of_victory = get_opponents_strength(matches_df, standings, strength_of="schedule")
         standings = (
             standings
-            .merge(win_loss_conf, how="left", on="team")
-            .merge(win_loss_last_half_conf, how="left", on="team")
+            .merge(strength_of_victory, how="left", on="team")
         )
-
-    if len(matches_df_div) > 0:
-        win_loss_div = get_win_loss_pct(matches_df_div)
-        win_loss_div = (
-            win_loss_div[["team","win_loss_pct"]]
-            .rename(columns= {"win_loss_pct": "win_loss_pct_div"})
-        )
+    if "strength_of_schedule" in metrics:
+        strength_of_schedule = get_opponents_strength(matches_df, standings, strength_of="victory")
         standings = (
             standings
-            .merge(win_loss_div, how="left", on="team")
+            .merge(strength_of_schedule, how="left", on="team")
         )
+        
+    if "win_loss_pct_playoff_teams_same_conf" in metrics or "win_loss_pct_playoff_teams_other_conf" in metrics:
+        win_loss_playoff_teams = get_win_loss_pct_playoff_teams(matches_df, standings)
+        standings = (
+            standings
+            .merge(win_loss_playoff_teams, how="left", on="team")
+        )
+
+    if "win_loss_pct_conf" in metrics or "win_loss_pct_conf_last_half" in metrics:
+        matches_df_conf = matches_df[matches_df["home_conference"]==matches_df["away_conference"]].copy()
+
+        if len(matches_df_conf) > 0:
+            if "win_loss_pct_conf" in metrics:
+                win_loss_conf = get_win_loss_pct(matches_df_conf)
+                win_loss_conf = (
+                    win_loss_conf[["team","win_loss_pct"]]
+                    .rename(columns= {"win_loss_pct": "win_loss_pct_conf"})
+                )
+                standings = (
+                    standings
+                    .merge(win_loss_conf, how="left", on="team")
+                )
+            if "win_loss_pct_conf_last_half" in metrics:
+                win_loss_last_half_conf = get_win_loss_pct_last_half(matches_df_conf)
+                standings = (
+                    standings
+                    .merge(win_loss_last_half_conf, how="left", on="team")
+                )
+
+    if "win_loss_pct_div" in metrics or "win_loss_pct_div_if_same_div" in metrics:
+        matches_df_div = matches_df[matches_df["home_division"]==matches_df["away_division"]].copy()
+        if len(matches_df_div) > 0:
+            win_loss_div = get_win_loss_pct(matches_df_div)
+            win_loss_div = (
+                win_loss_div[["team","win_loss_pct"]]
+                .rename(columns= {"win_loss_pct": "win_loss_pct_div"})
+            )
+            standings = (
+                standings
+                .merge(win_loss_div, how="left", on="team")
+            )
         
     return standings
 
@@ -1065,7 +1083,7 @@ def get_win_loss_pct_last_half(matches_df):
     Returns:
         pd.DataFrame: A DataFrame with one row per team and columns:
             - "team": Team identifier
-            - "win_loss_pct_conference_last_half": Win-loss percentage 
+            - "win_loss_pct_conf_last_half": Win-loss percentage 
               for the second half of the season (0–1, rounded to 3 decimals)
 
     Notes:
@@ -1108,7 +1126,7 @@ def get_win_loss_pct_last_half(matches_df):
         away_wins = matches_last_half[matches_last_half['away']==sel_team]["away_wins"].sum()
         played = len(matches_last_half)
         win_loss_pct = round((home_wins + away_wins) / played, 3)
-        standings.append({"team": sel_team, "win_loss_pct_conference_last_half": win_loss_pct})
+        standings.append({"team": sel_team, "win_loss_pct_conf_last_half": win_loss_pct})
 
     standings = pd.DataFrame(standings)
 
@@ -1288,10 +1306,15 @@ def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
                within each subgroup.
         - Head-to-head rules ("h2h_*") are applied only among tied teams.
     """
+    all_metrics = [
+        metric
+        for metrics in classif_rules.values()
+        for metric in metrics
+    ]
     if league_type == "UEFA":
         standings = get_standings_metrics_footy(matches_df)
     elif league_type in ["NBA","MLB","NFL"]:
-        standings = get_standings_metrics_us(matches_df)
+        standings = get_standings_metrics_us(matches_df, metrics = all_metrics)
     else:
         raise(ValueError("Invalid league type for getting standings"))
     for classif, rules in classif_rules.items():

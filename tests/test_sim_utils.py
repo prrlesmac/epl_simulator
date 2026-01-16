@@ -799,7 +799,17 @@ class TestGetStandingsMetrics:
         )
         matches["home_conference"] = "National"
         matches["away_conference"] = "National"
-        result = get_standings_metrics_us(matches)
+        metrics = [
+            "win_loss_pct",
+            "strength_of_schedule",
+            "strength_of_victory",
+            'win_loss_pct_playoff_teams_same_conf',
+            'win_loss_pct_playoff_teams_other_conf',
+            "win_loss_pct_conf",
+            "win_loss_pct_conf_last_half",
+            "win_loss_pct_div",
+        ]
+        result = get_standings_metrics_us(matches, metrics)
 
         expected = pd.DataFrame({
             "team": ["A", "B", "C", "D"],
@@ -812,7 +822,7 @@ class TestGetStandingsMetrics:
             'win_loss_pct_playoff_teams_same_conf': [0.667, 0.167, 0.500, 0.667],
             'win_loss_pct_playoff_teams_other_conf': [0, 0, 0, 0],
             "win_loss_pct_conf": [0.667, 0.167, 0.500, 0.667],
-            "win_loss_pct_conference_last_half": [0.667, 0, 0.667, 0.667],
+            "win_loss_pct_conf_last_half": [0.667, 0, 0.667, 0.667],
             "win_loss_pct_div": [0.5, 0.5, 0.5, 0.5],
         })
 
@@ -1135,7 +1145,7 @@ class TestGetStandings:
     def test_invalid_type(self):
         with pytest.raises(ValueError, match="Invalid league type for getting standings"):
             get_standings(matches_df=None,
-                          classif_rules=None,
+                          classif_rules={"league": ["win_loss_pct"]},
                           league_type='Wrong league',
                           divisions=None)
 
