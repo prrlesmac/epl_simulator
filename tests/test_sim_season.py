@@ -179,6 +179,11 @@ def continental_league_rules_knockout_stage_first_draw():
             "po_r2": "single_game_neutral",
         },
         "knockout_draw_status": "pending_uefa_second_draw",
+        # make sure order is respected
+        # 1-Bye
+        # 16-17
+        # 8-Bye
+        # 9-10 etc...
         "knockout_draw": [
             ("Liverpool", "Bye"),
             ("Paris S-G", "Brest"),
@@ -800,6 +805,40 @@ class TestSimulateLeague:
             "Bayer Leverkusen",
             "Inter Milan",
         ]
+        teams_in_same_path = [
+            [
+                "Liverpool",
+                "Barcelona",
+                "Paris S-G",
+                "Benfica",
+                "Monaco",
+                "Brest"
+            ],
+            [
+                "Arsenal",
+                "Inter",
+                "Milan",
+                "PSV Eindhoven",
+                "Feyenoord",
+                "Juventus"
+            ],
+            [
+                "Atlético Madrid",
+                "Leverkusen",
+                "Real Madrid",
+                "Bayern Munich",
+                "Celtic",
+                "Manchester City"
+            ],
+            [
+                "Lille",
+                "Aston Villa",
+                "Atalanta",
+                "Dortmund",
+                "Sporting CP",
+                "Club Brugge"
+            ],
+        ]
         for rounds in ["po_r32", "po_r16", "po_r8", "po_r4", "po_r2", "po_champion"]:
             assert np.isclose(
                 result.loc[result["team"].isin(eliminated_in_gs)][rounds].all(),
@@ -817,6 +856,13 @@ class TestSimulateLeague:
             1.0,
             atol=1e-3,
         )
+        for teams in teams_in_same_path:
+            print(result.loc[result["team"].isin(teams)]["po_r8"].sum())
+            assert np.isclose(
+                result.loc[result["team"].isin(teams)]["po_r8"].sum(),
+                2.0,
+                atol=1e-3,
+            )
 
     def test_simulate_league_continental_case_5(
         self,
