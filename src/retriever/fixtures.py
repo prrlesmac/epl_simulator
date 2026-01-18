@@ -278,6 +278,7 @@ def get_fixtures_text(url_list):
                         if game_data:
                             games_data.append(game_data)
             df = pd.DataFrame(games_data)
+            df["url"] = url
             df_all.append(df)
             print("Fetching fixtures data...")
         else:
@@ -285,6 +286,7 @@ def get_fixtures_text(url_list):
             return            
 
     df_all = pd.concat(df_all)
+
     return df_all
 
 

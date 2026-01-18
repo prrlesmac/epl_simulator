@@ -75,6 +75,8 @@ class EloCalculator:
             mov_multiplier = nfl_mov_multiplier(winner_point_diff, winner_elo_diff)
         elif self.league == "NBA":
             mov_multiplier = nba_mov_multiplier(winner_point_diff, winner_elo_diff)
+        elif self.league == "MLB":
+            mov_multiplier = 1
         else:
             raise(ValueError, "Invalid league for Elo calc")
         new_rating_a = rating_a + self.k * mov_multiplier * (actual_a - expected_a)
