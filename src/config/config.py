@@ -784,7 +784,7 @@ fixtures_config = {
         "table_id": ["schedule"],
     },
     "MLB": {
-        "fixtures_url": ["https://www.baseball-reference.com/leagues/majors/2024-schedule.shtml"],
+        "fixtures_url": ["https://www.baseball-reference.com/leagues/majors/2025-schedule.shtml"],
         "table_id": ["games"],
     }
 }
@@ -835,6 +835,13 @@ fixtures_history_config = {
             for month in ["october", "november", "december", "january", "february", "march", "april", "may", "june"]
         ],
         "table_id": ["schedule"],
+    },
+    "MLB": {
+        "fixtures_url": [
+            f"https://www.baseball-reference.com/leagues/majors/{year}-schedule.shtml"
+            for year in range(2020, 2025)
+        ],
+        "table_id": ["games"],
     },
 }
 
@@ -1227,5 +1234,54 @@ league_rules = {
         "knockout_draw": None,
         "knockout_reseeding": False,
         "has_play_in": True,
+    },
+    "MLB": {
+        "sim_type": "winner",
+        "home_advantage": 100,
+        "elo_kfactor": 20,
+        "season_start_adj": 1/4,
+        "has_knockout": True,
+        "classification": {
+            "division": ["win_loss_pct"
+                         ],
+            "conference": [
+                         "win_loss_pct"
+                         ],
+            "league": [
+                         "win_loss_pct"
+                         ],
+        },
+        "qualification": {
+            "playoff": [f"American {i}" for i in range(1, 7)] + [f"National {i}" for i in range(1, 7)]
+        },
+        "knockout_bracket": [
+            ("National 1", "Bye"),
+            ("National 4", "National 5"),
+            ("National 2", "Bye"),
+            ("National 3", "National 6"),
+            ("American 1", "Bye"),
+            ("American 4", "American 5"),
+            ("American 2", "Bye"),
+            ("American 3", "American 6"),
+        ],
+        "knockout_format": {
+            "po_r16": "best_of_3",
+            "po_r8": "best_of_5",
+            "po_r4": "best_of_7",
+            "po_r2": "best_of_7",
+        },
+        "knockout_draw_status": "no_draw",
+        "knockout_draw": [
+            ("Milwaukee Brewers", "Bye"),
+            ("Chicago Cubs", "San Diego Padres"),
+            ("Philadelphia Phillies", "Bye"),
+            ("Los Angeles Dodgers", "Cincinnati Reds"),
+            ("Toronto Blue Jays", "Bye"),
+            ("New York Yankees", "Boston Red Sox"),
+            ("Seattle Mariners", "Bye"),
+            ("Cleveland Guardians", "Detroit Tigers"),
+        ],
+        "knockout_reseeding": False,
+        "has_play_in": False,
     },
 }
