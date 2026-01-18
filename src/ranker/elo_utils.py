@@ -25,7 +25,7 @@ class EloCalculator:
             for team, rating in self.ratings.items()
         }
         
-    def calculate_elo(self, rating_a, rating_b, goals_a, goals_b):
+    def calculate_elo(self, rating_a, rating_b, goals_a, goals_b, home_adv):
 
         def nfl_mov_multiplier(winner_point_diff, winner_elo_diff):
             """
@@ -51,17 +51,18 @@ class EloCalculator:
 
             return mov_mult
         
+        rating_a_hf = rating_a + home_adv
         # Calculate expected scores
-        expected_a = 1 / (1 + 10 ** ((rating_b - rating_a) / 400))
+        expected_a = 1 / (1 + 10 ** ((rating_b - rating_a_hf) / 400))
         expected_b = 1 - expected_a
 
         # Actual scores based on result
         if goals_a > goals_b:  # Home wins
             actual_a, actual_b = 1, 0
-            winner_elo_diff = rating_a - rating_b
+            winner_elo_diff = rating_a_hf - rating_b
         elif goals_a < goals_b:  # Away wins
             actual_a, actual_b = 0, 1
-            winner_elo_diff = rating_b - rating_a
+            winner_elo_diff = rating_b - rating_a_hf
         elif goals_a == goals_b:  # Tie
             actual_a, actual_b = 0.5, 0.5
             winner_elo_diff = None
@@ -81,14 +82,21 @@ class EloCalculator:
 
         return new_rating_a, new_rating_b, expected_a, expected_b
 
-    def update_ratings(self, home_team, away_team, goals_a, goals_b):
+    def update_ratings(self, home_team, away_team, goals_a, goals_b, neutral):
         # Get current ratings
         home_rating = self.get_rating(home_team)
         away_rating = self.get_rating(away_team)
 
+        if neutral == "Y":
+            home_adv = 0
+        elif neutral == "N":
+            home_adv = self.home_adv
+        else:
+            raise(ValueError, "Invalid value for neutral column in matches df")
+
         # Calculate new ratings and win expectancies
         new_home_rating, new_away_rating, expected_home, expected_away = (
-            self.calculate_elo(home_rating, away_rating, goals_a, goals_b)
+            self.calculate_elo(home_rating, away_rating, goals_a, goals_b, home_adv)
         )
 
         # Update ratings
@@ -122,6 +130,12 @@ class EloCalculator:
 
         # Process matches and update the DataFrame
         for index, match in self.matches.iterrows():
+            prev_match_season = self.matches.at[max(0,index-1), "season"]
+            new_match_season = self.matches.at[index, "season"]
+
+            if prev_match_season != new_match_season:
+                self.adjust_season_start_elo()
+
             (
                 home_elo_before,
                 away_elo_before,
@@ -129,7 +143,7 @@ class EloCalculator:
                 away_elo_after,
                 home_expectancy,
                 away_expectancy,
-            ) = self.update_ratings(match["home_current"], match["away_current"], match["home_goals"], match["away_goals"])
+            ) = self.update_ratings(match["home_current"], match["away_current"], match["home_goals"], match["away_goals"], match["neutral"])
             # Populate the DataFrame
             self.matches.at[index, "home_elo_before"] = home_elo_before
             self.matches.at[index, "away_elo_before"] = away_elo_before
@@ -138,8 +152,3 @@ class EloCalculator:
             self.matches.at[index, "home_win_expectancy"] = home_expectancy
             self.matches.at[index, "away_win_expectancy"] = away_expectancy
 
-            prev_match_season = self.matches.at[max(0,index-1), "season"]
-            new_match_season = self.matches.at[index, "season"]
-
-            if prev_match_season != new_match_season:
-                self.adjust_season_start_elo()

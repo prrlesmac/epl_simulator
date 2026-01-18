@@ -1,5 +1,4 @@
 from ranker.elo_utils import EloCalculator
-import numpy as np
 from db import db_connect
 import pandas as pd
 from datetime import datetime

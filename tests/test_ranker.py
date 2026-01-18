@@ -1,6 +1,5 @@
 import pytest
 import pandas as pd
-import math
 from ranker.elo_utils import EloCalculator
 
 
@@ -14,6 +13,15 @@ def sample_elo_params():
         'league': 'NFL'
     }
 
+@pytest.fixture
+def sample_elo_params_nba():
+    """Standard Elo parameters for testing."""
+    return {
+        "elo_kfactor": 20,
+        "season_start_adj": 0.25,
+        "home_advantage": 100,
+        'league': 'NBA'
+    }
 
 @pytest.fixture
 def sample_matches():
@@ -23,9 +31,33 @@ def sample_matches():
         'home_current': ['Team A', 'Team B', 'Team C', 'Team A', 'Team B'],
         'away_current': ['Team B', 'Team C', 'Team A', 'Team C', 'Team A'],
         'home_goals': [3, 2, 1, 4, 2],
-        'away_goals': [1, 2, 2, 1, 2]
+        'away_goals': [1, 2, 2, 1, 2],
+        'neutral': ['N', 'N', 'N', 'N', 'N'],
     })
 
+@pytest.fixture
+def sample_matches_nfl():
+    """Sample match data for testing."""
+    return pd.DataFrame({
+        'season': [2023, 2023, 2023, 2024, 2024],
+        'home_current': ['Team A', 'Team B', 'Team C', 'Team A', 'Team B'],
+        'away_current': ['Team B', 'Team C', 'Team A', 'Team C', 'Team A'],
+        'home_goals': [35, 23, 17, 41, 27],
+        'away_goals': [12, 20, 23, 10, 24],
+        'neutral': ['N', 'N', 'N', 'N', 'N'],
+    })
+
+@pytest.fixture
+def sample_matches_nba():
+    """Sample match data for testing."""
+    return pd.DataFrame({
+        'season': [2023, 2023, 2023, 2024, 2024],
+        'home_current': ['Team A', 'Team B', 'Team C', 'Team A', 'Team B'],
+        'away_current': ['Team B', 'Team C', 'Team A', 'Team C', 'Team A'],
+        'home_goals': [90, 78, 100, 104, 102],
+        'away_goals': [72, 88, 92, 91, 105],
+        'neutral': ['N', 'N', 'N', 'N', 'N'],
+    })
 
 @pytest.fixture
 def expansion_elos():
@@ -46,7 +78,8 @@ def sample_matches_long():
         'away_current': ['Team B', 'Team C', 'Team D', 'Team A', 'Team C',
                         'Team D', 'Team A', 'Team B', 'Team D', 'Team C'],
         'home_goals': [35, 17, 20, 0, 45, 25, 30, 17, 22, 40],
-        'away_goals': [12, 23, 17, 3, 22, 25, 10, 22, 31, 10]
+        'away_goals': [12, 23, 17, 3, 22, 25, 10, 22, 31, 10],
+        'neutral': ['N', 'N', 'N', 'N', 'N','N', 'N', 'N', 'N', 'N'],
     })
 
 
@@ -160,7 +193,7 @@ class TestCalculateElo:
         """Test Elo calculation when home team wins."""
         calc = EloCalculator(sample_matches, sample_elo_params)
         
-        new_a, new_b, exp_a, exp_b = calc.calculate_elo(1600, 1600, 3, 1)
+        new_a, new_b, exp_a, exp_b = calc.calculate_elo(1600, 1600, 3, 1, 0)
         
         # With equal ratings, expected is 0.5 for each
         assert exp_a == pytest.approx(0.5)
@@ -175,7 +208,7 @@ class TestCalculateElo:
         """Test Elo calculation when away team wins."""
         calc = EloCalculator(sample_matches, sample_elo_params)
         
-        new_a, new_b, exp_a, exp_b = calc.calculate_elo(1600, 1600, 1, 3)
+        new_a, new_b, exp_a, exp_b = calc.calculate_elo(1600, 1600, 1, 3, 0)
         
         # Away team should gain rating
         assert round(new_a, 0) == pytest.approx(1589)
@@ -185,7 +218,7 @@ class TestCalculateElo:
         """Test Elo calculation for a tie."""
         calc = EloCalculator(sample_matches, sample_elo_params)
         
-        new_a, new_b, exp_a, exp_b = calc.calculate_elo(1600, 1600, 2, 2)
+        new_a, new_b, exp_a, exp_b = calc.calculate_elo(1600, 1600, 2, 2, 0)
         
         # With equal ratings and a tie, ratings should stay the same
         assert new_a == pytest.approx(1600)
@@ -195,7 +228,7 @@ class TestCalculateElo:
         """Test that expected probabilities sum to 1."""
         calc = EloCalculator(sample_matches, sample_elo_params)
         
-        _, _, exp_a, exp_b = calc.calculate_elo(1700, 1500, 3, 1)
+        _, _, exp_a, exp_b = calc.calculate_elo(1700, 1500, 3, 1, 0)
         
         assert round(exp_a, 2) == pytest.approx(0.76)   
         assert round(exp_b, 2) == pytest.approx(0.24)   
@@ -207,7 +240,7 @@ class TestUpdateRatings:
         """Test basic rating update."""
         calc = EloCalculator(sample_matches, sample_elo_params)
         
-        result = calc.update_ratings('Team A', 'Team B', 3, 1)
+        result = calc.update_ratings('Team A', 'Team B', 3, 1, 'N')
         
         assert len(result) == 6
         home_before, away_before, home_after, away_after, exp_home, exp_away = result
@@ -227,11 +260,11 @@ class TestUpdateRatings:
         calc = EloCalculator(sample_matches, sample_elo_params)
         
         # First match
-        calc.update_ratings('Team A', 'Team B', 3, 1)
+        calc.update_ratings('Team A', 'Team B', 3, 1, 'N')
         team_a_rating = calc.ratings['Team A']
         
         # Second match
-        _, _, home_after, _, _, _ = calc.update_ratings('Team A', 'Team C', 2, 1)
+        _, _, home_after, _, _, _ = calc.update_ratings('Team A', 'Team C', 2, 1, 'N')
         
         # Team A's new rating should be based on their previous rating
         assert calc.ratings['Team A'] == home_after
@@ -379,7 +412,8 @@ class TestEdgeCases:
             'home_current': ['Team A'],
             'away_current': ['Team B'],
             'home_goals': [2],
-            'away_goals': [1]
+            'away_goals': [1],
+            'neutral': 'N'
         })
         calc = EloCalculator(single_match, sample_elo_params)
         
@@ -395,7 +429,8 @@ class TestEdgeCases:
             'home_current': ['Team A', 'Team A', 'Team A'],
             'away_current': ['Team B', 'Team C', 'Team D'],
             'home_goals': [3, 2, 4],
-            'away_goals': [1, 1, 0]
+            'away_goals': [1, 1, 0],
+            'neutral': 'N'
         })
         calc = EloCalculator(matches, sample_elo_params)
         
@@ -414,7 +449,7 @@ class TestMovMultiplier:
         """Test MOV multiplier is 1 for ties."""
         calc = EloCalculator(sample_matches, sample_elo_params)
         
-        new_a, new_b, exp_a, _ = calc.calculate_elo(1600, 1600, 2, 2)
+        new_a, new_b, exp_a, _ = calc.calculate_elo(1600, 1600, 2, 2, 0)
         
         # For a tie with equal ratings: change = k * 1 * (0.5 - 0.5) = 0
         assert new_a == pytest.approx(1600)
@@ -425,14 +460,33 @@ class TestMovMultiplier:
         calc = EloCalculator(sample_matches, sample_elo_params)
         
         # 1-goal win
-        new_a_small, _, _, _ = calc.calculate_elo(1600, 1600, 2, 1)
+        new_a_small, _, _, _ = calc.calculate_elo(1600, 1600, 2, 1, 0)
         # 5-goal win  
-        new_a_large, _, _, _ = calc.calculate_elo(1600, 1600, 6, 1)
+        new_a_large, _, _, _ = calc.calculate_elo(1600, 1600, 6, 1, 0)
         
         gain_small = new_a_small - 1600
         gain_large = new_a_large - 1600
         
         assert gain_large > gain_small
+
+    def test_mov_multiplier_nfl(self, sample_matches_nfl, sample_elo_params):
+        """Test small sample for elo ratings."""
+        calc = EloCalculator(sample_matches_nfl, sample_elo_params)
+        calc.update_matches_elos()
+        
+        assert round(calc.ratings['Team A'], 2) == 1646.68
+        assert round(calc.ratings['Team B'], 2) == 1605.15
+        assert round(calc.ratings['Team C'], 2) == 1548.17
+
+    def test_mov_multiplier_nba(self, sample_matches_nba, sample_elo_params_nba):
+        """Test small sample for elo ratings."""
+        calc = EloCalculator(sample_matches_nba, sample_elo_params_nba)
+        calc.update_matches_elos()
+
+        assert round(calc.ratings['Team A'], 2) == 1618.86
+        assert round(calc.ratings['Team B'], 2) == 1574.78
+        assert round(calc.ratings['Team C'], 2) == 1606.37
+
 
 class TestFullEloCalc:
     def test_full_elo_calc(self, sample_matches_long, sample_elo_params):
@@ -442,8 +496,8 @@ class TestFullEloCalc:
         calc_home_elos = elo_calculator.matches["home_elo_after"].round()
         calc_away_elos = elo_calculator.matches["away_elo_after"].round()
 
-        expected_home_elos = pd.Series([1632.0, 1551.0, 1630.0, 1575.0, 1674.0, 1551.0, 1636.0, 1562.0, 1592.0, 1623.0], name="home_elo_after")
-        expected_away_elos = pd.Series([1568.0, 1617.0, 1587.0, 1644.0, 1600.0, 1574.0, 1619.0, 1583.0, 1589.0, 1596.0], name="away_elo_after")
+        expected_home_elos = pd.Series([1632.0, 1551.0, 1630.0, 1575.0, 1674.0, 1564.0, 1636.0, 1562.0, 1592.0, 1623.0], name="home_elo_after")
+        expected_away_elos = pd.Series([1568.0, 1617.0, 1587.0, 1644.0, 1600.0, 1581.0, 1619.0, 1583.0, 1589.0, 1596.0], name="away_elo_after")
 
         pd.testing.assert_series_equal(expected_home_elos, calc_home_elos)
         pd.testing.assert_series_equal(expected_away_elos, calc_away_elos)
