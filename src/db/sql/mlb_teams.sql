@@ -1,10 +1,10 @@
 CREATE TABLE teams_mlb (
     team VARCHAR(50) PRIMARY KEY,
-    division VARCHAR(50),
+    conference VARCHAR(50),
     league VARCHAR(50)
 );
 
-INSERT INTO teams_mlb (team, division, league) VALUES
+INSERT INTO teams_mlb (team, division, conference) VALUES
 -- American League - East Division
 ('Baltimore Orioles', 'East', 'American League'),
 ('Boston Red Sox', 'East', 'American League'),
