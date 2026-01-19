@@ -1252,17 +1252,17 @@ league_rules = {
                          ],
         },
         "qualification": {
-            "playoff": [f"American {i}" for i in range(1, 7)] + [f"National {i}" for i in range(1, 7)]
+            "playoff": [f"American League {i}" for i in range(1, 7)] + [f"National League {i}" for i in range(1, 7)]
         },
         "knockout_bracket": [
-            ("National 1", "Bye"),
-            ("National 4", "National 5"),
-            ("National 2", "Bye"),
-            ("National 3", "National 6"),
-            ("American 1", "Bye"),
-            ("American 4", "American 5"),
-            ("American 2", "Bye"),
-            ("American 3", "American 6"),
+            ("National League 1", "Bye"),
+            ("National League 4", "National League 5"),
+            ("National League 2", "Bye"),
+            ("National League 3", "National League 6"),
+            ("American League 1", "Bye"),
+            ("American League 4", "American League 5"),
+            ("American League 2", "Bye"),
+            ("American League 3", "American League 6"),
         ],
         "knockout_format": {
             "po_r16": "best_of_3",
@@ -1270,7 +1270,7 @@ league_rules = {
             "po_r4": "best_of_7",
             "po_r2": "best_of_7",
         },
-        "knockout_draw_status": "no_draw",
+        "knockout_draw_status": "completed_draw",
         "knockout_draw": [
             ("Milwaukee Brewers", "Bye"),
             ("Chicago Cubs", "San Diego Padres"),
