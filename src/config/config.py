@@ -472,6 +472,122 @@ nba_name_remap = {
 
 nba_expansion_elos = {}
 
+# MLB franchise name remaps
+mlb_name_remap = {
+
+    # Arizona Diamondbacks
+    "Arizona D'Backs": "Arizona D'Backs",
+
+    # Atlanta Braves
+    "Boston Braves": "Atlanta Braves",
+    "Milwaukee Braves": "Atlanta Braves",
+    "Atlanta Braves": "Atlanta Braves",
+
+    # Baltimore Orioles
+    "St. Louis Browns": "Baltimore Orioles",
+    "Baltimore Orioles": "Baltimore Orioles",
+
+    # Boston Red Sox
+    "Boston Red Sox": "Boston Red Sox",
+
+    # Chicago Cubs
+    "Chicago Cubs": "Chicago Cubs",
+
+    # Chicago White Sox
+    "Chicago White Sox": "Chicago White Sox",
+
+    # Cincinnati Reds
+    "Cincinnati Reds": "Cincinnati Reds",
+
+    # Cleveland Guardians
+    "Cleveland Indians": "Cleveland Guardians",
+    "Cleveland Guardians": "Cleveland Guardians",
+
+    # Colorado Rockies
+    "Colorado Rockies": "Colorado Rockies",
+
+    # Detroit Tigers
+    "Detroit Tigers": "Detroit Tigers",
+
+    # Houston Astros
+    "Houston Colt .45s": "Houston Astros",
+    "Houston Astros": "Houston Astros",
+
+    # Kansas City Royals
+    "Kansas City Royals": "Kansas City Royals",
+
+    # Los Angeles Angels
+    "California Angels": "Los Angeles Angels",
+    "Anaheim Angels": "Los Angeles Angels",
+    "Los Angeles Angels of Anaheim": "Los Angeles Angels",
+    "LA Angels of Anaheim": "Los Angeles Angels",
+    "Los Angeles Angels": "Los Angeles Angels",
+
+    # Los Angeles Dodgers
+    "Brooklyn Dodgers": "Los Angeles Dodgers",
+    "Los Angeles Dodgers": "Los Angeles Dodgers",
+
+    # Miami Marlins
+    "Florida Marlins": "Miami Marlins",
+    "Miami Marlins": "Miami Marlins",
+
+    # Milwaukee Brewers
+    "Seattle Pilots": "Milwaukee Brewers",
+    "Milwaukee Brewers": "Milwaukee Brewers",
+
+    # Minnesota Twins
+    "Washington Senators": "Minnesota Twins",
+    "Minnesota Twins": "Minnesota Twins",
+
+    # New York Mets
+    "New York Mets": "New York Mets",
+
+    # New York Yankees
+    "New York Yankees": "New York Yankees",
+
+    #  Athletics
+    "Philadelphia Athletics": "Athletics",
+    "Kansas City Athletics": "Athletics",
+    "Oakland Athletics": "Athletics",
+    "Athletics": "Athletics",
+
+    # Philadelphia Phillies
+    "Philadelphia Phillies": "Philadelphia Phillies",
+
+    # Pittsburgh Pirates
+    "Pittsburgh Pirates": "Pittsburgh Pirates",
+
+    # San Diego Padres
+    "San Diego Padres": "San Diego Padres",
+
+    # San Francisco Giants
+    "New York Giants": "San Francisco Giants",
+    "San Francisco Giants": "San Francisco Giants",
+
+    # Seattle Mariners
+    "Seattle Mariners": "Seattle Mariners",
+
+    # St. Louis Cardinals
+    "St. Louis Cardinals": "St. Louis Cardinals",
+
+    # Tampa Bay Rays
+    "Tampa Bay Devil Rays": "Tampa Bay Rays",
+    "Tampa Bay Rays": "Tampa Bay Rays",
+
+    # Texas Rangers
+    "Washington Senators (2nd)": "Texas Rangers",
+    "Texas Rangers": "Texas Rangers",
+
+    # Toronto Blue Jays
+    "Toronto Blue Jays": "Toronto Blue Jays",
+
+    # Washington Nationals
+    "Montreal Expos": "Washington Nationals",
+    "Washington Nationals": "Washington Nationals",
+}
+
+mlb_expansion_elos = {}
+
 # Database
 # league type to db table mapping
 db_table_mapping = {
@@ -880,7 +996,7 @@ fixtures_history_config = {
     "MLB": {
         "fixtures_url": [
             f"https://www.baseball-reference.com/leagues/majors/{year}-schedule.shtml"
-            for year in range(2020, 2025)
+            for year in range(1998, 2025)
         ],
         "table_id": ["games"],
     },
@@ -1278,8 +1394,8 @@ league_rules = {
     },
     "MLB": {
         "sim_type": "winner",
-        "home_advantage": 100,
-        "elo_kfactor": 20,
+        "home_advantage": 25,
+        "elo_kfactor": 5,
         "season_start_adj": 1/4,
         "has_knockout": True,
         "classification": {

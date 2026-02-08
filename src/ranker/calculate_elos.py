@@ -79,8 +79,8 @@ def run_elo_calc():
         name_remap = config.nba_name_remap
         expansion_elos = config.nba_expansion_elos
     elif league == "MLB":
-        name_remap = {}
-        expansion_elos = {}
+        name_remap = config.mlb_name_remap
+        expansion_elos = config.mlb_expansion_elos
     else:
         raise(ValueError, "Invalid league")
     matches = load_matches_data(league, name_remap)
