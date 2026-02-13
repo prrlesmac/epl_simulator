@@ -1399,14 +1399,31 @@ league_rules = {
         "season_start_adj": 1/4,
         "has_knockout": True,
         "classification": {
-            "division": ["win_loss_pct"
+            "division": [             
+                        "win_loss_pct",
+                         "h2h_sweep_full",
+                         "h2h_win_loss_pct",
+                         "win_loss_pct_div",
+                         "win_loss_pct_conf",
+                         "win_loss_pct_conf_last_half"
                          ],
             "conference": [
-                         "win_loss_pct"
+                         "division_winner",
+                         "win_loss_pct",
+                         "h2h_sweep_full",
+                         "h2h_win_loss_pct",
+                         "win_loss_pct_div",
+                         "win_loss_pct_conf",
+                         "win_loss_pct_conf_last_half"
                          ],
             "league": [
-                         "win_loss_pct"
-                         ],
+                         "win_loss_pct",
+                         "h2h_sweep_full",
+                         "h2h_win_loss_pct",
+                         "win_loss_pct_div",
+                         "win_loss_pct_conf",
+                         "win_loss_pct_conf_last_half"
+                        ],
         },
         "qualification": {
             "playoff": [f"American League {i}" for i in range(1, 7)] + [f"National League {i}" for i in range(1, 7)]
