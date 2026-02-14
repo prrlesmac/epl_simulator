@@ -472,6 +472,122 @@ nba_name_remap = {
 
 nba_expansion_elos = {}
 
+# MLB franchise name remaps
+mlb_name_remap = {
+
+    # Arizona Diamondbacks
+    "Arizona D'Backs": "Arizona D'Backs",
+
+    # Atlanta Braves
+    "Boston Braves": "Atlanta Braves",
+    "Milwaukee Braves": "Atlanta Braves",
+    "Atlanta Braves": "Atlanta Braves",
+
+    # Baltimore Orioles
+    "St. Louis Browns": "Baltimore Orioles",
+    "Baltimore Orioles": "Baltimore Orioles",
+
+    # Boston Red Sox
+    "Boston Red Sox": "Boston Red Sox",
+
+    # Chicago Cubs
+    "Chicago Cubs": "Chicago Cubs",
+
+    # Chicago White Sox
+    "Chicago White Sox": "Chicago White Sox",
+
+    # Cincinnati Reds
+    "Cincinnati Reds": "Cincinnati Reds",
+
+    # Cleveland Guardians
+    "Cleveland Indians": "Cleveland Guardians",
+    "Cleveland Guardians": "Cleveland Guardians",
+
+    # Colorado Rockies
+    "Colorado Rockies": "Colorado Rockies",
+
+    # Detroit Tigers
+    "Detroit Tigers": "Detroit Tigers",
+
+    # Houston Astros
+    "Houston Colt .45s": "Houston Astros",
+    "Houston Astros": "Houston Astros",
+
+    # Kansas City Royals
+    "Kansas City Royals": "Kansas City Royals",
+
+    # Los Angeles Angels
+    "California Angels": "Los Angeles Angels",
+    "Anaheim Angels": "Los Angeles Angels",
+    "Los Angeles Angels of Anaheim": "Los Angeles Angels",
+    "LA Angels of Anaheim": "Los Angeles Angels",
+    "Los Angeles Angels": "Los Angeles Angels",
+
+    # Los Angeles Dodgers
+    "Brooklyn Dodgers": "Los Angeles Dodgers",
+    "Los Angeles Dodgers": "Los Angeles Dodgers",
+
+    # Miami Marlins
+    "Florida Marlins": "Miami Marlins",
+    "Miami Marlins": "Miami Marlins",
+
+    # Milwaukee Brewers
+    "Seattle Pilots": "Milwaukee Brewers",
+    "Milwaukee Brewers": "Milwaukee Brewers",
+
+    # Minnesota Twins
+    "Washington Senators": "Minnesota Twins",
+    "Minnesota Twins": "Minnesota Twins",
+
+    # New York Mets
+    "New York Mets": "New York Mets",
+
+    # New York Yankees
+    "New York Yankees": "New York Yankees",
+
+    #  Athletics
+    "Philadelphia Athletics": "Athletics",
+    "Kansas City Athletics": "Athletics",
+    "Oakland Athletics": "Athletics",
+    "Athletics": "Athletics",
+
+    # Philadelphia Phillies
+    "Philadelphia Phillies": "Philadelphia Phillies",
+
+    # Pittsburgh Pirates
+    "Pittsburgh Pirates": "Pittsburgh Pirates",
+
+    # San Diego Padres
+    "San Diego Padres": "San Diego Padres",
+
+    # San Francisco Giants
+    "New York Giants": "San Francisco Giants",
+    "San Francisco Giants": "San Francisco Giants",
+
+    # Seattle Mariners
+    "Seattle Mariners": "Seattle Mariners",
+
+    # St. Louis Cardinals
+    "St. Louis Cardinals": "St. Louis Cardinals",
+
+    # Tampa Bay Rays
+    "Tampa Bay Devil Rays": "Tampa Bay Rays",
+    "Tampa Bay Rays": "Tampa Bay Rays",
+
+    # Texas Rangers
+    "Washington Senators (2nd)": "Texas Rangers",
+    "Texas Rangers": "Texas Rangers",
+
+    # Toronto Blue Jays
+    "Toronto Blue Jays": "Toronto Blue Jays",
+
+    # Washington Nationals
+    "Montreal Expos": "Washington Nationals",
+    "Washington Nationals": "Washington Nationals",
+}
+
+mlb_expansion_elos = {}
+
 # Database
 # league type to db table mapping
 db_table_mapping = {
@@ -683,7 +799,6 @@ db_table_definitions = {
             "Eastern 13": FLOAT(),
             "Eastern 14": FLOAT(),
             "Eastern 15": FLOAT(),
-            "Eastern 16": FLOAT(),
             "Western 1": FLOAT(),
             "Western 2": FLOAT(),
             "Western 3": FLOAT(),
@@ -699,8 +814,50 @@ db_table_definitions = {
             "Western 13": FLOAT(),
             "Western 14": FLOAT(),
             "Western 15": FLOAT(),
-            "Western 16": FLOAT(),
             "po_play_in": FLOAT(),
+            "po_r16": FLOAT(),
+            "po_r8": FLOAT(),
+            "po_r4": FLOAT(),
+            "po_r2": FLOAT(),
+            "po_champion": FLOAT(),
+            "playoff": FLOAT(),
+            "updated_at": TIMESTAMP(),
+        },
+    },
+    "mlb_sim_output_table": {
+        "name": "sim_standings_mlb",
+        "dtype": {
+            "team": VARCHAR(100),
+            "American League 1": FLOAT(),
+            "American League 2": FLOAT(),
+            "American League 3": FLOAT(),
+            "American League 4": FLOAT(),
+            "American League 5": FLOAT(),
+            "American League 6": FLOAT(),
+            "American League 7": FLOAT(),
+            "American League 8": FLOAT(),
+            "American League 9": FLOAT(),
+            "American League 10": FLOAT(),
+            "American League 11": FLOAT(),
+            "American League 12": FLOAT(),
+            "American League 13": FLOAT(),
+            "American League 14": FLOAT(),
+            "American League 15": FLOAT(),
+            "National League 1": FLOAT(),
+            "National League 2": FLOAT(),
+            "National League 3": FLOAT(),
+            "National League 4": FLOAT(),
+            "National League 5": FLOAT(),
+            "National League 6": FLOAT(),
+            "National League 7": FLOAT(),
+            "National League 8": FLOAT(),
+            "National League 9": FLOAT(),
+            "National League 10": FLOAT(),
+            "National League 11": FLOAT(),
+            "National League 12": FLOAT(),
+            "National League 13": FLOAT(),
+            "National League 14": FLOAT(),
+            "National League 15": FLOAT(),
             "po_r16": FLOAT(),
             "po_r8": FLOAT(),
             "po_r4": FLOAT(),
@@ -784,7 +941,7 @@ fixtures_config = {
         "table_id": ["schedule"],
     },
     "MLB": {
-        "fixtures_url": ["https://www.baseball-reference.com/leagues/majors/2024-schedule.shtml"],
+        "fixtures_url": ["https://www.baseball-reference.com/leagues/majors/2025-schedule.shtml"],
         "table_id": ["games"],
     }
 }
@@ -835,6 +992,13 @@ fixtures_history_config = {
             for month in ["october", "november", "december", "january", "february", "march", "april", "may", "june"]
         ],
         "table_id": ["schedule"],
+    },
+    "MLB": {
+        "fixtures_url": [
+            f"https://www.baseball-reference.com/leagues/majors/{year}-schedule.shtml"
+            for year in range(1998, 2025)
+        ],
+        "table_id": ["games"],
     },
 }
 
@@ -1261,5 +1425,71 @@ league_rules = {
         "knockout_draw": None,
         "knockout_reseeding": False,
         "has_play_in": True,
+    },
+    "MLB": {
+        "sim_type": "winner",
+        "home_advantage": 25,
+        "elo_kfactor": 5,
+        "season_start_adj": 1/4,
+        "has_knockout": True,
+        "classification": {
+            "division": [             
+                        "win_loss_pct",
+                         "h2h_sweep_full",
+                         "h2h_win_loss_pct",
+                         "win_loss_pct_div",
+                         "win_loss_pct_conf",
+                         "win_loss_pct_conf_last_half"
+                         ],
+            "conference": [
+                         "division_winner",
+                         "win_loss_pct",
+                         "h2h_sweep_full",
+                         "h2h_win_loss_pct",
+                         "win_loss_pct_div",
+                         "win_loss_pct_conf",
+                         "win_loss_pct_conf_last_half"
+                         ],
+            "league": [
+                         "win_loss_pct",
+                         "h2h_sweep_full",
+                         "h2h_win_loss_pct",
+                         "win_loss_pct_div",
+                         "win_loss_pct_conf",
+                         "win_loss_pct_conf_last_half"
+                        ],
+        },
+        "qualification": {
+            "playoff": [f"American League {i}" for i in range(1, 7)] + [f"National League {i}" for i in range(1, 7)]
+        },
+        "knockout_bracket": [
+            ("National League 1", "Bye"),
+            ("National League 4", "National League 5"),
+            ("National League 2", "Bye"),
+            ("National League 3", "National League 6"),
+            ("American League 1", "Bye"),
+            ("American League 4", "American League 5"),
+            ("American League 2", "Bye"),
+            ("American League 3", "American League 6"),
+        ],
+        "knockout_format": {
+            "po_r16": "best_of_3",
+            "po_r8": "best_of_5",
+            "po_r4": "best_of_7",
+            "po_r2": "best_of_7",
+        },
+        "knockout_draw_status": "completed_draw",
+        "knockout_draw": [
+            ("Milwaukee Brewers", "Bye"),
+            ("Chicago Cubs", "San Diego Padres"),
+            ("Philadelphia Phillies", "Bye"),
+            ("Los Angeles Dodgers", "Cincinnati Reds"),
+            ("Toronto Blue Jays", "Bye"),
+            ("New York Yankees", "Boston Red Sox"),
+            ("Seattle Mariners", "Bye"),
+            ("Cleveland Guardians", "Detroit Tigers"),
+        ],
+        "knockout_reseeding": False,
+        "has_play_in": False,
     },
 }

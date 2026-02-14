@@ -51,6 +51,36 @@ class EloCalculator:
 
             return mov_mult
         
+        def mlb_mov_multiplier(winner_point_diff, winner_elo_diff):
+            """
+            Compute the MLB-specific margin-of-victory (MOV) multiplier for Elo updates.
+
+            The multiplier scales the Elo change by comparing the adjusted run
+            differential to the expected margin implied by the pre-game Elo
+            difference, following FiveThirtyEight's MLB Elo methodology.
+
+            Parameters
+            ----------
+            winner_point_diff : int or float
+                Run differential for the winning team.
+            winner_elo_diff : int or float
+                Pre-game Elo difference (winner minus loser).
+
+            Returns
+            -------
+            float
+                Margin-of-victory multiplier applied to the base Elo update.
+            """
+            if winner_elo_diff is not None:
+                adj_margin = ((winner_point_diff + 1)**0.7)*1.41
+                exp_margin = ((winner_elo_diff)**3)*0.0000000546554876 + ((winner_elo_diff)**2)*0.00000896073139 + (winner_elo_diff)*0.00244895265 + 3.4
+
+                mov_mult = adj_margin / max(exp_margin, 0.1)
+            else:
+                mov_mult = 1
+
+            return mov_mult
+        
         rating_a_hf = rating_a + home_adv
         # Calculate expected scores
         expected_a = 1 / (1 + 10 ** ((rating_b - rating_a_hf) / 400))
@@ -75,6 +105,8 @@ class EloCalculator:
             mov_multiplier = nfl_mov_multiplier(winner_point_diff, winner_elo_diff)
         elif self.league == "NBA":
             mov_multiplier = nba_mov_multiplier(winner_point_diff, winner_elo_diff)
+        elif self.league == "MLB":
+            mov_multiplier = mlb_mov_multiplier(winner_point_diff, winner_elo_diff)
         else:
             raise(ValueError, "Invalid league for Elo calc")
         new_rating_a = rating_a + self.k * mov_multiplier * (actual_a - expected_a)

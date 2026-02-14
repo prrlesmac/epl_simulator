@@ -275,7 +275,7 @@ class TestGetFixtures:
 
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 1
-        assert set(df.columns) == {'round','date', 'away', 'home', 'away_goals', 'home_goals'}
+        assert set(df.columns) == {'round','date', 'away', 'home', 'away_goals', 'home_goals', 'url'}
         assert df.iloc[0]["away"] == "Yankees"
         assert df.iloc[0]["home_goals"] == 5
         mock_sleep.assert_called_once()
