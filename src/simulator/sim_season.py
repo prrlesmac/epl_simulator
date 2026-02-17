@@ -121,44 +121,76 @@ def single_simulation(
     Returns:
         pd.DataFrame: The standings DataFrame after simulating the pending matches and combining with played matches.
     """
-    league_schedule_played = schedule_played[
-        schedule_played["round"] == "League"
-    ].copy()
-    league_schedule_pending = schedule_pending[
-        schedule_pending["round"] == "League"
-    ].copy()
-    simulated_pending = simulate_matches_data_frame(league_schedule_pending, league_rules["sim_type"], league_rules["home_advantage"])
-    schedule_final = pd.concat(
-        [league_schedule_played, simulated_pending], ignore_index=True
+    league_schedule_played = schedule_played.loc[schedule_played["round"] == "League"]
+    league_schedule_pending = schedule_pending.loc[schedule_pending["round"] == "League"]
+    
+    # Simulate pending league matches
+    simulated_pending = simulate_matches_data_frame(
+        league_schedule_pending, 
+        league_rules["sim_type"], 
+        league_rules["home_advantage"]
     )
+    
+    schedule_final = pd.concat(
+        [league_schedule_played, simulated_pending], 
+        ignore_index=True
+    )
+    
+    # Calculate standings only if needed
     if current_standings_df is None:
-        standings_df = get_standings(schedule_final, league_rules["classification"], league_rules["league_type"], divisions)   
+        standings_df = get_standings(
+            schedule_final, 
+            league_rules["classification"], 
+            league_rules["league_type"], 
+            divisions
+        )   
     else:
-        standings_df = current_standings_df.copy()
+        standings_df = current_standings_df
+    
+    # Handle knockout stage if applicable
     if league_rules["has_knockout"]:
-        knockout_schedule_played = schedule_played[
-            schedule_played["round"] != "League"
-        ].copy()
-        knockout_schedule_pending = schedule_pending[
-            schedule_pending["round"] != "League"
-        ].copy()
-        simulated_pending = simulate_matches_data_frame(knockout_schedule_pending, league_rules["sim_type"], league_rules["home_advantage"])
-        playoff_schedule = pd.concat(
-            [knockout_schedule_played, simulated_pending], ignore_index=True
-        )
+        # Filter non-league matches
+        knockout_schedule_played = schedule_played.loc[schedule_played["round"] != "League"]
+        knockout_schedule_pending = schedule_pending.loc[schedule_pending["round"] != "League"]
+        
+        # Only simulate if there are pending knockout matches
+        if len(knockout_schedule_pending) > 0:
+            simulated_ko_pending = simulate_matches_data_frame(
+                knockout_schedule_pending, 
+                league_rules["sim_type"], 
+                league_rules["home_advantage"]
+            )
+            playoff_schedule = pd.concat(
+                [knockout_schedule_played, simulated_ko_pending], 
+                ignore_index=True
+            )
+        else:
+            playoff_schedule = knockout_schedule_played
+        
         # TODO think of better ways to pull elos
-        elos = schedule_final.drop_duplicates(subset=["home"])[
-            ["home", "elo_home"]
-        ].rename(columns={"home": "team", "elo_home": "elo"})
+        elos_final = schedule_final[["home", "elo_home"]].drop_duplicates(subset=["home"])
+        elos_final = elos_final.rename(columns={"home": "team", "elo_home": "elo"})
+        
+        # Handle play-in tournament if configured
         if ("has_play_in" in league_rules) and (league_rules["has_play_in"]):
-            standings_df = simulate_play_in_tourney(standings_df, playoff_schedule, elos, league_rules["home_advantage"])
+            standings_df = simulate_play_in_tourney(
+                standings_df, 
+                playoff_schedule, 
+                elos_final, 
+                league_rules["home_advantage"]
+            )
+        
+        # Determine knockout bracket
         if league_rules["knockout_draw_status"] == "pending_draw":
             draw = draw_from_pots(standings_df, pot_size=2)
             bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
         elif league_rules["knockout_draw_status"] == "pending_uefa_second_draw":
             top_draw = draw_from_pots(standings_df, pot_size=2)
             bottom_draw = extract_positions_from_bracket(league_rules["knockout_draw"], league_rules["knockout_bracket"])
-            draw = pd.concat([top_draw[top_draw["draw_order"]<=8], bottom_draw[bottom_draw["draw_order"]>8]])
+            draw = pd.concat([
+                top_draw[top_draw["draw_order"]<=8], 
+                bottom_draw[bottom_draw["draw_order"]>8]
+            ])
             bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
         elif league_rules["knockout_draw_status"] == "completed_draw":
             if league_rules["knockout_reseeding"]:
@@ -167,15 +199,22 @@ def single_simulation(
             else:
                 bracket = pd.DataFrame(league_rules["knockout_draw"], columns=["team1", "team2"])
         elif league_rules["knockout_draw_status"] == "no_draw":
-            draw = standings_df.copy()
-            draw["draw_order"] = draw["playoff_pos"]
-            draw = draw[["team", "draw_order"]]
+            draw = standings_df[["team", "playoff_pos"]].rename(columns={"playoff_pos": "draw_order"})
             bracket = create_bracket_from_composition(draw, league_rules['knockout_bracket'])
         else:
             raise ValueError("Invalid knockout draw status selected")
+        
+        # Simulate playoffs
         playoff_df = simulate_playoff_bracket(
-            bracket, league_rules["knockout_format"], elos, playoff_schedule, league_rules["knockout_reseeding"], league_rules["home_advantage"]
+            bracket, 
+            league_rules["knockout_format"], 
+            elos_final, 
+            playoff_schedule, 
+            league_rules["knockout_reseeding"], 
+            league_rules["home_advantage"]
         )
+        
+        # Merge playoff results
         standings_df = standings_df.merge(playoff_df, how="left", on="team")
 
     return standings_df

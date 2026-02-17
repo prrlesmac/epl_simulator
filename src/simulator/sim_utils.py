@@ -240,39 +240,73 @@ def simulate_matches_data_frame(matches_df, sim_type, home_advantage):
     Parameters:
         matches_df (pd.DataFrame): DataFrame containing matches to simulate
         sim_type (str): "goals" if we need to simulate match goals outcome
-                        "wunner" if we only simulate win/lose outcome
+                        "winner" if we only simulate win/lose outcome
         home_advantage (float): adjustment to home team's elo
 
     Returns:
         pd.DataFrame: DataFrame with simulation results
     """
-
-    for index, match in matches_df.iterrows():
-
-        home_advantage = home_advantage if match["neutral"] == "N" else 0
-        elo_home = match["elo_home"]
-        elo_away = match["elo_away"]
-
-        # Calculate win probability for Team 1
-        win_proba = calculate_win_probability(
-            elo_home, elo_away, home_adv=home_advantage
-        )
-
-        # Simulate match
-        if sim_type == "goals":
-            result = simulate_match_goals(win_proba)
-            # Append result
-            matches_df.at[index, "home_goals"] = result[0]
-            matches_df.at[index, "away_goals"] = result[1]
-        elif sim_type == "winner":
-            result = simulate_match_winner(win_proba)
-            # Append result
-            matches_df.at[index, "home_goals"] = 1 if result == 1 else 0
-            matches_df.at[index, "away_goals"] = 0 if result == 1 else 1
-        else:
-            raise(ValueError("Invalid sim type in simulate_matches_data_frame"))
+    matches_df = matches_df.copy()
+    
+    # Vectorize home advantage: apply adjustment only if match is not neutral
+    home_adv_array = np.where(matches_df["neutral"] == "N", home_advantage, 0)
+    
+    # Vectorize win probability calculation
+    rank_diff = matches_df["elo_away"].values - matches_df["elo_home"].values - home_adv_array
+    win_proba = 1 / (1 + 10 ** (rank_diff / 400))
+    
+    # Simulate matches based on type
+    if sim_type == "goals":
+        home_goals, away_goals = _simulate_match_goals_vectorized(win_proba)
+        matches_df["home_goals"] = home_goals
+        matches_df["away_goals"] = away_goals
+        
+    elif sim_type == "winner":
+        # Simulate binary winner (1 for home team, 2 for away team)
+        random_vals = np.random.rand(len(matches_df))
+        winners = np.where(random_vals <= win_proba, 1, 2)
+        matches_df["home_goals"] = np.where(winners == 1, 1, 0)
+        matches_df["away_goals"] = np.where(winners == 1, 0, 1)
+        
+    else:
+        raise ValueError("Invalid sim type in simulate_matches_data_frame")
             
-    return pd.DataFrame(matches_df)
+    return matches_df
+
+
+def _simulate_match_goals_vectorized(proba, goal_adj=1):
+    """
+    Vectorized version of simulate_match_goals for arrays of win probabilities.
+    
+    Parameters:
+        proba (np.ndarray): Array of win probabilities for home team
+        goal_adj (float): Goal adjustment factor
+        
+    Returns:
+        tuple: (home_goals, away_goals) as numpy arrays
+    """
+    # Vectorized expected goals calculation for home team
+    ExpGH = np.where(
+        proba < 0.5,
+        0.2 + 1.1 * np.sqrt(proba / 0.5),
+        1.69 / (1.12 * np.sqrt(2 - proba / 0.5) + 0.18),
+    ) * goal_adj
+    
+    # Vectorized expected goals calculation for away team
+    away_proba = 1 - proba
+    ExpGA = np.where(
+        away_proba < 0.5,
+        0.2 + 1.1 * np.sqrt(away_proba / 0.5),
+        1.69 / (1.12 * np.sqrt(2 - away_proba / 0.5) + 0.18),
+    ) * goal_adj
+    
+    # Vectorized Poisson sampling
+    min_exp = np.minimum(ExpGA, ExpGH)
+    Base = np.random.poisson(0.18 * min_exp) * goal_adj
+    GH = np.random.poisson(ExpGH - 0.18 * min_exp) + Base
+    GA = np.random.poisson(ExpGA - 0.18 * min_exp) + Base
+    
+    return (GH, GA)
 
 
 def simulate_play_in_tourney(standings_df, playoff_schedule, elos, home_advantage):

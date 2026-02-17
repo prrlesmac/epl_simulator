@@ -7,6 +7,7 @@ import random
 from simulator.sim_utils import (
     calculate_win_probability,
     simulate_match_goals,
+    _simulate_match_goals_vectorized,
     simulate_match_winner,
     simulate_extra_time,
     simulate_matches_data_frame,
@@ -127,11 +128,74 @@ class TestCalculateWinProbability:
         assert pytest.approx(prob_a_beats_b + prob_b_beats_a, rel=1e-6) == 1.0
 
 
-class TestSimulateMatch:
+# class TestSimulateMatch:
+
+#     def test_return_type_and_structure(self):
+#         """Test that function returns a tuple of two integers"""
+#         result = simulate_match_goals(0.5)
+#         assert isinstance(result, tuple)
+#         assert len(result) == 2
+#         assert isinstance(result[0], (int, np.integer))
+#         assert isinstance(result[1], (int, np.integer))
+
+#     def test_non_negative_goals(self):
+#         """Test that goals are always non-negative"""
+#         for proba in [0.1, 0.3, 0.5, 0.7, 0.9]:
+#             for _ in range(100):
+#                 gh, ga = simulate_match_goals(proba)
+#                 assert gh >= 0, f"Home goals should be non-negative, got {gh}"
+#                 assert ga >= 0, f"Away goals should be non-negative, got {ga}"
+
+#     def test_boundary_probabilities(self):
+#         """Test edge cases with extreme probabilities"""
+#         # Test with very low probability
+#         gh, ga = simulate_match_goals(0.01)
+#         assert isinstance(gh, (int, np.integer))
+#         assert isinstance(ga, (int, np.integer))
+#         assert gh >= 0 and ga >= 0
+
+#         # Test with very high probability
+#         gh, ga = simulate_match_goals(0.99)
+#         assert isinstance(gh, (int, np.integer))
+#         assert isinstance(ga, (int, np.integer))
+#         assert gh >= 0 and ga >= 0
+
+#         # Test with exactly 0.5
+#         gh, ga = simulate_match_goals(0.5)
+#         assert isinstance(gh, (int, np.integer))
+#         assert isinstance(ga, (int, np.integer))
+#         assert gh >= 0 and ga >= 0
+
+#     def test_deterministic_with_fixed_seed(self):
+#         """Test that results are deterministic with fixed random seed"""
+#         np.random.seed(42)
+#         result1 = simulate_match_goals(0.6)
+
+#         np.random.seed(42)
+#         result2 = simulate_match_goals(0.6)
+
+#         assert result1 == result2, "Results should be identical with same seed"
+
+#     def test_poisson_distribution_properties(self):
+#         """Test that the underlying Poisson distribution is working correctly"""
+#         # Mock numpy.random.poisson to test the calculation logic
+#         with patch("numpy.random.poisson") as mock_poisson:
+#             mock_poisson.side_effect = [1, 2, 1]  # Base, GH, GA
+
+#             result = simulate_match_goals(0.6)
+
+#             # Should call poisson 3 times
+#             assert mock_poisson.call_count == 3
+
+#             # Result should be (2+1, 1+1) = (3, 2)
+#             assert result == (3, 2)
+
+
+class TestSimulateMatchVectorized:
 
     def test_return_type_and_structure(self):
         """Test that function returns a tuple of two integers"""
-        result = simulate_match_goals(0.5)
+        result = _simulate_match_goals_vectorized(0.5)
         assert isinstance(result, tuple)
         assert len(result) == 2
         assert isinstance(result[0], (int, np.integer))
@@ -141,26 +205,26 @@ class TestSimulateMatch:
         """Test that goals are always non-negative"""
         for proba in [0.1, 0.3, 0.5, 0.7, 0.9]:
             for _ in range(100):
-                gh, ga = simulate_match_goals(proba)
+                gh, ga = _simulate_match_goals_vectorized(proba)
                 assert gh >= 0, f"Home goals should be non-negative, got {gh}"
                 assert ga >= 0, f"Away goals should be non-negative, got {ga}"
 
     def test_boundary_probabilities(self):
         """Test edge cases with extreme probabilities"""
         # Test with very low probability
-        gh, ga = simulate_match_goals(0.01)
+        gh, ga = _simulate_match_goals_vectorized(0.01)
         assert isinstance(gh, (int, np.integer))
         assert isinstance(ga, (int, np.integer))
         assert gh >= 0 and ga >= 0
 
         # Test with very high probability
-        gh, ga = simulate_match_goals(0.99)
+        gh, ga = _simulate_match_goals_vectorized(0.99)
         assert isinstance(gh, (int, np.integer))
         assert isinstance(ga, (int, np.integer))
         assert gh >= 0 and ga >= 0
 
         # Test with exactly 0.5
-        gh, ga = simulate_match_goals(0.5)
+        gh, ga = _simulate_match_goals_vectorized(0.5)
         assert isinstance(gh, (int, np.integer))
         assert isinstance(ga, (int, np.integer))
         assert gh >= 0 and ga >= 0
@@ -168,10 +232,10 @@ class TestSimulateMatch:
     def test_deterministic_with_fixed_seed(self):
         """Test that results are deterministic with fixed random seed"""
         np.random.seed(42)
-        result1 = simulate_match_goals(0.6)
+        result1 = _simulate_match_goals_vectorized(0.6)
 
         np.random.seed(42)
-        result2 = simulate_match_goals(0.6)
+        result2 = _simulate_match_goals_vectorized(0.6)
 
         assert result1 == result2, "Results should be identical with same seed"
 
@@ -181,7 +245,7 @@ class TestSimulateMatch:
         with patch("numpy.random.poisson") as mock_poisson:
             mock_poisson.side_effect = [1, 2, 1]  # Base, GH, GA
 
-            result = simulate_match_goals(0.6)
+            result = _simulate_match_goals_vectorized(0.6)
 
             # Should call poisson 3 times
             assert mock_poisson.call_count == 3
