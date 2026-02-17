@@ -1160,6 +1160,9 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        # pre season
+        # "knockout_draw_status": "pending_draw",
+        # "knockout_draw": None,
         "knockout_draw_status": "pending_uefa_second_draw",
         "knockout_draw": [       
            ("Arsenal", "Bye"),
@@ -1228,6 +1231,9 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        # pre season
+        # "knockout_draw_status": "pending_draw",
+        # "knockout_draw": None,
         "knockout_draw_status": "pending_uefa_second_draw",
         "knockout_draw": [       
            ("Lyon", "Bye"),
@@ -1296,6 +1302,9 @@ league_rules = {
             "po_r4": "two-legged",
             "po_r2": "single_game_neutral",
         },
+        # pre season
+        # "knockout_draw_status": "pending_draw",
+        # "knockout_draw": None,
         "knockout_draw_status": "pending_uefa_second_draw",
         "knockout_draw": [       
            ("Strasbourg", "Bye"),
