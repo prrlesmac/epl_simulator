@@ -157,6 +157,7 @@ def get_fixtures_local_file(filepath, table_id):
         html_content = html_file.read()
 
     df_all = parse_fixtures_html(html_content, table_id)
+    df_all['filepath'] = filepath
     print("Fetching fixtures data...")
     
     return df_all
@@ -492,7 +493,14 @@ def process_nfl_table(fixtures):
     fixtures = fixtures[(~fixtures["away"].isnull()) & (~fixtures["home"].isnull())].copy()
     fixtures = fixtures[(fixtures["away"]!="") & (fixtures["home"]!="")].copy()
     fixtures = fixtures[~fixtures["round"].str.startswith("Pre")].copy()
-    fixtures["season"] = fixtures["url"].str.extract(r"/years/(\d{4})/")  
+    if 'url' in fixtures.columns:
+        fixtures["season"] = fixtures["url"].str.extract(r"/years/(\d{4})/")  
+    elif 'filepath' in fixtures.columns:
+        fixtures["season"] = fixtures["filepath"].str.extract(r"\b((?:19|20)\d{2})\b")
+        fixtures['url'] = ''
+    else:
+        raise(ValueError, "fixtures df needs either url or filepath")
+
     fixtures["home_goals"] = pd.to_numeric(fixtures["home_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
     fixtures["away_goals"] = pd.to_numeric(fixtures["away_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
 

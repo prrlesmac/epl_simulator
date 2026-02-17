@@ -926,6 +926,7 @@ fixtures_config = {
     },
     "NFL": {
         "fixtures_url": ["https://www.pro-football-reference.com/years/2025/games.htm"],
+        "local_file_path": "data/nfl/2025 NFL Regular Season Schedule _ Pro-Football-Reference.com.html",
         "table_id": ["games"],
     },
     "NBA": {
