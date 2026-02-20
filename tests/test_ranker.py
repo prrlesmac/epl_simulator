@@ -60,7 +60,7 @@ def sample_matches_nba():
     })
 
 @pytest.fixture
-def expansion_elos():
+def starting_elos_test():
     """Expansion team Elo ratings."""
     return {
         'Expansion Team': 1400
@@ -90,7 +90,7 @@ class TestEloCalculatorInitialization:
         """Test basic initialization."""
         calc = EloCalculator(sample_matches, sample_elo_params)
         
-        assert calc.initial_rating == 1600
+        assert calc.initial_default_rating == 1600
         assert calc.k == 20
         assert calc.season_start_adj == 0.25
         assert calc.home_adv == 0
@@ -99,15 +99,15 @@ class TestEloCalculatorInitialization:
     
     def test_init_with_custom_initial_rating(self, sample_matches, sample_elo_params):
         """Test initialization with custom initial rating."""
-        calc = EloCalculator(sample_matches, sample_elo_params, initial_rating=1500)
+        calc = EloCalculator(sample_matches, sample_elo_params, initial_default_rating=1500)
         
-        assert calc.initial_rating == 1500
+        assert calc.initial_default_rating == 1500
     
-    def test_init_with_expansion_elos(self, sample_matches, sample_elo_params, expansion_elos):
+    def test_init_with_starting_elos(self, sample_matches, sample_elo_params, starting_elos_test):
         """Test initialization with expansion team Elos."""
-        calc = EloCalculator(sample_matches, sample_elo_params, expansion_elos=expansion_elos)
+        calc = EloCalculator(sample_matches, sample_elo_params, starting_elos=starting_elos_test)
         
-        assert calc.expansion_elos == expansion_elos
+        assert calc.ratings == starting_elos_test
 
 
 class TestGetRating:
@@ -127,16 +127,16 @@ class TestGetRating:
         rating = calc.get_rating('Team A')
         assert rating == 1750
     
-    def test_get_rating_expansion_team(self, sample_matches, sample_elo_params, expansion_elos):
+    def test_get_rating_expansion_team(self, sample_matches, sample_elo_params, starting_elos_test):
         """Test getting rating for expansion team."""
-        calc = EloCalculator(sample_matches, sample_elo_params, expansion_elos=expansion_elos)
+        calc = EloCalculator(sample_matches, sample_elo_params, starting_elos=starting_elos_test)
         
         rating = calc.get_rating('Expansion Team')
         assert rating == 1400
     
-    def test_get_rating_priority(self, sample_matches, sample_elo_params, expansion_elos):
+    def test_get_rating_priority(self, sample_matches, sample_elo_params, starting_elos_test):
         """Test that current ratings take priority over expansion ratings."""
-        calc = EloCalculator(sample_matches, sample_elo_params, expansion_elos=expansion_elos)
+        calc = EloCalculator(sample_matches, sample_elo_params, starting_elos=starting_elos_test)
         calc.ratings['Expansion Team'] = 1550
         
         rating = calc.get_rating('Expansion Team')
@@ -238,8 +238,7 @@ class TestUpdateRatings:
     
     def test_update_ratings_basic(self, sample_matches, sample_elo_params):
         """Test basic rating update."""
-        calc = EloCalculator(sample_matches, sample_elo_params)
-        
+        calc = EloCalculator(sample_matches, sample_elo_params, starting_elos={})
         result = calc.update_ratings('Team A', 'Team B', 3, 1, 'N')
         
         assert len(result) == 6

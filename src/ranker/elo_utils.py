@@ -3,19 +3,22 @@ import math
 
 # Elo calculator
 class EloCalculator:
-    def __init__(self, matches, elo_params, expansion_elos={}, initial_rating=1600):
+    def __init__(self, matches, elo_params, starting_elos=None, initial_default_rating=1600):
         self.matches = matches
-        self.ratings = {}
-        self.initial_rating = initial_rating
+        if starting_elos is None:
+            self._initial_ratings = {}
+        else:
+            self._initial_ratings = starting_elos.copy()
+        self.ratings = self._initial_ratings.copy()
+        self.initial_default_rating = initial_default_rating
         self.k = elo_params['elo_kfactor']
         self.season_start_adj = elo_params['season_start_adj']
         self.home_adv = elo_params['home_advantage']
-        self.expansion_elos = expansion_elos
         self.league = elo_params['league']
 
     def get_rating(self, team):
         # Return current rating or initial rating if team not rated yet
-        return self.ratings.get(team, self.expansion_elos.get(team, self.initial_rating))
+        return self.ratings.get(team, self.initial_default_rating)
     
     def adjust_season_start_elo(self):
         league_avg = sum(self.ratings.values()) / len(self.ratings)
@@ -81,6 +84,31 @@ class EloCalculator:
 
             return mov_mult
         
+        def uefa_mov_multiplier(winner_point_diff):
+            """
+            Compute a UEFA-style margin-of-victory multiplier.
+
+            If the winner's point differential is not zero (non tied game),
+            the multiplier is the square root of that value. Otherwise, the
+            multiplier defaults to 1.
+
+            Parameters
+            ----------
+            winner_point_diff : int or float or None
+                Difference in points between winner and opponent.
+
+            Returns
+            -------
+            float
+                Margin-of-victory multiplier.
+            """            
+            if winner_point_diff is not None and winner_point_diff > 0.01:
+                mov_mult = winner_point_diff ** 0.5
+            else:
+                mov_mult = 1
+            return mov_mult
+        
+
         rating_a_hf = rating_a + home_adv
         # Calculate expected scores
         expected_a = 1 / (1 + 10 ** ((rating_b - rating_a_hf) / 400))
@@ -107,6 +135,8 @@ class EloCalculator:
             mov_multiplier = nba_mov_multiplier(winner_point_diff, winner_elo_diff)
         elif self.league == "MLB":
             mov_multiplier = mlb_mov_multiplier(winner_point_diff, winner_elo_diff)
+        elif self.league == "UEFA":
+            mov_multiplier = uefa_mov_multiplier(winner_point_diff)
         else:
             raise(ValueError, "Invalid league for Elo calc")
         new_rating_a = rating_a + self.k * mov_multiplier * (actual_a - expected_a)
@@ -183,4 +213,3 @@ class EloCalculator:
             self.matches.at[index, "away_elo_after"] = away_elo_after
             self.matches.at[index, "home_win_expectancy"] = home_expectancy
             self.matches.at[index, "away_win_expectancy"] = away_expectancy
-

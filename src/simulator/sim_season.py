@@ -370,9 +370,10 @@ def load_league_data(league):
         engine,
     )
 
-    elos_query = f"SELECT * FROM {config.db_table_definitions['elo_table']['name']}_{table_suffix}" + (
-        f" WHERE country = '{league}'" if (not is_continental_league) and (not is_us_league) else ""
-    )
+    # elos_query = f"SELECT * FROM {config.db_table_definitions['elo_table']['name']}_{table_suffix}" + (
+    #     f" WHERE country = '{league}'" if (not is_continental_league) and (not is_us_league) else ""
+    # )
+    elos_query = f"SELECT * FROM {config.db_table_definitions['elo_table']['name']}_{table_suffix}"
     elos = pd.read_sql(elos_query, engine)
 
     if is_us_league:
