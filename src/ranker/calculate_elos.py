@@ -27,7 +27,7 @@ def load_matches_data(league, name_remap):
         UNION ALL
         SELECT * FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix}
         WHERE played = 'Y'
-        AND date >= '2026-02-16'
+        --AND date >= '2026-02-26'
         ORDER BY date
         """,
         engine,
