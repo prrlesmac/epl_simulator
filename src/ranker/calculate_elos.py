@@ -46,7 +46,7 @@ def load_matches_data(league, name_remap):
 
     matches["home_current"] = matches["home"].replace(name_remap)
     matches["away_current"] = matches["away"].replace(name_remap)
-    breakpoint()
+
     return matches
 
 
