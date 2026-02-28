@@ -17,25 +17,38 @@ def load_matches_data(league, name_remap):
         name_remap (Dict): Contains the remapping for franchise name changes
 
     Returns:
-        pd.DataFrame: DataFrames containing all matches for a league
+        pd.DataFrame: DataFrame containing all matches for a league
     """
     engine = db_connect.get_postgres_engine()
     table_suffix = league.lower()
-    matches = pd.read_sql(
-        f"""
-        SELECT * FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix}_history 
+    cutoff_date = config.elo_date
+
+    # Conditional filter
+    date_filter = "AND date > %(cutoff_date)s" if league.upper() == "UEFA" else ""
+
+    query = f"""
+        SELECT *
+        FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix}_history
+
         UNION ALL
-        SELECT * FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix}
+
+        SELECT *
+        FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix}
         WHERE played = 'Y'
-        --AND date >= '2026-02-27'
+        {date_filter}
+
         ORDER BY date
-        """,
-        engine,
-    )
+    """
+
+    params = {"cutoff_date": cutoff_date} if league.upper() == "UEFA" else None
+
+    matches = pd.read_sql(query, engine, params=params)
+
     matches["home_current"] = matches["home"].replace(name_remap)
     matches["away_current"] = matches["away"].replace(name_remap)
-
+    breakpoint()
     return matches
+
 
 def load_starting_elos_from_database(league):
     """
