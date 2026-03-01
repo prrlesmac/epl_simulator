@@ -1,4 +1,4 @@
-from playwright.sync_api import sync_playwright
+#from playwright.sync_api import sync_playwright
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -85,53 +85,53 @@ def get_fixtures(url_list, table_id):
 
     return df_all
 
-def get_fixtures_playwright(url, table_id):
-    """
-    Fetch and parse a fixture table from a webpage using Playwright
+# def get_fixtures_playwright(url, table_id):
+#     """
+#     Fetch and parse a fixture table from a webpage using Playwright
 
-    Sends an HTTP GET request to the specified URL, parses the HTML to extract
-    a table of fixtures using BeautifulSoup, and converts the table into a
-    Pandas DataFrame. The function assumes the table has a specific ID
-    (`sched_2024-2025_9_1`) and that the table structure includes a thead and tbody.
+#     Sends an HTTP GET request to the specified URL, parses the HTML to extract
+#     a table of fixtures using BeautifulSoup, and converts the table into a
+#     Pandas DataFrame. The function assumes the table has a specific ID
+#     (`sched_2024-2025_9_1`) and that the table structure includes a thead and tbody.
 
-    Args:
-        url (str): The URL of the webpage containing the fixture table.
-        table_id (list): list table IDs for geting the fixtures using beautiful soup
+#     Args:
+#         url (str): The URL of the webpage containing the fixture table.
+#         table_id (list): list table IDs for geting the fixtures using beautiful soup
 
-    Returns:
-        pandas.DataFrame: A DataFrame containing the fixture information,
-        with column headers extracted from the table. If the request fails,
-        the function prints an error message and may return an undefined variable.
+#     Returns:
+#         pandas.DataFrame: A DataFrame containing the fixture information,
+#         with column headers extracted from the table. If the request fails,
+#         the function prints an error message and may return an undefined variable.
 
-    Raises:
-        requests.exceptions.RequestException: If the HTTP request fails.
-        AttributeError: If the expected table or structure is not found in the HTML.
-    """
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)  # or headless=False to watch
-        page = browser.new_page()
+#     Raises:
+#         requests.exceptions.RequestException: If the HTTP request fails.
+#         AttributeError: If the expected table or structure is not found in the HTML.
+#     """
+#     with sync_playwright() as p:
+#         browser = p.chromium.launch(headless=True)  # or headless=False to watch
+#         page = browser.new_page()
 
-        # Mimic a real browser
-        page.set_extra_http_headers({
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
-            ),
-            "Referer": "https://www.google.com/",
-            "Accept-Language": "en-US,en;q=0.9"
-        })
+#         # Mimic a real browser
+#         page.set_extra_http_headers({
+#             "User-Agent": (
+#                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+#                 "AppleWebKit/537.36 (KHTML, like Gecko) "
+#                 "Chrome/120.0.0.0 Safari/537.36"
+#             ),
+#             "Referer": "https://www.google.com/",
+#             "Accept-Language": "en-US,en;q=0.9"
+#         })
 
-        page.goto(url, wait_until="domcontentloaded")
-        time.sleep(10)  # Wait for Cloudflare challenge or dynamic content
+#         page.goto(url, wait_until="domcontentloaded")
+#         time.sleep(10)  # Wait for Cloudflare challenge or dynamic content
 
-        html = page.content()
-        browser.close()
+#         html = page.content()
+#         browser.close()
 
-    # Now parse the table with BeautifulSoup or your existing parser
-    df_all = parse_fixtures_html(html, table_id)
-    print("Fixtures fetched via Playwright")
-    return df_all
+#     # Now parse the table with BeautifulSoup or your existing parser
+#     df_all = parse_fixtures_html(html, table_id)
+#     print("Fixtures fetched via Playwright")
+#     return df_all
 
 
 def get_fixtures_local_file(filepath, table_id):
@@ -711,8 +711,8 @@ def main_fixtures():
                 fixtures = get_fixtures(v["fixtures_url"], v["table_id"])
             elif config.parsing_method == "local_file":
                 fixtures = get_fixtures_local_file(v["local_file_path"], v["table_id"])
-            elif config.parsing_method == "playwright":
-                fixtures = get_fixtures_playwright(v["fixtures_url"], v["table_id"])
+            # elif config.parsing_method == "playwright":
+            #     fixtures = get_fixtures_playwright(v["fixtures_url"], v["table_id"])
             else:
                 raise(ValueError, "Invalid fixture parsing method")
         fixtures = process_fixtures(fixtures, country=k)
