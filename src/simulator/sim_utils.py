@@ -1696,7 +1696,7 @@ def validate_bracket(bracket_df, knockout_format):
             f"Bracket format does not match the number of rounds. Expected {expected_rounds} rounds, got {len(knockout_format)}."
         )
 
-
+#@profile
 def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule, has_reseeding, home_advantage):
     """
     Simulates a knockout playoff bracket using ELO ratings.
@@ -1739,7 +1739,7 @@ def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule
 
     return _build_results_dataframe(teams_progression, rounds)
 
-
+#@profile
 def _simulate_round(
     current_round,
     round_format,
@@ -1780,7 +1780,7 @@ def _simulate_round(
 
     return winners
 
-
+#@profile
 def get_match_winner_from_playoff(
     team1, team2, round_format, elos_dict, playoff_schedule, home_advantage
 ):
@@ -1825,7 +1825,18 @@ def get_match_winner_from_playoff(
 
     return _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_format, tie_matches, home_adv=home_advantage)
 
+def _build_tie_match_index(schedule):
+    """
+    Pre-build a dict mapping (team1, team2) -> list of row indices.
+    Call once before looping, then pass to _get_tie_matches.
+    """
+    index = {}
+    for i, row in schedule.iterrows():
+        key = (row["home"], row["away"])
+        index.setdefault(key, []).append(i)
+    return index
 
+#@profile
 def _get_tie_matches(team1, team2, playoff_schedule):
     """
     Retrieve all scheduled matches between two teams from the playoff schedule.
@@ -1838,10 +1849,10 @@ def _get_tie_matches(team1, team2, playoff_schedule):
     Returns:
         pd.DataFrame: Subset of playoff_schedule for matches between the two teams.
     """
-    return playoff_schedule[
-        ((playoff_schedule["home"] == team1) & (playoff_schedule["away"] == team2))
-        | ((playoff_schedule["home"] == team2) & (playoff_schedule["away"] == team1))
-    ].copy()
+    tie_match_index = _build_tie_match_index(playoff_schedule)
+    indices = tie_match_index.get((team1, team2), []) + \
+              tie_match_index.get((team2, team1), [])
+    return playoff_schedule.loc[indices].copy()
 
 
 def _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_format, tie_matches, home_adv):
@@ -1920,26 +1931,35 @@ def _get_winner_from_completed_matches(team1, team2, tie_matches):
     """
     Determine the winner from completed two-leg matches.
 
+    Scans match notes for a regex pattern indicating a winner.
+    If no winner is found in notes, falls back to goal-based logic.
+
     Args:
         team1 (str): First team.
         team2 (str): Second team.
-        tie_matches (pd.DataFrame): DataFrame containing the matches.
+        tie_matches (pd.DataFrame): Matches between the two teams.
 
     Returns:
         str: Name of the winning team.
 
     Raises:
-        Warning: If extracted winner from notes is not one of the two teams.
+        Warning: If extracted winner is not one of the two teams.
     """
-    string_result = tie_matches.iloc[-1]["notes"]
-    match = re.search(r";\s*(.*?)\s+won", string_result)
 
-    if match:
-        winner = match.group(1)
-        if winner not in [team1, team2]:
-            raise Warning(f"Winner {winner} not in teams {team1}, {team2}")
-        return winner
+    pattern = re.compile(r";\s*(.*?)\s+won")
 
+    # Iterate through notes (skip NaNs)
+    for note in tie_matches["notes"].dropna():
+        match = pattern.search(note)
+        if match:
+            winner = match.group(1)
+
+            if winner not in (team1, team2):
+                raise Warning(f"Winner {winner} not in teams {team1}, {team2}")
+
+            return winner
+
+    # Fallback if regex not found
     return _get_winner_by_goals(team1, team2, tie_matches)
 
 
@@ -2113,28 +2133,35 @@ def _playoff_round_reseeding(winners, bracket_df):
 
     return pd.DataFrame(matchups)
     
-
+#@profile
 def _build_results_dataframe(teams_progression, rounds):
     """
-    Construct a final results DataFrame summarizing team progression.
+    Convert a nested team progression dictionary into a results DataFrame.
+
+    Each row represents a team and each column represents a tournament round
+    (plus "po_champion"). Missing values are filled with 0 and cast to int.
 
     Args:
-        teams_progression (dict): Dictionary tracking round-by-round progression of each team.
-        rounds (list): List of round names in order.
+        teams_progression (Dict[str, Dict[str, int]]):
+            Mapping of team -> {round_name: value}.
+        rounds (List[str]):
+            Ordered list of round names.
 
     Returns:
-        pd.DataFrame: DataFrame summarizing tournament outcome for all teams.
+        pd.DataFrame: Results table with one row per team.
     """
-    all_teams = list(teams_progression.keys())
     all_rounds = rounds + ["po_champion"]
 
-    result = pd.DataFrame(index=all_teams, columns=all_rounds).fillna(0).astype(int)
+    result = (
+        pd.DataFrame.from_dict(teams_progression, orient="index")
+        .reindex(columns=all_rounds, fill_value=0)
+        .fillna(0)
+        .astype(int)
+    )
 
-    for team, progress in teams_progression.items():
-        for round_name in progress:
-            result.loc[team, round_name] = progress[round_name]
+    result.index.name = "team"
 
-    return result.reset_index().rename(columns={"index": "team"})
+    return result.reset_index()
 
 
 def draw_from_pots(df, pot_size=2):

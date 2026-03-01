@@ -857,7 +857,6 @@ class TestSimulateLeague:
             atol=1e-3,
         )
         for teams in teams_in_same_path:
-            print(result.loc[result["team"].isin(teams)]["po_r8"].sum())
             assert np.isclose(
                 result.loc[result["team"].isin(teams)]["po_r8"].sum(),
                 2.0,
