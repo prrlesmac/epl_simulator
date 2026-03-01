@@ -60,6 +60,28 @@ def sample_matches_nba():
     })
 
 @pytest.fixture
+def sample_matches_uefa():
+    """Sample match data for testing."""
+    return pd.DataFrame({
+        'season': [2023, 2023, 2023, 2024, 2024],
+        'home_current': ['Team A', 'Team B', 'Team C', 'Team A', 'Team B'],
+        'away_current': ['Team B', 'Team C', 'Team A', 'Team C', 'Team A'],
+        'home_goals': [3, 0, 2, 5, 1],
+        'away_goals': [0, 2, 2, 1, 0],
+        'neutral': ['N', 'N', 'N', 'N', 'N'],
+    })
+
+@pytest.fixture
+def sample_elo_params_uefa():
+    """Standard Elo parameters for testing."""
+    return {
+        "elo_kfactor": 20,
+        "season_start_adj": 0,
+        "home_advantage": 100,
+        'league': 'UEFA'
+    }
+
+@pytest.fixture
 def starting_elos_test():
     """Expansion team Elo ratings."""
     return {
@@ -486,6 +508,14 @@ class TestMovMultiplier:
         assert round(calc.ratings['Team B'], 2) == 1574.78
         assert round(calc.ratings['Team C'], 2) == 1606.37
 
+    def test_mov_multiplier_uefa(self, sample_matches_uefa, sample_elo_params_uefa):
+        """Test small sample for elo ratings."""
+        calc = EloCalculator(sample_matches_uefa, sample_elo_params_uefa)
+        calc.update_matches_elos()
+
+        assert round(calc.ratings['Team A'], 2) == 1620.92
+        assert round(calc.ratings['Team B'], 2) == 1578.75
+        assert round(calc.ratings['Team C'], 2) == 1600.33
 
 class TestFullEloCalc:
     def test_full_elo_calc(self, sample_matches_long, sample_elo_params):
