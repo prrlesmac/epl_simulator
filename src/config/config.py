@@ -332,7 +332,7 @@ nfl_name_remap = {
     "Washington Commanders": "Washington Commanders",
 }
 
-nfl_expansion_elos = {
+nfl_starting_elos = {
 
     "Baltimore Ravens": 1500.0,
     "Carolina Panthers": 1550.0,
@@ -470,7 +470,7 @@ nba_name_remap = {
     "Washington Wizards": "Washington Wizards",
 }
 
-nba_expansion_elos = {}
+nba_starting_elos = {}
 
 # MLB franchise name remaps
 mlb_name_remap = {
@@ -586,7 +586,7 @@ mlb_name_remap = {
     "Washington Nationals": "Washington Nationals",
 }
 
-mlb_expansion_elos = {}
+mlb_starting_elos = {}
 
 # Database
 # league type to db table mapping
@@ -601,6 +601,16 @@ db_table_mapping = {
 db_table_definitions = {
     "elo_table": {
         "name": "current_elos",
+        "dtype": {
+            "club": VARCHAR(100),
+            "country": VARCHAR(100),
+            "level": INTEGER(),
+            "elo": FLOAT(),
+            "updated_at": TIMESTAMP(),
+        },
+    },
+    "starting_elo_table": {
+        "name": "starting_elos",
         "dtype": {
             "club": VARCHAR(100),
             "country": VARCHAR(100),
@@ -880,7 +890,7 @@ db_table_definitions = {
 # Data scraping
 parsing_method = "http_request" # must be local_file, http_request, or playwright
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-#elo_date = "2025-06-01"  # For testing purposes, set a fixed date
+#elo_date = "2025-08-15"  # For testing purposes, set a fixed date
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
 pull_fixture_history = False
 fixtures_config = {
@@ -1003,6 +1013,31 @@ fixtures_history_config = {
     },
 }
 
+## Elos Calculations
+elo_params = {
+    "UEFA" : {
+        "home_advantage": 80,
+        "elo_kfactor": 15,
+        "season_start_adj": 0,
+    },
+    "NFL": {
+        "home_advantage": 50,
+        "elo_kfactor": 20,
+        "season_start_adj": 1/3,
+    },
+    "NBA": {
+        "home_advantage": 100,
+        "elo_kfactor": 20,
+        "season_start_adj": 1/4,
+    },
+    "MLB": {
+        "home_advantage": 25,
+        "elo_kfactor": 5,
+        "season_start_adj": 1/4,
+    }
+}
+
+
 ## Simulation
 number_of_simulations = 10000
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
@@ -1012,7 +1047,7 @@ schedule_cutoff_date = None
 league_rules = {
     "ENG": {
         "sim_type": "goals",
-        "home_advantage": 80,
+        "home_advantage": elo_params["UEFA"]["home_advantage"],
         "has_knockout": False,
         "classification": {
             "league": [
@@ -1031,7 +1066,7 @@ league_rules = {
     },
     "ESP": {
         "sim_type": "goals",
-        "home_advantage": 80,
+        "home_advantage": elo_params["UEFA"]["home_advantage"],
         "has_knockout": False,
         "classification": {
             "league": [
@@ -1050,7 +1085,7 @@ league_rules = {
     },
     "ITA": {
         "sim_type": "goals",
-        "home_advantage": 80,
+        "home_advantage": elo_params["UEFA"]["home_advantage"],
         "has_knockout": False,
         "classification": {
             "league": [
@@ -1070,7 +1105,7 @@ league_rules = {
     },
     "GER": {
         "sim_type": "goals",
-        "home_advantage": 80,
+        "home_advantage": elo_params["UEFA"]["home_advantage"],
         "has_knockout": False,
         "classification": {
             "league": [
@@ -1092,7 +1127,7 @@ league_rules = {
     },
     "FRA": {
         "sim_type": "goals",
-        "home_advantage": 80,
+        "home_advantage": elo_params["UEFA"]["home_advantage"],
         "has_knockout": False,
         "classification": {
             "league": [
@@ -1115,7 +1150,7 @@ league_rules = {
     },
     "UCL": {
         "sim_type": "goals",
-        "home_advantage": 80,
+        "home_advantage": elo_params["UEFA"]["home_advantage"],
         "has_knockout": True,
         "classification": {
             "league": [
@@ -1163,22 +1198,22 @@ league_rules = {
         # pre season
         # "knockout_draw_status": "pending_draw",
         # "knockout_draw": None,
-        "knockout_draw_status": "pending_uefa_second_draw",
+        "knockout_draw_status": "completed_draw",
         "knockout_draw": [       
            ("Arsenal", "Bye"),
             ("Leverkusen", "Olympiacos"),
-            ("Manchester City", "Bye"),
-            ("Real Madrid", "Benfica"),
+            ("Sporting CP", "Bye"),
+            ("Inter", "Bodø/Glimt"),
             ("Tottenham Hotspur", "Bye"),
-            ("Juventus", "Galatasaray"),
+            ("Atlético Madrid", "Club Brugge"),
             ("Barcelona", "Bye"),
             ("Newcastle United", "Qarabağ"),
             ("Bayern Munich", "Bye"),
             ("Atalanta", "Dortmund"),
-            ("Sporting CP", "Bye"),
-            ("Inter", "Bodø/Glimt"),
+            ("Manchester City", "Bye"),
+            ("Real Madrid", "Benfica"),
             ("Liverpool", "Bye"),
-            ("Atlético Madrid", "Club Brugge"),
+            ("Juventus", "Galatasaray"),
             ("Chelsea", "Bye"),
             ("Paris Saint-Germain", "Monaco"),
         ],
@@ -1186,7 +1221,7 @@ league_rules = {
     },
     "UEL": {
         "sim_type": "goals",
-        "home_advantage": 80,
+        "home_advantage": elo_params["UEFA"]["home_advantage"],
         "has_knockout": True,
         "classification": {
             "league": [
@@ -1234,30 +1269,30 @@ league_rules = {
         # pre season
         # "knockout_draw_status": "pending_draw",
         # "knockout_draw": None,
-        "knockout_draw_status": "pending_uefa_second_draw",
+        "knockout_draw_status": "completed_draw",
         "knockout_draw": [       
            ("Lyon", "Bye"),
             ("Celta Vigo", "PAOK"),
-            ("Roma", "Bye"),
+            ("Freiburg", "Bye"),
             ("Genk", "Dinamo Zagreb"),
             ("Real Betis", "Bye"),
-            ("Nottingham Forest", "Fenerbahçe"),
-            ("Porto", "Bye"),
+            ("Viktoria Plzeň", "Panathinaikos"),
+            ("Braga", "Bye"),
             ("Ferencváros", "Ludogorets Razgrad"),
             ("Aston Villa", "Bye"),
             ("Red Star", "Lille"),
-            ("Freiburg", "Bye"),
+            ("Roma", "Bye"),
             ("Bologna", "Brann"),
             ("Midtjylland", "Bye"),
-            ("Viktoria Plzeň", "Panathinaikos"),
-            ("Braga", "Bye"),
+            ("Nottingham Forest", "Fenerbahçe"),
+            ("Porto", "Bye"),
             ("Stuttgart", "Celtic"),
         ],
         "knockout_reseeding": False,
     },
     "UECL": {
         "sim_type": "goals",
-        "home_advantage": 80,
+        "home_advantage": elo_params["UEFA"]["home_advantage"],
         "has_knockout": True,
         "classification": {
             "league": [
@@ -1305,30 +1340,31 @@ league_rules = {
         # pre season
         # "knockout_draw_status": "pending_draw",
         # "knockout_draw": None,
-        "knockout_draw_status": "pending_uefa_second_draw",
+        "knockout_draw_status": "completed_draw",
         "knockout_draw": [       
            ("Strasbourg", "Bye"),
             ("AC Omonia", "Rijeka"),
-            ("AEK Larnaca FC", "Bye"),
+            ("Mainz 05", "Bye"),
             ("Sigma Olomouc", "Lausanne-Sport"),
-            ("Sparta Prague", "Bye"),
+            ("AEK Athens", "Bye"),
             ("KF Drita", "NK Celje"),
             ("Rayo Vallecano", "Bye"),
-            ("KuPS", "Lech Poznań"),
+            ("FK Shkëndija", "Samsunspor"),
             ("Raków", "Bye"),
             ("Jagiellonia", "Fiorentina"),
-            ("Mainz 05", "Bye"),
+            ("AEK Larnaca FC", "Bye"),
             ("Zrinjski Mostar", "Crystal Palace"),
-            ("AEK Athens", "Bye"),
+            ("Sparta Prague", "Bye"),
             ("FC Noah", "AZ Alkmaar"),
             ("Shakhtar Donetsk", "Bye"),
-            ("FK Shkëndija", "Samsunspor"),
+            ("KuPS", "Lech Poznań"),
+
         ],
         "knockout_reseeding": False,
     },
     "NFL": {
         "sim_type": "winner",
-        "home_advantage": 50,
+        "home_advantage": elo_params["NFL"]["home_advantage"],
         "elo_kfactor": 20,
         "season_start_adj": 1/3,
         "has_knockout": True,
@@ -1388,7 +1424,7 @@ league_rules = {
     },
     "NBA": {
         "sim_type": "winner",
-        "home_advantage": 100,
+        "home_advantage": elo_params["NBA"]["home_advantage"],
         "elo_kfactor": 20,
         "season_start_adj": 1/4,
         "has_knockout": True,
@@ -1438,7 +1474,7 @@ league_rules = {
     },
     "MLB": {
         "sim_type": "winner",
-        "home_advantage": 25,
+        "home_advantage": elo_params["MLB"]["home_advantage"],
         "elo_kfactor": 5,
         "season_start_adj": 1/4,
         "has_knockout": True,
