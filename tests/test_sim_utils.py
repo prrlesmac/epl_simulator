@@ -1238,10 +1238,10 @@ class TestGetOpponentsAggregateStats:
         # Expected points and goal diff
         expected_opponent_stats = pd.DataFrame(
             [
-                {"team": "A", "opponent_points": 7.0, "opponent_goal_difference": 1.0, "opponent_goals_for": 7.0},
-                {"team": "B", "opponent_points": 4.0, "opponent_goal_difference": -1.0, "opponent_goals_for": 6.0},
-                {"team": "C", "opponent_points": 4.0, "opponent_goal_difference": -1.0, "opponent_goals_for": 6.0},
-                {"team": "D", "opponent_points": 7.0, "opponent_goal_difference": 1.0, "opponent_goals_for": 7.0},
+                {"team": "A", "opponent_points": 7, "opponent_goal_difference": 1, "opponent_goals_for": 7},
+                {"team": "B", "opponent_points": 4, "opponent_goal_difference": -1, "opponent_goals_for": 6},
+                {"team": "C", "opponent_points": 4, "opponent_goal_difference": -1, "opponent_goals_for": 6},
+                {"team": "D", "opponent_points": 7, "opponent_goal_difference": 1, "opponent_goals_for": 7},
             ]
         )
 

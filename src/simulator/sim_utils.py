@@ -558,7 +558,7 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos, home_advantag
 
     return standings_df
 
-
+#@profile
 def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
     """
     Applies a head-to-head (H2H) tiebreaker rule to a group of tied teams based on their matches against each other.
@@ -588,7 +588,9 @@ def apply_h2h_tiebreaker(matches_df, tied_teams, rule):
     if rule=="h2h_win_loss_pct":
         standings_tied = get_win_loss_pct(tied_matches_df)
     else:
-        standings_tied = get_standings_metrics_footy(tied_matches_df)
+        if rule.startswith("h2h_"):
+            metrics = [rule[4:]]
+        standings_tied = get_standings_metrics_footy(tied_matches_df, metrics = metrics)
     # add h2h prefix to metrics
     standings_tied.columns = [
         f"h2h_{col}" if col != "team" else col for col in standings_tied.columns
@@ -812,8 +814,8 @@ def apply_win_loss_pct_same_div_tiebreaker(standings):
 
     return standings_tied
     
-
-def get_standings_metrics_footy(matches_df):
+#@profile
+def get_standings_metrics_footy(matches_df, metrics=['points','goal_difference','goals_for','goals_against','away_goals_for','wins','away_wins']):
     """
     Calculates basic league standings metrics for each team based on match results.
 
@@ -839,74 +841,63 @@ def get_standings_metrics_footy(matches_df):
         - 'goals_against': total goals conceded (home + away)
         - 'away_goals_for': goals scored in away matches (useful for tiebreakers)
     """
+    valid_metrics = ['points','goal_difference','goals_for','goals_against','away_goals_for','wins','away_wins']
+    calc_metrics = [x for x in metrics if x in valid_metrics]
+    if "opponent_points" in metrics and "points" not in metrics:
+        calc_metrics.append('points')
+    if "opponent_goal_difference" in metrics and "goal_difference" not in metrics:
+        calc_metrics.append('goal_difference')
+    if "opponent_goals_for" in metrics and "goals_for" not in metrics:
+        calc_metrics.append('goals_for')
 
-    matches_df["home_pts"] = np.where(
-        matches_df["home_goals"] > matches_df["away_goals"],
-        3,
-        np.where(matches_df["home_goals"] == matches_df["away_goals"], 1, 0),
-    )
-    matches_df["away_pts"] = np.where(
-        matches_df["away_goals"] > matches_df["home_goals"],
-        3,
-        np.where(matches_df["home_goals"] == matches_df["away_goals"], 1, 0),
-    )
-    matches_df["home_wins"] = np.where(
-        matches_df["home_goals"] > matches_df["away_goals"],
-        1,
-        0
-    )
-    matches_df["away_wins"] = np.where(
-        matches_df["away_goals"] > matches_df["home_goals"],
-        1,
-        0
-    )
-    home_pts = (
-        matches_df.groupby(["home"])[["home_pts", "home_goals", "away_goals","home_wins"]]
+    home_matches_df = matches_df.copy()
+    away_matches_df = matches_df.copy()
+
+    home_matches_df['home_away'] = 'home'
+    home_matches_df['team'] = home_matches_df['home']
+    home_matches_df['goals_for'] = home_matches_df['home_goals']
+    home_matches_df['goals_against'] = home_matches_df['away_goals']
+
+    away_matches_df['home_away'] = 'away'
+    away_matches_df['team'] = away_matches_df['away']
+    away_matches_df['goals_for'] = away_matches_df['away_goals']
+    away_matches_df['goals_against'] = away_matches_df['home_goals']
+
+    matches_df_all = pd.concat([home_matches_df, away_matches_df])
+
+    if any(x in calc_metrics for x in ['points','opponent_points']):
+        matches_df_all["points"] = np.where(
+            matches_df_all["goals_for"] > matches_df_all["goals_against"],
+            3,
+            np.where(matches_df_all["goals_for"] == matches_df_all["goals_against"], 1, 0),
+        )
+    if any(x in calc_metrics for x in ['wins','away_wins']):
+        matches_df_all["wins"] = np.where(
+            matches_df_all["goals_for"] > matches_df_all["goals_against"],
+            1,
+            0
+        )
+    if "away_wins" in calc_metrics:
+        matches_df_all["away_wins"] = np.where(
+            matches_df_all["home_away"]=='away',
+            matches_df_all["wins"],
+            0
+        )
+
+    if "goal_difference" in calc_metrics:
+        matches_df_all["goal_difference"] = matches_df_all['goals_for'] - matches_df_all['goals_against']
+
+    if "away_goals_for" in calc_metrics:
+        matches_df_all["away_goals_for"] = np.where(
+            matches_df_all["home_away"]=='away',
+            matches_df_all["goals_for"],
+            0
+        )
+    standings = (
+        matches_df_all.groupby(["team"])[calc_metrics]
         .sum()
         .reset_index()
-    )
-    away_pts = (
-        matches_df.groupby(["away"])[["away_pts", "away_goals", "home_goals","away_wins"]]
-        .sum()
-        .reset_index()
-    )
-
-    home_pts = home_pts.rename(
-        columns={
-            "home": "team",
-            "home_goals": "home_goals_for",
-            "away_goals": "away_goals_against",
-        }
-    )
-    away_pts = away_pts.rename(
-        columns={
-            "away": "team",
-            "away_goals": "away_goals_for",
-            "home_goals": "home_goals_against",
-        }
-    )
-    # Combine wins and losses into a single DataFrame
-    standings = pd.merge(home_pts, away_pts, how="outer", on="team").fillna(0)
-    standings["points"] = standings["home_pts"] + standings["away_pts"]
-    standings["goals_for"] = standings["home_goals_for"] + standings["away_goals_for"]
-    standings["goals_against"] = (
-        standings["home_goals_against"] + standings["away_goals_against"]
-    )
-    standings["goal_difference"] = standings["goals_for"] - standings["goals_against"]
-    standings["wins"] = standings["home_wins"] + standings["away_wins"]
-
-    standings = standings[
-        [
-            "team",
-            "points",
-            "goal_difference",
-            "goals_for",
-            "goals_against",
-            "away_goals_for",
-            "wins",
-            "away_wins"
-        ]
-    ].fillna(0)
+    ).fillna(0)
 
     return standings
 
@@ -1346,7 +1337,7 @@ def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
         for metric in metrics
     ]
     if league_type == "UEFA":
-        standings = get_standings_metrics_footy(matches_df)
+        standings = get_standings_metrics_footy(matches_df, metrics = all_metrics)
     elif league_type in ["NBA","MLB","NFL"]:
         standings = get_standings_metrics_us(matches_df, metrics = all_metrics)
     else:
