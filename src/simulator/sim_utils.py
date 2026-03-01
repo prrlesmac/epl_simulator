@@ -1532,34 +1532,42 @@ def get_opponents_aggregate_stats(matches_df, standings_df):
             - 'opponent_goal_difference': Sum of all opponents' goal difference
             - 'opponent_goals_for': Sum of all opponents' goals for
     """
-    # Get set of all opponents each team has played against
-    team_opponents = {}
+    # Build long team-opponent table
+    home = matches_df[["home", "away"]].rename(
+        columns={"home": "team", "away": "opponent"}
+    )
+    away = matches_df[["home", "away"]].rename(
+        columns={"away": "team", "home": "opponent"}
+    )
 
-    for _, row in matches_df.iterrows():
-        team_opponents.setdefault(row['home'], set()).add(row['away'])
-        team_opponents.setdefault(row['away'], set()).add(row['home'])
+    team_opponents = (
+        pd.concat([home, away], ignore_index=True)
+        .drop_duplicates()
+    )
 
-    # Create lookup dictionaries for points and goals_for
-    points_lookup = standings_df.set_index("team")["points"].to_dict()
-    goals_lookup = standings_df.set_index("team")["goals_for"].to_dict()
-    goal_difference_lookup = standings_df.set_index("team")["goal_difference"].to_dict()
+    # Rename standings team column to avoid collision
+    standings_subset = standings_df.rename(columns={"team": "opponent"})
 
-    # Build result
-    result = []
-    for team, opponents in team_opponents.items():
-        total_points = sum(points_lookup.get(opp, 0) for opp in opponents)
-        total_goal_difference = sum(goal_difference_lookup.get(opp, 0) for opp in opponents)
-        total_goals = sum(goals_lookup.get(opp, 0) for opp in opponents)
+    # Merge opponent stats
+    merged = team_opponents.merge(
+        standings_subset[
+            ["opponent", "points", "goal_difference", "goals_for"]
+        ],
+        on="opponent",
+        how="left"
+    )
 
-        result.append({
-            "team": team,
-            "opponent_points": total_points,
-            "opponent_goal_difference": total_goal_difference,
-            "opponent_goals_for": total_goals
+    # Aggregate per team
+    result = (
+        merged.groupby("team", as_index=False)
+        .agg(
+            opponent_points=("points", "sum"),
+            opponent_goal_difference=("goal_difference", "sum"),
+            opponent_goals_for=("goals_for", "sum"),
+        )
+    )
 
-        })
-
-    return pd.DataFrame(result)
+    return result
 
 
 def get_opponents_strength(matches_df, standings_df, strength_of):

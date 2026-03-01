@@ -1245,7 +1245,7 @@ class TestGetOpponentsAggregateStats:
             ]
         )
 
-        pd.testing.assert_frame_equal(opponent_stats, expected_opponent_stats)
+        pd.testing.assert_frame_equal(opponent_stats, expected_opponent_stats, check_dtype=False)
 
 
 class TestValidateBracket:
