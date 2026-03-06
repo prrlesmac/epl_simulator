@@ -271,7 +271,9 @@ def get_fixtures_text(url_list):
                     current_stage = "League" if schedule == "MLB Schedule" else "Playoff" if schedule == "Postseason Schedule" else ""
                 if element.name == 'h3':
                     # Extract date from h3 element
-                    current_date = element.get_text(strip=True)
+                    date_element = element.get_text(strip=True)
+                    pattern = r'^[A-Za-z]+, [A-Za-z]+ \d{1,2}, \d{4}$'   
+                    current_date = date_element if re.match(pattern, date_element) else None
                 elif element.name == 'p' and 'game' in element.get('class', []):
                     # Parse game data
                     if current_date:
@@ -303,6 +305,10 @@ def parse_game_element(game_element, date, round):
     Returns:
         dict: Game data dictionary or None if parsing fails
     """
+    # Skip Spring training games
+    if game_element.find("span", string="(Spring)"):
+        return None
+
     try:
         text = game_element.get_text()
         
@@ -322,14 +328,20 @@ def parse_game_element(game_element, date, round):
         # Pattern looks for numbers in parentheses
         scores = re.findall(r'\((\d+)\)', text)
         
-        if len(teams) != 2 or len(scores) != 2:
+        if len(teams) != 2:
             return None
         
         # Determine home/away based on @ symbol and strong tag (winner indication)
         away_team = teams[0]
         home_team = teams[1]
-        away_goals = int(scores[0])
-        home_goals = int(scores[1])
+        if len(scores) == 2:
+            away_goals = int(scores[0])
+            home_goals = int(scores[1])
+        elif len(scores) == 0:
+            away_goals = None
+            home_goals = None
+        else:
+            return None
         
         return {
             'round': round,

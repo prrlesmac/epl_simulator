@@ -952,7 +952,7 @@ fixtures_config = {
         "table_id": ["schedule"],
     },
     "MLB": {
-        "fixtures_url": ["https://www.baseball-reference.com/leagues/majors/2025-schedule.shtml"],
+        "fixtures_url": ["https://www.baseball-reference.com/leagues/majors/2026-schedule.shtml"],
         "table_id": ["games"],
     }
 }
@@ -1365,8 +1365,6 @@ league_rules = {
     "NFL": {
         "sim_type": "winner",
         "home_advantage": elo_params["NFL"]["home_advantage"],
-        "elo_kfactor": 20,
-        "season_start_adj": 1/3,
         "has_knockout": True,
         "classification": {
             "division": ["win_loss_pct",
@@ -1425,8 +1423,6 @@ league_rules = {
     "NBA": {
         "sim_type": "winner",
         "home_advantage": elo_params["NBA"]["home_advantage"],
-        "elo_kfactor": 20,
-        "season_start_adj": 1/4,
         "has_knockout": True,
         "classification": {
             "division": ["win_loss_pct"
@@ -1475,8 +1471,6 @@ league_rules = {
     "MLB": {
         "sim_type": "winner",
         "home_advantage": elo_params["MLB"]["home_advantage"],
-        "elo_kfactor": 5,
-        "season_start_adj": 1/4,
         "has_knockout": True,
         "classification": {
             "division": [             
@@ -1524,17 +1518,8 @@ league_rules = {
             "po_r4": "best_of_7",
             "po_r2": "best_of_7",
         },
-        "knockout_draw_status": "completed_draw",
-        "knockout_draw": [
-            ("Milwaukee Brewers", "Bye"),
-            ("Chicago Cubs", "San Diego Padres"),
-            ("Philadelphia Phillies", "Bye"),
-            ("Los Angeles Dodgers", "Cincinnati Reds"),
-            ("Toronto Blue Jays", "Bye"),
-            ("New York Yankees", "Boston Red Sox"),
-            ("Seattle Mariners", "Bye"),
-            ("Cleveland Guardians", "Detroit Tigers"),
-        ],
+        "knockout_draw_status": "no_draw",
+        "knockout_draw": None,
         "knockout_reseeding": False,
         "has_play_in": False,
     },
