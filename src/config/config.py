@@ -686,6 +686,7 @@ db_table_definitions = {
             "20": FLOAT(),
             "champion": FLOAT(),
             "top_4": FLOAT(),
+            "top_5": FLOAT(),
             "relegation_direct": FLOAT(),
             "relegation_playoff": FLOAT(),
             "league": VARCHAR(100),
@@ -1061,6 +1062,7 @@ league_rules = {
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
+            "top_5": [1, 2, 3, 4, 5],
             "relegation_direct": [18, 19, 20],
         },
     },
@@ -1080,6 +1082,7 @@ league_rules = {
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
+            "top_5": [1, 2, 3, 4, 5],
             "relegation_direct": [18, 19, 20],
         },
     },
@@ -1100,6 +1103,7 @@ league_rules = {
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
+            "top_5": [1, 2, 3, 4, 5],
             "relegation_direct": [18, 19, 20],
         },
     },
@@ -1121,6 +1125,7 @@ league_rules = {
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
+            "top_5": [1, 2, 3, 4, 5],
             "relegation_playoff": [16],
             "relegation_direct": [17, 18],
         },
@@ -1144,6 +1149,7 @@ league_rules = {
         "qualification": {
             "champion": [1],
             "top_4": [1, 2, 3, 4],
+            "top_5": [1, 2, 3, 4, 5],
             "relegation_playoff": [16],
             "relegation_direct": [17, 18],
         },

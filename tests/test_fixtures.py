@@ -261,7 +261,7 @@ class TestGetFixtures:
         soup = BeautifulSoup(self.create_bad_score_html(), "html.parser")
         game_el = soup.find("p", class_="game")
         result = parse_game_element(game_el, "Some Date", "MLB Season")
-        assert result is None
+        assert result == {'round': 'MLB Season', 'date': 'Some Date', 'away': 'Yankees', 'home': 'Red Sox', 'away_goals': None, 'home_goals': None}
 
     @patch("time.sleep")
     @patch("requests.get")
