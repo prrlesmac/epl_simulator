@@ -10,7 +10,19 @@ def sample_elo_params():
         'elo_kfactor': 20,
         'season_start_adj': 0.25,
         'home_advantage': 0,
-        'league': 'NFL'
+        'league': 'NFL',
+        'in_between_seasons': False
+    }
+
+@pytest.fixture
+def sample_elo_params_in_between():
+    """Standard Elo parameters for testing."""
+    return {
+        'elo_kfactor': 20,
+        'season_start_adj': 0.25,
+        'home_advantage': 0,
+        'league': 'NFL',
+        'in_between_seasons': True
     }
 
 @pytest.fixture
@@ -20,7 +32,8 @@ def sample_elo_params_nba():
         "elo_kfactor": 20,
         "season_start_adj": 0.25,
         "home_advantage": 100,
-        'league': 'NBA'
+        'league': 'NBA',
+        'in_between_seasons': False
     }
 
 @pytest.fixture
@@ -78,7 +91,8 @@ def sample_elo_params_uefa():
         "elo_kfactor": 20,
         "season_start_adj": 0,
         "home_advantage": 100,
-        'league': 'UEFA'
+        'league': 'UEFA',
+        'in_between_seasons': False
     }
 
 @pytest.fixture
@@ -393,12 +407,32 @@ class TestUpdateMatchesElos:
         # We can verify by checking that ratings were adjusted toward mean
         team_a_after_match_2 = calc.matches.iloc[2]['away_elo_after']
         team_a_before_match_3 = calc.matches.iloc[3]['home_elo_before']
-        
+
         # These should be different due to season adjustment
         # (unless Team A happened to be exactly at league average)
         # This test verifies the adjustment logic runs
         assert 'home_elo_before' in calc.matches.columns
+        assert team_a_after_match_2 != team_a_before_match_3
+
+
+    def test_update_matches_elos_in_between_seasons(self, sample_matches, sample_elo_params_in_between):
+        """Test that season start adjustment is applied."""
+        starting_elos = {
+            'Team A': 1700,
+            'Team B': 1650,
+            'Team C': 1600,
+        }
+        calc = EloCalculator(sample_matches.copy(), sample_elo_params_in_between, starting_elos=starting_elos)
+        
+        calc.update_matches_elos()
+
+        team_a_starting = calc.matches.iloc[0]['home_elo_before']
+        team_b_starting = calc.matches.iloc[0]['away_elo_before']
+        team_c_starting = calc.matches.iloc[1]['away_elo_before']
+
+        assert [team_a_starting, team_b_starting, team_c_starting] == [1687.5, 1650, 1612.5]
     
+
     def test_update_matches_elos_preserves_original_data(self, sample_matches, sample_elo_params):
         """Test that original match data is preserved."""
         original_columns = set(sample_matches.columns)

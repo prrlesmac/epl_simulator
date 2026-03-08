@@ -15,6 +15,7 @@ class EloCalculator:
         self.season_start_adj = elo_params['season_start_adj']
         self.home_adv = elo_params['home_advantage']
         self.league = elo_params['league']
+        self.in_between_seasons = elo_params['in_between_seasons']
 
     def get_rating(self, team):
         # Return current rating or initial rating if team not rated yet
@@ -191,13 +192,20 @@ class EloCalculator:
         self.matches["away_win_expectancy"] = 0.0
 
         # Process matches and update the DataFrame
+        in_between_seasons_adj = self.in_between_seasons
         for index, match in self.matches.iterrows():
+            # adjust elos for new season start
             prev_match_season = self.matches.at[max(0,index-1), "season"]
             new_match_season = self.matches.at[index, "season"]
-
-            if prev_match_season != new_match_season:
+            season_start_adjust_elos = (
+                prev_match_season != new_match_season
+                or in_between_seasons_adj
+            )
+            if season_start_adjust_elos:
                 self.adjust_season_start_elo()
+            in_between_seasons_adj = False
 
+            # update ratings based on new game
             (
                 home_elo_before,
                 away_elo_before,
@@ -206,6 +214,7 @@ class EloCalculator:
                 home_expectancy,
                 away_expectancy,
             ) = self.update_ratings(match["home_current"], match["away_current"], match["home_goals"], match["away_goals"], match["neutral"])
+
             # Populate the DataFrame
             self.matches.at[index, "home_elo_before"] = home_elo_before
             self.matches.at[index, "away_elo_before"] = away_elo_before

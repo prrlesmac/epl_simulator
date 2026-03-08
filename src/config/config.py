@@ -1020,21 +1020,25 @@ elo_params = {
         "home_advantage": 80,
         "elo_kfactor": 15,
         "season_start_adj": 0,
+        "in_between_seasons": False,
     },
     "NFL": {
         "home_advantage": 50,
         "elo_kfactor": 20,
         "season_start_adj": 1/3,
+        "in_between_seasons": True,
     },
     "NBA": {
         "home_advantage": 100,
         "elo_kfactor": 20,
         "season_start_adj": 1/4,
+        "in_between_seasons": False,
     },
     "MLB": {
         "home_advantage": 25,
         "elo_kfactor": 5,
         "season_start_adj": 1/4,
+        "in_between_seasons": True,
     }
 }
 
