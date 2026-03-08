@@ -1026,7 +1026,7 @@ elo_params = {
         "home_advantage": 50,
         "elo_kfactor": 20,
         "season_start_adj": 1/3,
-        "in_between_seasons": True,
+        "in_between_seasons": False,
     },
     "NBA": {
         "home_advantage": 100,

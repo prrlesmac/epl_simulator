@@ -423,15 +423,16 @@ class TestUpdateMatchesElos:
             'Team C': 1600,
         }
         calc = EloCalculator(sample_matches.copy(), sample_elo_params_in_between, starting_elos=starting_elos)
-        
         calc.update_matches_elos()
 
-        team_a_starting = calc.matches.iloc[0]['home_elo_before']
-        team_b_starting = calc.matches.iloc[0]['away_elo_before']
-        team_c_starting = calc.matches.iloc[1]['away_elo_before']
+        ratings_final = calc.ratings
+        expected_ratings = {
+            "Team A": 1692.0,
+            "Team B": 1645.6,
+            "Team C": 1612.4,
+        }
+        assert ratings_final == pytest.approx(expected_ratings, abs=0.1)
 
-        assert [team_a_starting, team_b_starting, team_c_starting] == [1687.5, 1650, 1612.5]
-    
 
     def test_update_matches_elos_preserves_original_data(self, sample_matches, sample_elo_params):
         """Test that original match data is preserved."""
