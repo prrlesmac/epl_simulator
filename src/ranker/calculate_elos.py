@@ -21,10 +21,10 @@ def load_matches_data(league, name_remap):
     """
     engine = db_connect.get_postgres_engine()
     table_suffix = league.lower()
-    cutoff_date = config.elo_date
+    cutoff_date = config.first_elo_calc_date
 
     # Conditional filter
-    date_filter = "AND date > %(cutoff_date)s" if league.upper() == "UEFA" else ""
+    date_filter = "AND date >= %(cutoff_date)s" if league.upper() == "UEFA" else ""
 
     query = f"""
         SELECT *
