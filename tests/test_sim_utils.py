@@ -19,6 +19,7 @@ from simulator.sim_utils import (
     apply_break_division_tiebreaker,
     apply_win_loss_pct_same_div_tiebreaker,
     get_win_loss_pct_playoff_teams,
+    _build_tie_match_index,
     get_standings_metrics_footy,
     get_standings_metrics_us,
     get_standings,
@@ -1990,7 +1991,8 @@ class TestPlayoffSimulation:
         assert winners == ["A"]
 
     def test_get_tie_matches(self):
-        matches = _get_tie_matches("A", "B", self.playoff_schedule)
+        tie_match_index = _build_tie_match_index(self.playoff_schedule) 
+        matches = _get_tie_matches("A", "B", self.playoff_schedule, tie_match_index)
         mock_df = pd.DataFrame(
             [
                 {
@@ -2014,10 +2016,12 @@ class TestPlayoffSimulation:
         pd.testing.assert_frame_equal(matches, mock_df)
 
     def test_determine_winner_from_schedule(self):
-        tie_matches = _get_tie_matches("A", "B", self.playoff_schedule)
+        tie_match_index = _build_tie_match_index(self.playoff_schedule) 
+        tie_matches = _get_tie_matches("A", "B", self.playoff_schedule, tie_match_index)
         winner = _determine_winner_from_schedule("A", "B", 1600, 1600, "single_game_neutral" ,tie_matches, home_adv=80)
         assert winner == "A"
-        tie_matches = _get_tie_matches("A", "B", self.playoff_schedule_partial)
+        tie_match_index = _build_tie_match_index(self.playoff_schedule) 
+        tie_matches = _get_tie_matches("A", "B", self.playoff_schedule_partial, tie_match_index)
         winner = _determine_winner_from_schedule("A", "B", 1600, 1600, "single_game_neutral" ,tie_matches, home_adv=80)
         assert winner in ["A", "B"]
 

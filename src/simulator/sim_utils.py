@@ -1765,11 +1765,11 @@ def _simulate_round(
     """
     winners = []
 
+    tie_match_index = _build_tie_match_index(playoff_schedule)  # build ONCE here 
     for _, row in current_round.iterrows():
         team1, team2 = row["team1"], row["team2"]
-
         winner = get_match_winner_from_playoff(
-            team1, team2, round_format, elos_dict, playoff_schedule, home_advantage
+            team1, team2, round_format, elos_dict, playoff_schedule, tie_match_index, home_advantage
         )
         winners.append(winner)
 
@@ -1781,7 +1781,7 @@ def _simulate_round(
 
 #@profile
 def get_match_winner_from_playoff(
-    team1, team2, round_format, elos_dict, playoff_schedule, home_advantage
+    team1, team2, round_format, elos_dict, playoff_schedule, tie_match_index, home_advantage
 ):
     """
     Simulate a single playoff match between two teams.
@@ -1792,6 +1792,9 @@ def get_match_winner_from_playoff(
         round_format (str): Format of the round.
         elos_dict (dict): Dictionary of ELO ratings.
         playoff_schedule (pd.DataFrame): Schedule of real matches, if available.
+        tie_match_index (dict): Pre-built index mapping (team1, team2) tuples to
+            row indices in playoff_schedule. Built once via _build_tie_match_index
+            and passed in to avoid rebuilding on every call.
         home_advantage (float): elo adjustment to home team
 
     Returns:
@@ -1805,7 +1808,7 @@ def get_match_winner_from_playoff(
     team1_elo = elos_dict.get(team1, 1000)
     team2_elo = elos_dict.get(team2, 1000)
 
-    tie_matches = _get_tie_matches(team1, team2, playoff_schedule)
+    tie_matches = _get_tie_matches(team1, team2, playoff_schedule, tie_match_index)
 
     if tie_matches.empty:
         if round_format in ('single_game_neutral', 'single_game', 'two-legged'):
@@ -1836,7 +1839,7 @@ def _build_tie_match_index(schedule):
     return index
 
 #@profile
-def _get_tie_matches(team1, team2, playoff_schedule):
+def _get_tie_matches(team1, team2, playoff_schedule, tie_match_index):
     """
     Retrieve all scheduled matches between two teams from the playoff schedule.
 
@@ -1844,16 +1847,18 @@ def _get_tie_matches(team1, team2, playoff_schedule):
         team1 (str): First team.
         team2 (str): Second team.
         playoff_schedule (pd.DataFrame): DataFrame containing all playoff matches.
+        tie_match_index (dict): Pre-built index mapping (team1, team2) tuples to
+            row indices in playoff_schedule. Built once via _build_tie_match_index
+            and passed in to avoid rebuilding on every call.
 
     Returns:
         pd.DataFrame: Subset of playoff_schedule for matches between the two teams.
     """
-    tie_match_index = _build_tie_match_index(playoff_schedule)
     indices = tie_match_index.get((team1, team2), []) + \
               tie_match_index.get((team2, team1), [])
     return playoff_schedule.loc[indices].copy()
 
-
+#@profile
 def _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_format, tie_matches, home_adv):
     """
     Determine the winner of a matchup or playoff series based on the scheduled
@@ -1961,7 +1966,7 @@ def _get_winner_from_completed_matches(team1, team2, tie_matches):
     # Fallback if regex not found
     return _get_winner_by_goals(team1, team2, tie_matches)
 
-
+#@profile
 def _get_winner_from_partial_matches(team1, team2, tie_matches, win_proba):
     """
     Determine the winner from partially played ties.
@@ -2026,16 +2031,16 @@ def _calculate_total_goals(team1, team2, tie_matches):
     Returns:
         tuple: Total goals for team1 and team2.
     """
-    t1_goals = (
-        tie_matches[tie_matches["home"] == team1]["home_goals"].sum()
-        + tie_matches[tie_matches["away"] == team1]["away_goals"].sum()
-    )
-
-    t2_goals = (
-        tie_matches[tie_matches["home"] == team2]["home_goals"].sum()
-        + tie_matches[tie_matches["away"] == team2]["away_goals"].sum()
-    )
-
+    t1_goals, t2_goals = 0, 0
+    for row in tie_matches.itertuples():
+        if row.home == team1:
+            t1_goals += row.home_goals
+        if row.away == team1:
+            t1_goals += row.away_goals
+        if row.home == team2:
+            t2_goals += row.home_goals
+        if row.away == team2:
+            t2_goals += row.away_goals
     return t1_goals, t2_goals
 
 

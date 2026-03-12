@@ -166,7 +166,7 @@ def single_simulation(
             )
         else:
             playoff_schedule = knockout_schedule_played
-        
+
         # TODO think of better ways to pull elos
         elos_final = schedule_final[["home", "elo_home"]].drop_duplicates(subset=["home"])
         elos_final = elos_final.rename(columns={"home": "team", "elo_home": "elo"})
