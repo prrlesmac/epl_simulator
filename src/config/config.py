@@ -889,9 +889,10 @@ db_table_definitions = {
 }
 
 # Data scraping
-parsing_method = "local_file" # must be local_file, http_request, or playwright
+parsing_method = "http_request" # must be local_file, http_request, or playwright
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-#elo_date = "2026-03-06"  # For testing purposes, set a fixed date
+#elo_date = "2026-03-12"  # For testing purposes, set a fixed date
+# first date to include for list of played matches used to update elos
 first_elo_calc_date = '2026-03-12'
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
 pull_fixture_history = False
