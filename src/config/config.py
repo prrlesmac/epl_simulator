@@ -957,7 +957,13 @@ fixtures_config = {
     "MLB": {
         "fixtures_url": ["https://www.baseball-reference.com/leagues/majors/2026-schedule.shtml"],
         "table_id": ["games"],
-    }
+    },
+    "FIFA_WC": {
+        "fixtures_url": ["https://fbref.com/en/comps/1/schedule/World-Cup-Scores-and-Fixtures"],
+        "local_file_path": "data/fifa/World Cup Scores & Fixtures _ FBref.com",
+        # TODO get correct table id
+        "table_id": ["sched_2025-2026_882_2", "sched_2025-2026_882_3"], 
+    },
 }
 
 fixtures_history_config = {
