@@ -960,9 +960,8 @@ fixtures_config = {
     },
     "FIFA_WC": {
         "fixtures_url": ["https://fbref.com/en/comps/1/schedule/World-Cup-Scores-and-Fixtures"],
-        "local_file_path": "data/fifa/World Cup Scores & Fixtures _ FBref.com",
-        # TODO get correct table id
-        "table_id": ["sched_2025-2026_882_2", "sched_2025-2026_882_3"], 
+        "local_file_path": "data/fifa_wc/World Cup Scores & Fixtures _ FBref.com.html",
+        "table_id": ["sched_2026_1_1"], 
     },
 }
 
