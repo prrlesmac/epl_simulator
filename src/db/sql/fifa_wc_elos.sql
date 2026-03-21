@@ -1,10 +1,10 @@
-CREATE TABLE starting_elos_fifa (
+CREATE TABLE starting_elos_fifa_wc (
     id SERIAL PRIMARY KEY,
     club VARCHAR(100) NOT NULL,
     elo FLOAT8 NOT NULL
 );
 
-INSERT INTO starting_elos_fifa (club, elo) VALUES
+INSERT INTO starting_elos_fifa_wc (club, elo) VALUES
     ('Spain', 2172),
     ('Argentina', 2113),
     ('France', 2062),

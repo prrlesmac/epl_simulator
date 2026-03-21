@@ -1029,6 +1029,12 @@ elo_params = {
         "season_start_adj": 0,
         "in_between_seasons": False,
     },
+    "FIFA_WC" : {
+        "home_advantage": 40,
+        "elo_kfactor": 60,
+        "season_start_adj": 0,
+        "in_between_seasons": False,
+    },
     "NFL": {
         "home_advantage": 50,
         "elo_kfactor": 20,
@@ -1051,7 +1057,7 @@ elo_params = {
 
 
 ## Simulation
-number_of_simulations = 10000
+number_of_simulations = 100
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
 played_cutoff_date = None
 schedule_cutoff_date = None
@@ -1377,6 +1383,57 @@ league_rules = {
             ("KuPS", "Lech Poznań"),
 
         ],
+        "knockout_reseeding": False,
+    },
+    "FIFA_WC": {
+        "sim_type": "goals",
+        "home_advantage": 0,
+        "has_knockout": True,
+        "classification": {
+            "group": [
+                "points",
+                "goal_difference",
+                "goals_for",
+            ],
+        },
+        "knockout_bracket": [
+
+            ("E1", "Bye"),
+            ("I1", "Bye"),
+
+            ("A2", "B2"),
+            ("F1", "C2"),
+
+            ("K2", "L2"),
+            ("H1", "J2"),
+
+            ("D1", "Bye"),
+            ("G1", "Bye"),
+
+            ("C1", "F2"),
+            ("E2", "I2"),
+
+            ("A1", "Bye"),
+            ("L1", "Bye"),
+
+            ("J1", "H2"),
+            ("D2", "G2"),
+
+            ("B1", "Bye"),
+            ("K1", "Bye"),
+        ],
+        "knockout_format": {
+            "po_r32": "single_game_neutral",
+            "po_r16": "single_game_neutral",
+            "po_r8": "single_game_neutral",
+            "po_r4": "single_game_neutral",
+            "po_r2": "single_game_neutral",
+        },
+        # pre season
+        # "knockout_draw_status": "pending_draw",
+        # "knockout_draw": None,
+        "knockout_draw_status": "no_draw",
+        "knockout_draw": None,
         "knockout_reseeding": False,
     },
     "NFL": {
