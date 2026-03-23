@@ -1,80 +1,80 @@
-CREATE TABLE fifa_wc_teams (
+CREATE TABLE teams_fifa_wc (
     id SERIAL PRIMARY KEY,
     team VARCHAR(100) NOT NULL,
-    group_name VARCHAR(10) NOT NULL,
+    division VARCHAR(10) NOT NULL,
     confederation VARCHAR(20) NOT NULL
 );
 
-INSERT INTO fifa_wc_teams (team, group_name, confederation) VALUES
+INSERT INTO teams_fifa_wc (team, division, confederation) VALUES
 
--- Group A
-('Mexico', 'Group A', 'CONCACAF'),
-('South Korea', 'Group A', 'AFC'),
-('South Africa', 'Group A', 'CAF'),
-('Denmark', 'Group A', 'UEFA'), 
+-- A
+('Mexico', 'A', 'CONCACAF'),
+('Korea Republic', 'A', 'AFC'),
+('South Africa', 'A', 'CAF'),
+('Denmark', 'A', 'UEFA'), 
 
--- Group B
-('Canada', 'Group B', 'CONCACAF'),
-('Switzerland', 'Group B', 'UEFA'),
-('Qatar', 'Group B', 'AFC'),
-('Italy', 'Group B', 'UEFA'),
+-- B
+('Canada', 'B', 'CONCACAF'),
+('Switzerland', 'B', 'UEFA'),
+('Qatar', 'B', 'AFC'),
+('Italy', 'B', 'UEFA'),
 
--- Group C
-('Brazil', 'Group C', 'CONMEBOL'),
-('Morocco', 'Group C', 'CAF'),
-('Scotland', 'Group C', 'UEFA'),
-('Haiti', 'Group C', 'CONCACAF'),
+-- C
+('Brazil', 'C', 'CONMEBOL'),
+('Morocco', 'C', 'CAF'),
+('Scotland', 'C', 'UEFA'),
+('Haiti', 'C', 'CONCACAF'),
 
--- Group D
-('USA', 'Group D', 'CONCACAF'),
-('Paraguay', 'Group D', 'CONMEBOL'),
-('Australia', 'Group D', 'AFC'),
-('Turkey', 'Group D', 'UEFA'),
+-- D
+('United States', 'D', 'CONCACAF'),
+('Paraguay', 'D', 'CONMEBOL'),
+('Australia', 'D', 'AFC'),
+('Turkey', 'D', 'UEFA'),
 
--- Group E
-('Germany', 'Group E', 'UEFA'),
-('Ecuador', 'Group E', 'CONMEBOL'),
-('Ivory Coast', 'Group E', 'CAF'),
-('Curaçao', 'Group E', 'CONCACAF'),
+-- E
+('Germany', 'E', 'UEFA'),
+('Ecuador', 'E', 'CONMEBOL'),
+('Côte d''Ivoire', 'E', 'CAF'),
+('Curaçao', 'E', 'CONCACAF'),
 
--- Group F
-('Netherlands', 'Group F', 'UEFA'),
-('Japan', 'Group F', 'AFC'),
-('Tunisia', 'Group F', 'CAF'),
-('Ukraine', 'Group F', 'UEFA'),
+-- F
+('Netherlands', 'F', 'UEFA'),
+('Japan', 'F', 'AFC'),
+('Tunisia', 'F', 'CAF'),
+('Ukraine', 'F', 'UEFA'),
 
--- Group G
-('Belgium', 'Group G', 'UEFA'),
-('Egypt', 'Group G', 'CAF'),
-('Iran', 'Group G', 'AFC'),
-('New Zealand', 'Group G', 'OFC'),
+-- G
+('Belgium', 'G', 'UEFA'),
+('Egypt', 'G', 'CAF'),
+('IR Iran', 'G', 'AFC'),
+('New Zealand', 'G', 'OFC'),
 
--- Group H
-('Spain', 'Group H', 'UEFA'),
-('Uruguay', 'Group H', 'CONMEBOL'),
-('Saudi Arabia', 'Group H', 'AFC'),
-('Cape Verde', 'Group H', 'CAF'),
+-- H
+('Spain', 'H', 'UEFA'),
+('Uruguay', 'H', 'CONMEBOL'),
+('Saudi Arabia', 'H', 'AFC'),
+('Cape Verde', 'H', 'CAF'),
 
--- Group I
-('France', 'Group I', 'UEFA'),
-('Norway', 'Group I', 'UEFA'),
-('Senegal', 'Group I', 'CAF'),
-('Iraq', 'Group I', 'AFC'),
+-- I
+('France', 'I', 'UEFA'),
+('Norway', 'I', 'UEFA'),
+('Senegal', 'I', 'CAF'),
+('Iraq', 'I', 'AFC'),
 
--- Group J
-('Argentina', 'Group J', 'CONMEBOL'),
-('Algeria', 'Group J', 'CAF'),
-('Austria', 'Group J', 'UEFA'),
-('Jordan', 'Group J', 'AFC'),
+-- J
+('Argentina', 'J', 'CONMEBOL'),
+('Algeria', 'J', 'CAF'),
+('Austria', 'J', 'UEFA'),
+('Jordan', 'J', 'AFC'),
 
--- Group K
-('Portugal', 'Group K', 'UEFA'),
-('Colombia', 'Group K', 'CONMEBOL'),
-('Uzbekistan', 'Group K', 'AFC'),
-('DR Congo', 'Group K', 'CAF'),
+-- K
+('Portugal', 'K', 'UEFA'),
+('Colombia', 'K', 'CONMEBOL'),
+('Uzbekistan', 'K', 'AFC'),
+('DR Congo', 'K', 'CAF'),
 
--- Group L
-('England', 'Group L', 'UEFA'),
-('Croatia', 'Group L', 'UEFA'),
-('Ghana', 'Group L', 'CAF'),
-('Panama', 'Group L', 'CONCACAF');
+-- L
+('England', 'L', 'UEFA'),
+('Croatia', 'L', 'UEFA'),
+('Ghana', 'L', 'CAF'),
+('Panama', 'L', 'CONCACAF');

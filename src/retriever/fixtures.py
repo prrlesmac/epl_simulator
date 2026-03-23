@@ -396,6 +396,11 @@ def process_footy_table(fixtures, country):
     fixtures["neutral"] = "N"
     if "round" not in fixtures.columns:
         fixtures["round"] = "League"
+    fixtures["round"] = np.where(
+        fixtures["round"] == "Group stage",
+        "League",
+        fixtures["round"]
+    )
     fixtures["round"] = fixtures["round"].fillna("League")
 
     return fixtures

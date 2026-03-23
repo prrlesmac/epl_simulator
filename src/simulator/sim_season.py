@@ -358,8 +358,7 @@ def load_league_data(league):
         tuple: (schedule_df, elos_df, divisions) DataFrames containing schedule, Elo and divisional data
     """
     table_suffix = "uefa" if league in config.active_uefa_leagues else league
-    is_continental_league = league in ["UCL", "UEL", "UECL"]
-    is_us_league = league in ["NFL", "MLB", "NBA"]
+    has_divisions = league in ["NFL", "MLB", "NBA", "FIFA_WC"]
     engine = db_connect.get_postgres_engine()
 
     schedule = pd.read_sql(
@@ -375,7 +374,7 @@ def load_league_data(league):
     elos = pd.read_sql(elos_query, engine)
     elos = elos[elos['club'].isin(teams)]
 
-    if is_us_league:
+    if has_divisions:
         divisions = pd.read_sql(
             f"SELECT * FROM {config.db_table_definitions['divisions_table']['name']}_{table_suffix}",
             engine,

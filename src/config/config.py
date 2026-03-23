@@ -593,6 +593,7 @@ mlb_starting_elos = {}
 db_table_mapping = {
     "UEFA_LOCAL": "domestic_sim_output_table",
     "UEFA_CONTINENTAL": "continental_sim_output_table",
+    "FIFA_WC": "fifa_wc_sim_output_table",
     "NFL": "nfl_sim_output_table",
     "MLB": "mlb_sim_output_table",
     "NBA": "nba_sim_output_table",
@@ -735,6 +736,20 @@ db_table_definitions = {
             "36": FLOAT(),
             "playoff": FLOAT(),
             "direct_to_round_of_16": FLOAT(),
+            "po_r32": FLOAT(),
+            "po_r16": FLOAT(),
+            "po_r8": FLOAT(),
+            "po_r4": FLOAT(),
+            "po_r2": FLOAT(),
+            "po_champion": FLOAT(),
+            "league": VARCHAR(100),
+            "updated_at": TIMESTAMP(),
+        },
+    },
+    "fifa_wc_sim_output_table": {
+        "name": "sim_standings_fifa_wc",
+        "dtype": {
+            "team": VARCHAR(100),
             "po_r32": FLOAT(),
             "po_r16": FLOAT(),
             "po_r8": FLOAT(),
@@ -889,7 +904,7 @@ db_table_definitions = {
 }
 
 # Data scraping
-parsing_method = "http_request" # must be local_file, http_request, or playwright
+parsing_method = "local_file" # must be local_file, http_request, or playwright
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 #elo_date = "2026-03-12"  # For testing purposes, set a fixed date
 # first date to include for list of played matches used to update elos
@@ -1057,7 +1072,7 @@ elo_params = {
 
 
 ## Simulation
-number_of_simulations = 100
+number_of_simulations = 10000
 active_uefa_leagues = ["ENG","ESP","ITA","GER","FRA","UCL","UEL","UECL"]
 played_cutoff_date = None
 schedule_cutoff_date = None
@@ -1390,11 +1405,16 @@ league_rules = {
         "home_advantage": 0,
         "has_knockout": True,
         "classification": {
-            "group": [
+            "division": [
                 "points",
+                "h2h_points",
+                "h2h_goal_difference",
+                "h2h_goals_for",
                 "goal_difference",
                 "goals_for",
             ],
+        },
+        "qualification": {
         },
         "knockout_bracket": [
 

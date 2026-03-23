@@ -1336,7 +1336,7 @@ def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
         for metrics in classif_rules.values()
         for metric in metrics
     ]
-    if league_type == "UEFA":
+    if league_type in ["UEFA", "FIFA_WC"]:
         standings = get_standings_metrics_footy(matches_df, metrics = all_metrics)
     elif league_type in ["NBA","MLB","NFL"]:
         standings = get_standings_metrics_us(matches_df, metrics = all_metrics)
@@ -1364,6 +1364,9 @@ def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
 
     if league_type == "UEFA":
         standings["playoff_pos"] = standings["league_pos"]
+    elif league_type == "FIFA_WC":
+        standings["playoff_pos"] = standings["division"] + standings["division_pos"].astype(str)
+        # TODO do the third place ranks
     else:
         standings["playoff_pos"] = standings["conference"] + " " + standings["conference_pos"].astype(str)
 
