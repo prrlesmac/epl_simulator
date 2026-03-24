@@ -2,6 +2,7 @@ from simulator.sim_utils import (
     simulate_matches_data_frame,
     simulate_play_in_tourney,
     get_standings,
+    get_fifa_wc_bracket,
     draw_from_pots,
     create_bracket_from_composition,
     extract_positions_from_bracket,
@@ -179,7 +180,13 @@ def single_simulation(
                 elos_final, 
                 league_rules["home_advantage"]
             )
-        
+
+        # Handle third place ranking
+        if ("knockout_third_place_mapping" in league_rules):
+            standings_df = get_fifa_wc_bracket(
+                standings_df, 
+                league_rules['knockout_third_place_mapping']
+            )
         # Determine knockout bracket
         if league_rules["knockout_draw_status"] == "pending_draw":
             draw = draw_from_pots(standings_df, pot_size=2)

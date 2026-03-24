@@ -1,5 +1,6 @@
 import datetime
 from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, TIMESTAMP, DATE
+from config import bracket_configs
 
 # mapping from club elo to fb ref
 club_name_mapping = {
@@ -1413,13 +1414,18 @@ league_rules = {
                 "goal_difference",
                 "goals_for",
             ],
+            "league": [
+                "points",
+                "goal_difference",
+                "goals_for",
+            ],
         },
         "qualification": {
         },
         "knockout_bracket": [
 
-            ("E1", "Bye"),
-            ("I1", "Bye"),
+            ("E1", "3rd vs E1"),
+            ("I1", "3rd vs I1"),
 
             ("A2", "B2"),
             ("F1", "C2"),
@@ -1427,20 +1433,20 @@ league_rules = {
             ("K2", "L2"),
             ("H1", "J2"),
 
-            ("D1", "Bye"),
-            ("G1", "Bye"),
+            ("D1", "3rd vs D1"),
+            ("G1", "3rd vs G1"),
 
             ("C1", "F2"),
             ("E2", "I2"),
 
-            ("A1", "Bye"),
-            ("L1", "Bye"),
+            ("A1", "3rd vs A1"),
+            ("L1", "3rd vs L1"),
 
             ("J1", "H2"),
             ("D2", "G2"),
 
-            ("B1", "Bye"),
-            ("K1", "Bye"),
+            ("B1", "3rd vs B1"),
+            ("K1", "3rd vs K1"),
         ],
         "knockout_format": {
             "po_r32": "single_game_neutral",
@@ -1455,6 +1461,7 @@ league_rules = {
         "knockout_draw_status": "no_draw",
         "knockout_draw": None,
         "knockout_reseeding": False,
+        "knockout_third_place_mapping": bracket_configs.fifa_wc_third_place_mapping
     },
     "NFL": {
         "sim_type": "winner",

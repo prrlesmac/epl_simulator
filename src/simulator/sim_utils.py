@@ -1366,7 +1366,6 @@ def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
         standings["playoff_pos"] = standings["league_pos"]
     elif league_type == "FIFA_WC":
         standings["playoff_pos"] = standings["division"] + standings["division_pos"].astype(str)
-        # TODO do the third place ranks
     else:
         standings["playoff_pos"] = standings["conference"] + " " + standings["conference_pos"].astype(str)
 
@@ -2282,3 +2281,20 @@ def extract_positions_from_bracket(knockout_draw, knockout_bracket):
 
     return draw_pos
 
+
+def get_fifa_wc_bracket(standings, knockout_third_place_mapping):
+
+    top_third_placed = standings[standings["division_pos"]==3].sort_values(by="league_pos").head(8)
+    standings["top_third_placed"] = np.where(
+        standings["team"].isin(top_third_placed["team"]),
+        True,
+        False
+    )
+    top_third_combo = top_third_placed.sort_values(by='division')["division"]
+    top_third_combo = tuple(top_third_combo)
+    third_place_rivals = knockout_third_place_mapping[top_third_combo]
+    mask = standings['playoff_pos'].isin(third_place_rivals)
+    standings.loc[mask, 'playoff_pos'] = '3rd vs ' + standings.loc[mask, 'playoff_pos'].map(third_place_rivals)
+    standings.loc[~standings['playoff_pos'].str[-1].isin(['1', '2']), 'playoff_pos'] = None
+
+    return standings
