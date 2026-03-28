@@ -75,7 +75,7 @@ def filter_elos(elos, country, level):
     return filtered_elos
 
 
-def main_elos():
+def run_elos_fetch():
     engine = db_connect.get_postgres_engine()
     elos = get_elos(config.elo_rating_url)
     if elos is None:
@@ -95,4 +95,4 @@ def main_elos():
 
 
 if __name__ == "__main__":
-    main_elos()
+    run_elos_fetch()

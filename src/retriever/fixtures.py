@@ -706,7 +706,7 @@ def process_fixtures(fixtures, country):
     return fixtures
 
 
-def main_fixtures():
+def run_fixtures():
     fixtures_all = []
     league_name = os.getenv("LEAGUES_TO_SIM")
     leagues_to_sim = config.active_uefa_leagues if league_name == "UEFA" else [league_name]
@@ -749,4 +749,4 @@ def main_fixtures():
 
 
 if __name__ == "__main__":
-    main_fixtures()
+    run_fixtures()
