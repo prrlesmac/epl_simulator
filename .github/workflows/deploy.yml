@@ -104,11 +104,11 @@ jobs:
       - name: Build and push Docker image
         env:
           PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          REGION: us-central1
+          REGION: us-east1
           REPOSITORY: sports-sim-repo
           IMAGE_NAME: sports-sim
           IMAGE_TAG: ${{ github.sha }}
-          REGISTRY: us-central1-docker.pkg.dev
+          REGISTRY: us-east1-docker.pkg.dev
         run: |
           docker build -t $REPOSITORY:$IMAGE_TAG .
           docker tag $REPOSITORY:$IMAGE_TAG $REGISTRY/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:latest
