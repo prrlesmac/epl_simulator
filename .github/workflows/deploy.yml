@@ -44,7 +44,7 @@ jobs:
         docker build -t test-build .
         echo "Docker build successful"
 
-  build-and-push:
+  build-and-push-aws:
     runs-on: ubuntu-latest
     needs: test
 
