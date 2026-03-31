@@ -24,7 +24,6 @@ def get_elos(url):
     Raises:
         requests.exceptions.RequestException: If an error occurs or request times out.
     """
-    print("Fetching elos...")
     try:
         # Add a timeout of 60 seconds
         response = requests.get(url, timeout=60)
@@ -76,6 +75,7 @@ def filter_elos(elos, country, level):
 
 
 def run_elos_fetch():
+    print("Fetching elos from API...")
     engine = db_connect.get_postgres_engine()
     elos = get_elos(config.elo_rating_url)
     if elos is None:
@@ -84,6 +84,7 @@ def run_elos_fetch():
     elos = filter_elos(elos, None, None)
     elos["club"] = elos["club"].replace(config.club_name_mapping)
     elos["updated_at"] = datetime.now()
+    print("Saving elos to DB")
     elos.to_sql(
         f"{config.db_table_definitions['starting_elo_table']['name']}_uefa",
         engine,
@@ -91,7 +92,7 @@ def run_elos_fetch():
         index=False,
         dtype=config.db_table_definitions['starting_elo_table']['dtype'],
     )
-    print("Elos updated...")
+    print("Elos updated in DB")
 
 
 if __name__ == "__main__":

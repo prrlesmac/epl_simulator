@@ -139,6 +139,7 @@ def run_elo_calc():
 
     print("Saving to DB")
     save_elos_to_database(matches_elos, current_ratings, league)
+    print("Elos saved to DB")
 
 
 if __name__ == "__main__":

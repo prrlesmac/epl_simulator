@@ -707,6 +707,7 @@ def process_fixtures(fixtures, country):
 
 
 def run_fixtures():
+    print("Starting fixtures scraper...")
     fixtures_all = []
     league_name = os.getenv("LEAGUES_TO_SIM")
     leagues_to_sim = config.active_uefa_leagues if league_name == "UEFA" else [league_name]
@@ -735,6 +736,7 @@ def run_fixtures():
     if league_name == "NBA":
         fixtures_all = post_process_nba_table(fixtures_all)
     table_name = f"{config.db_table_definitions['fixtures_table']['name']}_{league_name.lower()}{'_history' if config.pull_fixture_history else ''}"
+    print("Saving fixtures to DB...")
     engine = db_connect.get_postgres_engine()
     with engine.begin() as conn:
         conn.execute(text(f"TRUNCATE TABLE {table_name}"))
@@ -745,7 +747,7 @@ def run_fixtures():
         index=False,
         dtype=config.db_table_definitions["fixtures_table"]["dtype"],
     )
-    print("Fixtures updated")
+    print("Fixtures updated in DB")
 
 
 if __name__ == "__main__":
