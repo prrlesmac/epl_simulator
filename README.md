@@ -1,4 +1,4 @@
-to install package locally:
+to install package locally (the -e is to make sure any code edits are reflected):
 pip install -e .
 
 to build docker image
