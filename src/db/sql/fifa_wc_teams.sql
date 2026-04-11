@@ -11,13 +11,13 @@ INSERT INTO teams_fifa_wc (team, division, confederation) VALUES
 ('Mexico', 'A', 'CONCACAF'),
 ('Korea Republic', 'A', 'AFC'),
 ('South Africa', 'A', 'CAF'),
-('Denmark', 'A', 'UEFA'), 
+('Czechia', 'A', 'UEFA'), 
 
 -- B
 ('Canada', 'B', 'CONCACAF'),
 ('Switzerland', 'B', 'UEFA'),
 ('Qatar', 'B', 'AFC'),
-('Italy', 'B', 'UEFA'),
+('Bosnia & Herz''na', 'B', 'UEFA'),
 
 -- C
 ('Brazil', 'C', 'CONMEBOL'),
@@ -29,7 +29,7 @@ INSERT INTO teams_fifa_wc (team, division, confederation) VALUES
 ('United States', 'D', 'CONCACAF'),
 ('Paraguay', 'D', 'CONMEBOL'),
 ('Australia', 'D', 'AFC'),
-('Turkey', 'D', 'UEFA'),
+('Türkiye', 'D', 'UEFA'),
 
 -- E
 ('Germany', 'E', 'UEFA'),
@@ -41,7 +41,7 @@ INSERT INTO teams_fifa_wc (team, division, confederation) VALUES
 ('Netherlands', 'F', 'UEFA'),
 ('Japan', 'F', 'AFC'),
 ('Tunisia', 'F', 'CAF'),
-('Ukraine', 'F', 'UEFA'),
+('Sweden', 'F', 'UEFA'),
 
 -- G
 ('Belgium', 'G', 'UEFA'),
@@ -71,7 +71,7 @@ INSERT INTO teams_fifa_wc (team, division, confederation) VALUES
 ('Portugal', 'K', 'UEFA'),
 ('Colombia', 'K', 'CONMEBOL'),
 ('Uzbekistan', 'K', 'AFC'),
-('DR Congo', 'K', 'CAF'),
+('Congo DR', 'K', 'CAF'),
 
 -- L
 ('England', 'L', 'UEFA'),
