@@ -170,13 +170,14 @@ def single_simulation(
         # TODO think of better ways to pull elos
         elos_final = schedule_final[["home", "elo_home"]].drop_duplicates(subset=["home"])
         elos_final = elos_final.rename(columns={"home": "team", "elo_home": "elo"})
+        elos_dict = dict(zip(elos_final["team"], elos_final["elo"]))
         
         # Handle play-in tournament if configured
         if ("has_play_in" in league_rules) and (league_rules["has_play_in"]):
             standings_df = simulate_play_in_tourney(
                 standings_df, 
                 playoff_schedule, 
-                elos_final, 
+                elos_dict, 
                 league_rules["home_advantage"]
             )
         
@@ -208,7 +209,7 @@ def single_simulation(
         playoff_df = simulate_playoff_bracket(
             bracket, 
             league_rules["knockout_format"], 
-            elos_final, 
+            elos_dict, 
             playoff_schedule, 
             league_rules["knockout_reseeding"], 
             league_rules["home_advantage"]

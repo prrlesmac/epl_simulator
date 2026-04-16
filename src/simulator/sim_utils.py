@@ -309,7 +309,7 @@ def _simulate_match_goals_vectorized(proba, goal_adj=1):
     return (GH, GA)
 
 
-def simulate_play_in_tourney(standings_df, playoff_schedule, elos, home_advantage):
+def simulate_play_in_tourney(standings_df, playoff_schedule, elos_dict, home_advantage):
     """
     Simulate the NBA Play-In Tournament and assign final playoff seeds (7-10)
     for each conference.
@@ -346,7 +346,7 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos, home_advantag
             If results are present, they are used directly; otherwise games
             are simulated.
 
-        elos (dict):
+        elos_dict (dict):
             Mapping of team name to Elo rating, used when simulating games.
 
         home_advantage (float):
@@ -405,7 +405,7 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos, home_advantag
             winner = _simulate_round(
                 play_in_first_round,
                 round_format="single_game",
-                elos_dict=elos,
+                elos_dict=elos_dict,
                 playoff_schedule=play_in_schedule,
                 teams_progression={},
                 round_label="play_in_first_round",
@@ -433,7 +433,7 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos, home_advantag
             winner = _simulate_round(
                 play_in_second_round,
                 round_format="single_game",
-                elos_dict=elos,
+                elos_dict=elos_dict,
                 playoff_schedule=play_in_schedule,
                 teams_progression={},
                 round_label="play_in_second_round",
@@ -487,7 +487,7 @@ def simulate_play_in_tourney(standings_df, playoff_schedule, elos, home_advantag
             winner = _simulate_round(
                 play_in_second_round,
                 round_format="single_game",
-                elos_dict=elos,
+                elos_dict=elos_dict,
                 playoff_schedule=play_in_schedule,
                 teams_progression={},
                 round_label="play_in_second_round",
@@ -1696,7 +1696,7 @@ def validate_bracket(bracket_df, knockout_format):
         )
 
 #@profile
-def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule, has_reseeding, home_advantage):
+def simulate_playoff_bracket(bracket_df, knockout_format, elos_dict, playoff_schedule, has_reseeding, home_advantage):
     """
     Simulates a knockout playoff bracket using ELO ratings.
 
@@ -1704,7 +1704,7 @@ def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule
         bracket_df: Bracket structure with columns ['team1', 'team2'],
             and additional columns ['seed1','seed2'] in case the bracket has re-seeding
         knockout_format: Dictionary defining the format of each round
-        elos: DataFrame with columns ['team', 'elo'] representing team ELO ratings
+        elos_dict: Dictionary with keys ['team', 'elo'] representing team ELO ratings
         playoff_schedule: DataFrame with pending matches to simulate
         has_reseeding (boolean): True/False if playoff has re-seeding after each round
         home_advantage (float): Elo adjustment to home team
@@ -1713,7 +1713,6 @@ def simulate_playoff_bracket(bracket_df, knockout_format, elos, playoff_schedule
         Wide-format DataFrame with one row per team and binary indicators for each round
     """
     validate_bracket(bracket_df, knockout_format)
-    elos_dict = dict(zip(elos["team"], elos["elo"]))
     teams_progression = {}
     rounds = []
 
