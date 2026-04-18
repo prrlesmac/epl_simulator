@@ -127,83 +127,56 @@ def simulate_match_winner(proba):
 
     return result
 
-def simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches=None, best_of=7, home_adv=80):
+def simulate_series_winner(team1_elo, team2_elo, best_of=7, home_adv=80):
     """
-    Simulate the winner of a playoff series using Elo-based win probabilities. 
-    
-    The function first checks if any games have already been played (`tie_matches`). 
-    If so, it counts the number of wins each team has based on observed results. 
-    If one team has already reached the required number of wins for the series 
-    (best-of-N format), that team is returned as the winner.
-    
-    If the series is not yet decided, the function simulates the remaining games 
-    using an Elo-based win probability model. The simulation continues until one 
-    team reaches the required number of wins or all games have been played.
-    
+    Simulate the winner of a playoff series using Elo-based win probabilities.
+
+    This function simulates a best-of-N series between two teams using their Elo
+    ratings. Each game outcome is determined probabilistically via an Elo win
+    probability model, optionally adjusted for home advantage.
+
+    The simulation iterates game by game until one team reaches a majority of wins
+    (i.e., more than half of `best_of`) or all games have been played.
+
     Parameters
     ----------
-    team1 : str
-        Name of the first team in the series.
-    team2 : str
-        Name of the second team in the series.
     team1_elo : float
-        Elo rating of `team1`.
+        Elo rating of team 1.
     team2_elo : float
-        Elo rating of `team2`.
-    tie_matches : pandas.DataFrame, optional
-        DataFrame containing previously played matches in the series.
-        Must include the columns:
-        - "home"
-        - "away"
-        - "home_goals"
-        - "away_goals"
-        
-        If None or empty, the series is assumed to have no prior results.
+        Elo rating of team 2.
     best_of : int, optional
-        Length of the playoff series (default = 7). 
-        Must be an odd integer (e.g., 1, 3, 5, 7).
-    home_advantage: float, optional
-        Elo adjustment for home team
+        Total number of games in the series (default = 7). Must be an odd integer
+        (e.g., 1, 3, 5, 7).
+    home_adv : float, optional
+        Elo rating boost applied to the home team when computing win probabilities
+        (default = 80).
 
     Returns
     -------
     int
-        `1` if team1 wins the series.
-        `2` if team2 wins the series.
+        1 if team 1 wins the series.
+        2 if team 2 wins the series.
 
     Raises
     ------
     ValueError
-        If the simulated series ends with an equal number of wins for both teams 
-        (which should not occur in a best-of-N format).
-    
+        If the series ends without a winner (which should not occur in a valid
+        best-of-N simulation).
+
     Notes
     -----
-    - Win probabilities are computed using `calculate_win_probability()`, which 
-      must be defined in the same module.
-    - For best-of-7 and best-of-5 formats, early games may use reversed Elo 
-      probabilities depending on game order (home advantage logic).
-    - Simulation uses `numpy.random.rand()` to determine each game’s outcome.
-
+    - Win probabilities are computed using `calculate_win_probability()`.
+    - Game order affects probabilities:
+    - In best-of-3, all games use the same probability setup.
+    - In longer series, early games may flip perspective (simulating home/away
+        advantage patterns).
+    - Each game outcome is determined by comparing the win probability against
+    a uniform random draw from `numpy.random.rand()`.
+    - The simulation stops early once a team reaches a majority of wins.
     """
-    if tie_matches is not None and not tie_matches.empty:
-        tie_matches["winner"] = tie_matches.apply(
-            lambda row: row["home"] if row["home_goals"] > row["away_goals"] else row["away"],
-            axis=1
-        )
-        team1_wins = (tie_matches["winner"] == team1).sum()
-        team2_wins = (tie_matches["winner"] == team2).sum()
-        if team1_wins > (best_of / 2):
-            return 1
-        if team2_wins > (best_of / 2):
-            return 2
-    else:
-        team1_wins = 0
-        team2_wins = 0
-    
-    remaining_matches = best_of - team1_wins - team2_wins
-
-    for i in range(remaining_matches):
+    team1_wins = 0
+    team2_wins = 0
+    for i in range(best_of):
         if best_of == 3:
             proba = calculate_win_probability(team1_elo, team2_elo, home_adv=home_adv)
         else:
@@ -230,6 +203,73 @@ def simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches=None,
     else:
         raise(ValueError("Series simulation ended in tie"))
 
+    return result
+
+
+def simulate_series_winner_from_schedule(team1, team2, tie_matches, best_of=7):
+    """
+    Determine the winner of a playoff series from a fixed schedule of matches.
+
+    This function evaluates a completed series (`tie_matches`) between two teams
+    and assigns a winner based strictly on match results. Each match is labeled
+    with a winner only when one team scores more goals than the other; draws are
+    treated as having no winner.
+
+    The function then counts total wins for each team and returns the series winner
+    once a team exceeds half of the total games in a best-of-N format.
+
+    Parameters
+    ----------
+    team1 : str
+        Name of the first team in the series.
+    team2 : str
+        Name of the second team in the series.
+    tie_matches : pandas.DataFrame
+        DataFrame containing all matches in the series. Must have exactly `best_of`
+        rows and include the following columns:
+        - "home"
+        - "away"
+        - "home_goals"
+        - "away_goals"
+
+        Matches with equal goals are treated as draws and do not count toward wins.
+    best_of : int, optional
+        Total number of games in the series (default = 7). Must match the number
+        of rows in `tie_matches`.
+
+    Returns
+    -------
+    int
+        1 if `team1` wins the series.
+        2 if `team2` wins the series.
+
+    Raises
+    ------
+    ValueError
+        If:
+        - The number of matches does not equal `best_of`.
+        - Neither team has reached a majority of wins (e.g., due to draws or
+        incomplete/invalid results).
+    """
+
+    if len(tie_matches) > best_of:
+        raise(ValueError("Number of tie matches is higher than the best of config")) 
+    tie_matches["winner"] = tie_matches.apply(
+        lambda row: row["home"] if row["home_goals"] > row["away_goals"]
+        else row["away"] if row["away_goals"] > row["home_goals"]
+        else None,
+        axis=1
+    )
+    team1_wins = (tie_matches["winner"] == team1).sum()
+    team2_wins = (tie_matches["winner"] == team2).sum()
+    if team1_wins > (best_of / 2):
+        result = 1
+    elif team2_wins > (best_of / 2):
+        result = 2
+    else:
+        print(team1,team2,tie_matches,best_of)
+        raise(ValueError("Series simulation ended in tie or not enough matches")) 
+    
     return result
 
 
@@ -1817,7 +1857,7 @@ def get_match_winner_from_playoff(
             result = simulate_match_winner(win_proba)
         elif round_format in ('best_of_3', 'best_of_5', 'best_of_7'):
             best_of_num = int("".join(filter(str.isdigit, round_format)))
-            result = simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches=None, best_of=best_of_num, home_adv=home_advantage)
+            result = simulate_series_winner(team1_elo, team2_elo, best_of=best_of_num, home_adv=home_advantage)
         else:
             raise ValueError(
                 "Invalid playoff matchup_type"
@@ -1922,7 +1962,7 @@ def _determine_winner_from_schedule(team1, team2, team1_elo, team2_elo, round_fo
             winner = team1 if result == 1 else team2
     elif round_format.startswith("best"):
         best_of_num = int("".join(filter(str.isdigit, round_format)))
-        result = simulate_series_winner(team1, team2, team1_elo, team2_elo, tie_matches, best_of_num, home_adv)
+        result = simulate_series_winner_from_schedule(team1, team2, tie_matches, best_of_num)
         winner = team1 if result == 1 else team2
     else: 
         raise ValueError("Invalid round format for simulation")

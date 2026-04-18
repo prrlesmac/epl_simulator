@@ -180,6 +180,7 @@ def single_simulation(
                 elos_dict, 
                 league_rules["home_advantage"]
             )
+            playoff_schedule = playoff_schedule[playoff_schedule["round"] != "Play-in"].copy()
         
         # Determine knockout bracket
         if league_rules["knockout_draw_status"] == "pending_draw":
