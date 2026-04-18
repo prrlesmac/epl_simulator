@@ -893,7 +893,7 @@ parsing_method = "http_request" # must be local_file, http_request, or playwrigh
 elo_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 #elo_date = "2026-03-12"  # For testing purposes, set a fixed date
 # first date to include for list of played matches used to update elos
-first_elo_calc_date = '2026-04-13'
+first_elo_calc_date = '2026-04-16'
 elo_rating_url = f"http://api.clubelo.com/{elo_date}"
 pull_fixture_history = False
 fixtures_config = {
@@ -1476,7 +1476,18 @@ league_rules = {
             "po_r2": "best_of_7",
         },
         "knockout_draw_status": "no_draw",
-        "knockout_draw": None,
+        "knockout_draw": [
+            # Eastern Conference — First round
+            ("Detroit Pistons", "Orlando Magic"),
+            ("Cleveland Cavaliers", "Toronto Raptors"),
+            ("New York Knicks", "Atlanta Hawks"),
+            ("Boston Celtics", "Philadelphia 76ers"),
+            # Western Conference — First round
+            ("Oklahoma City Thunder", "Phoenix Suns"),
+            ("Los Angeles Lakers", "Houston Rockets"),
+            ("San Antonio Spurs", "Portland Trail Blazers"),
+            ("Denver Nuggets", "Minnesota Timberwolves"),
+        ],
         "knockout_reseeding": False,
         "has_play_in": True,
     },
