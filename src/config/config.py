@@ -950,7 +950,7 @@ fixtures_config = {
             "https://www.basketball-reference.com/leagues/NBA_2026_games-january.html",
             "https://www.basketball-reference.com/leagues/NBA_2026_games-february.html",
             "https://www.basketball-reference.com/leagues/NBA_2026_games-march.html",
-            "https://www.basketball-reference.com/leagues/NBA_2026_games-april.html"
+            "https://www.basketball-reference.com/leagues/NBA_2026_games-april.html",
             "https://www.basketball-reference.com/leagues/NBA_2026_games-may.html",          
             ],
         "table_id": ["schedule"],

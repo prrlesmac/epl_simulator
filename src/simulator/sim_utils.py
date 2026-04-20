@@ -267,7 +267,6 @@ def simulate_series_winner_from_schedule(team1, team2, tie_matches, best_of=7):
     elif team2_wins > (best_of / 2):
         result = 2
     else:
-        print(team1,team2,tie_matches,best_of)
         raise(ValueError("Series simulation ended in tie or not enough matches")) 
     
     return result

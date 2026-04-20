@@ -150,8 +150,8 @@ def single_simulation(
     # Handle knockout stage if applicable
     if league_rules["has_knockout"]:
         # Filter non-league matches
-        knockout_schedule_played = schedule_played.loc[schedule_played["round"] != "League"]
-        knockout_schedule_pending = schedule_pending.loc[schedule_pending["round"] != "League"]
+        knockout_schedule_played = schedule_played.loc[~schedule_played["round"].isin(["League", "NBA Cup Final"])]
+        knockout_schedule_pending = schedule_pending.loc[~schedule_pending["round"].isin(["League", "NBA Cup Final"])]
         
         # Only simulate if there are pending knockout matches
         if len(knockout_schedule_pending) > 0:
