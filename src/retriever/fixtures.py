@@ -134,32 +134,48 @@ def get_fixtures(url_list, table_id):
 #     return df_all
 
 
-def get_fixtures_local_file(filepath, table_id):
+def get_fixtures_local_file(filepath_list, table_id):
     """
-    Fetches and parses a fixture table from a given local HTML file.
+    Fetches and parses fixture tables from given local HTML files.
 
-    Reads a local HTML file, parses the HTML to extract
-    a table of fixtures using BeautifulSoup, and converts the table into a
-    Pandas DataFrame. The function assumes the table has a specific ID
-    (`sched_2024-2025_9_1`) and that the table structure includes a thead and tbody.
+    Reads local HTML files, parses the HTML to extract
+    tables of fixtures using BeautifulSoup, and converts the tables into
+    Pandas DataFrames. The function assumes the tables have specific IDs
+    and that the table structure includes a thead and tbody.
 
     Args:
-        filepath (str): The path of the file containing the fixtures table.
+        filepath_list (list): List of paths of the files containing the fixtures tables.
         table_id (list): list table IDs for geting the fixtures using beautiful soup
 
     Returns:
         pandas.DataFrame: A DataFrame containing the fixture information,
-        with column headers extracted from the table. If the request fails,
-        the function prints an error message and may return an undefined variable.
+        with column headers extracted from the tables. If a file read fails,
+        the function prints an error message and may skip that file.
     """
 
-    with open(filepath, "r", encoding="utf-8") as html_file:
-        html_content = html_file.read()
+    df_all = []
+    for filepath in filepath_list:
+        print(filepath)
+        try:
+            with open(filepath, "r", encoding="utf-8") as html_file:
+                html_content = html_file.read()
 
-    df_all = parse_fixtures_html(html_content, table_id)
-    df_all['filepath'] = filepath
-    print("Fetching fixtures data...")
+            df = parse_fixtures_html(html_content, table_id)
+            df['filepath'] = filepath
+            print("Fetching fixtures data...")
+            df_all.append(df)
+        except FileNotFoundError:
+            print(f"File not found: {filepath}")
+            continue
+        except Exception as e:
+            print(f"Error reading file {filepath}: {e}")
+            continue
     
+    if not df_all:
+        raise ValueError("No valid fixture files were processed")
+    
+    df_all = pd.concat(df_all, ignore_index=True)
+
     return df_all
 
 
@@ -562,7 +578,18 @@ def process_nba_table(fixtures):
     })
     fixtures = fixtures[(~fixtures["away"].isnull()) & (~fixtures["home"].isnull())].copy()
     fixtures["date"] = pd.to_datetime(fixtures["date"], format='%a, %b %d, %Y')
-    fixtures["season"] = fixtures["url"].str.extract(r"/leagues/NBA_(\d{4})_")  
+    if 'url' in fixtures.columns:
+        fixtures["season"] = fixtures["url"].str.extract(r"/leagues/NBA_(\d{4})_")  
+    elif 'filepath' in fixtures.columns:
+        fixtures["season"] =  (
+            fixtures["filepath"]
+            .str.extract(r"\b(?:19|20)\d{2}-(\d{2})\b")[0]
+            .astype(int)
+            .add(2000)
+        )
+        fixtures['url'] = ''
+    else:
+        raise(ValueError, "fixtures df needs either url or filepath")
     fixtures["home_goals"] = pd.to_numeric(fixtures["home_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
     fixtures["away_goals"] = pd.to_numeric(fixtures["away_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
 

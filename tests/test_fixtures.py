@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from retriever.fixtures import (
     extract_scores,
     get_fixtures,
+    get_fixtures_local_file,
     parse_fixtures_html,
     get_fixtures_text,
     parse_game_element,
@@ -290,6 +291,145 @@ class TestGetFixtures:
         result = get_fixtures_text(["http://dummy-url.com"])
         assert result is None
         mock_sleep.assert_called_once()
+
+    def test_get_fixtures_local_file_success_single_file(self):
+        """Test successful fixture loading from a single local file."""
+        # Create temporary HTML file
+        tables_data = {
+            "table1": {
+                "headers": ["Date", "Home", "Score", "Away", "xG"],
+                "rows": [
+                    ["2024-01-15", "Barcelona", "2–1", "Real Madrid", "2.1"],
+                    ["2024-01-16", "Liverpool", "3–0", "Arsenal", "2.8"],
+                ],
+            }
+        }
+        
+        html_content = self.create_mock_html(tables_data)
+        
+        with patch("builtins.open", create=True) as mock_open:
+            mock_open.return_value.__enter__.return_value.read.return_value = html_content
+            
+            result = get_fixtures_local_file(["test_file.html"], ["table1"])
+            
+            assert isinstance(result, pd.DataFrame)
+            assert len(result) == 2
+            assert "xG" not in result.columns
+            assert "Barcelona" in result["Home"].values
+            mock_open.assert_called_once()
+
+    def test_get_fixtures_local_file_success_multiple_files(self):
+        """Test successful fixture loading from multiple local files."""
+        tables_data = {
+            "table1": {
+                "headers": ["Date", "Home", "Score", "Away", "xG"],
+                "rows": [["2024-01-15", "Team1", "2–1", "Team2", "2.1"]],
+            },
+        }
+        
+        html_content = self.create_mock_html(tables_data)
+        
+        with patch("builtins.open", create=True) as mock_open:
+            mock_open.return_value.__enter__.return_value.read.return_value = html_content
+            
+            result = get_fixtures_local_file(["file1.html", "file2.html"], ["table1"])
+            
+            assert isinstance(result, pd.DataFrame)
+            assert len(result) == 2  # 1 row from each file
+            assert all(result["filepath"].isin(["file1.html", "file2.html"]))
+
+    def test_get_fixtures_local_file_file_not_found(self):
+        """Test handling of missing files."""
+        with patch("builtins.open", side_effect=FileNotFoundError("File not found")):
+            with patch("builtins.print") as mock_print:
+                with pytest.raises(ValueError, match="No valid fixture files were processed"):
+                    get_fixtures_local_file(["missing_file.html"], ["table1"])
+            
+            # Should print warning about file not found
+            mock_print.assert_called()
+
+    def test_get_fixtures_local_file_with_empty_rows(self):
+        """Test that empty rows are properly filtered out."""
+        tables_data = {
+            "table1": {
+                "headers": ["Date", "Home", "Score", "Away", "xG"],
+                "rows": [
+                    ["2024-01-15", "Barcelona", "2–1", "Real Madrid", "2.1"],
+                    ["2024-01-16", "", "", "", ""],  # Empty row
+                    ["2024-01-17", "Liverpool", "1–1", "Arsenal", "1.8"],
+                ],
+            }
+        }
+        
+        html_content = self.create_mock_html(tables_data)
+        
+        with patch("builtins.open", create=True) as mock_open:
+            mock_open.return_value.__enter__.return_value.read.return_value = html_content
+            
+            result = get_fixtures_local_file(["test_file.html"], ["table1"])
+            
+            # Should exclude the empty row
+            assert len(result) == 2
+            assert "" not in result["Home"].values
+
+    def test_get_fixtures_local_file_no_valid_files(self):
+        """Test handling when no valid files can be processed."""
+        with patch("builtins.open", side_effect=FileNotFoundError("Not found")):
+            with pytest.raises(ValueError, match="No valid fixture files were processed"):
+                get_fixtures_local_file(["file1.html", "file2.html"], ["table1"])
+
+    def test_get_fixtures_local_file_filepath_column_added(self):
+        """Test that filepath column is added to the result."""
+        tables_data = {
+            "table1": {
+                "headers": ["Date", "Home", "Score", "Away", "xG"],
+                "rows": [["2024-01-15", "Barcelona", "2–1", "Real Madrid", "2.1"]],
+            },
+        }
+        
+        html_content = self.create_mock_html(tables_data)
+        
+        with patch("builtins.open", create=True) as mock_open:
+            mock_open.return_value.__enter__.return_value.read.return_value = html_content
+            
+            result = get_fixtures_local_file(["test_file.html"], ["table1"])
+            
+            assert "filepath" in result.columns
+            assert result.iloc[0]["filepath"] == "test_file.html"
+
+    def test_get_fixtures_local_file_multiple_tables_per_file(self):
+        """Test fixture loading with multiple tables in a single file."""
+        tables_data = {
+            "table1": {
+                "headers": ["Date", "Home", "Score", "Away", "xG"],
+                "rows": [["2024-01-15", "Team1", "2–1", "Team2", "2.1"]],
+            },
+            "table2": {
+                "headers": ["Date", "Home", "Score", "Away", "xG"],
+                "rows": [["2024-01-16", "Team3", "1–0", "Team4", "1.5"]],
+            },
+        }
+        
+        html_content = self.create_mock_html(tables_data)
+        
+        with patch("builtins.open", create=True) as mock_open:
+            mock_open.return_value.__enter__.return_value.read.return_value = html_content
+            
+            result = get_fixtures_local_file(["test_file.html"], ["table1", "table2"])
+            
+            assert len(result) == 2
+            assert "Team1" in result["Home"].values
+            assert "Team3" in result["Home"].values
+
+    def test_get_fixtures_local_file_general_exception(self):
+        """Test handling of general exceptions during file reading."""
+        with patch("builtins.open", side_effect=Exception("Unexpected error")):
+            with patch("builtins.print") as mock_print:
+                with pytest.raises(ValueError, match="No valid fixture files were processed"):
+                    get_fixtures_local_file(["test_file.html"], ["table1"])
+            
+            # Should print error message
+            mock_print.assert_called()
 
     
 class TestProcessFixtures:
