@@ -309,6 +309,69 @@ def get_fixtures_text(url_list):
     return df_all
 
 
+def get_fixtures_text_local_file(filepath_list):
+    """
+    Scrape baseball game data from local HTML files and return a pandas DataFrame.
+    
+    Args:
+        filepath_list (list): list of file paths to parse
+    
+    Returns:
+        pd.DataFrame: DataFrame with columns: date, home_team, away_team, runs_home, runs_away
+    """
+    df_all = []
+    for filepath in filepath_list:
+        print(filepath)
+        try:
+            with open(filepath, "r", encoding="utf-8") as html_file:
+                html_content = html_file.read()
+
+            # Parse the HTML content using BeautifulSoup
+            soup = BeautifulSoup(html_content, "html.parser")
+
+            games_data = []
+            current_date = None
+            current_stage = ""
+            # Find all h3 elements (dates) and game elements
+            for element in soup.find_all(['h2', 'h3', 'p']):
+                if element.name == 'h2':
+                    schedule = element.get_text(strip=True)
+                    current_stage = "League" if schedule == "MLB Schedule" else "Playoff" if schedule == "Postseason Schedule" else ""
+                if element.name == 'h3':
+                    # Extract date from h3 element
+                    date_element = element.get_text(strip=True)
+                    pattern = r'^[A-Za-z]+, [A-Za-z]+ \d{1,2}, \d{4}$'   
+                    current_date = date_element if re.match(pattern, date_element) else None
+                elif element.name == 'p' and 'game' in element.get('class', []):
+                    # Parse game data
+                    if current_date:
+                        game_data = parse_game_element(element, current_date, current_stage)
+                        if game_data:
+                            games_data.append(game_data)
+            
+            if games_data:
+                df = pd.DataFrame(games_data)
+                df["filepath"] = filepath
+                df_all.append(df)
+                print("Fetching fixtures data...")
+            else:
+                print(f"Warning: No game data found in {filepath}")
+                
+        except FileNotFoundError:
+            print(f"File not found: {filepath}")
+            continue
+        except Exception as e:
+            print(f"Error reading file {filepath}: {e}")
+            continue
+
+    if not df_all:
+        raise ValueError("No valid fixture files were processed")
+
+    df_all = pd.concat(df_all, ignore_index=True)
+
+    return df_all
+
+
 def parse_game_element(game_element, date, round):
     """
     Parse individual game element to extract team names and scores.
@@ -668,7 +731,19 @@ def process_mlb_table(fixtures):
     """
     fixtures = fixtures[(~fixtures["away"].isnull()) & (~fixtures["home"].isnull())].copy()
     fixtures["date"] = pd.to_datetime(fixtures["date"], format='%A, %B %d, %Y')
-    fixtures["season"] = fixtures["url"].str.extract(r"/leagues/majors/(\d{4})-")
+
+    if 'url' in fixtures.columns:
+        fixtures["season"] = fixtures["url"].str.extract(r"/leagues/majors/(\d{4})-")
+    elif 'filepath' in fixtures.columns:
+        fixtures["season"] =  (
+            fixtures["filepath"]
+            .str.extract(r"\b((?:19|20)\d{2})\b")
+            .astype(int)
+        )
+        fixtures['url'] = ''
+    else:
+        raise(ValueError, "fixtures df needs either url or filepath")
+    
     fixtures["home_goals"] = pd.to_numeric(fixtures["home_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
     fixtures["away_goals"] = pd.to_numeric(fixtures["away_goals"].replace("", pd.NA), errors="coerce").astype("Int64")
 
@@ -745,7 +820,12 @@ def run_fixtures():
     for k, v in leagues_config.items():
         print("Getting fixtures for: ", k)
         if k == "MLB":
-            fixtures = get_fixtures_text(v["fixtures_url"])
+            if config.parsing_method == "http_request":
+                fixtures = get_fixtures_text(v["fixtures_url"])
+            elif config.parsing_method == "local_file":
+                fixtures = get_fixtures_text_local_file(v["local_file_path"])
+            else:
+                raise(ValueError, "Invalid fixture parsing method")
         else:
             if config.parsing_method == "http_request":
                 fixtures = get_fixtures(v["fixtures_url"], v["table_id"])

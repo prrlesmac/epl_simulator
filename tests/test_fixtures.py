@@ -15,6 +15,7 @@ from retriever.fixtures import (
     extract_scores,
     get_fixtures,
     get_fixtures_local_file,
+    get_fixtures_text_local_file,
     parse_fixtures_html,
     get_fixtures_text,
     parse_game_element,
@@ -427,9 +428,86 @@ class TestGetFixtures:
             with patch("builtins.print") as mock_print:
                 with pytest.raises(ValueError, match="No valid fixture files were processed"):
                     get_fixtures_local_file(["test_file.html"], ["table1"])
+
+    def test_get_fixtures_text_local_file_success_single_file(self):
+        """Test successful fixture loading from a single local MLB file."""
+        html_content = self.create_mock_html_text()
+        
+        with patch("builtins.open", create=True) as mock_open:
+            mock_open.return_value.__enter__.return_value.read.return_value = html_content
+            
+            result = get_fixtures_text_local_file(["test_file.html"])
+            
+            assert isinstance(result, pd.DataFrame)
+            assert len(result) == 1
+            assert set(result.columns) == {'round', 'date', 'away', 'home', 'away_goals', 'home_goals', 'filepath'}
+            assert result.iloc[0]["away"] == "Yankees"
+            assert result.iloc[0]["home"] == "Red Sox"
+            assert result.iloc[0]["away_goals"] == 3
+            assert result.iloc[0]["home_goals"] == 5
+            mock_open.assert_called_once()
+
+    def test_get_fixtures_text_local_file_success_multiple_files(self):
+        """Test successful fixture loading from multiple local files."""
+        html_content = self.create_mock_html_text()
+        
+        with patch("builtins.open", create=True) as mock_open:
+            mock_open.return_value.__enter__.return_value.read.return_value = html_content
+            
+            result = get_fixtures_text_local_file(["file1.html", "file2.html"])
+            
+            assert isinstance(result, pd.DataFrame)
+            assert len(result) == 2  # 1 row from each file
+            assert all(result["filepath"].isin(["file1.html", "file2.html"]))
+            assert mock_open.call_count == 2
+
+    def test_get_fixtures_text_local_file_file_not_found(self):
+        """Test handling of missing files."""
+        with patch("builtins.open", side_effect=FileNotFoundError("File not found")):
+            with patch("builtins.print") as mock_print:
+                with pytest.raises(ValueError, match="No valid fixture files were processed"):
+                    get_fixtures_text_local_file(["missing_file.html"])
+            
+            # Should print warning about file not found
+            mock_print.assert_called()
+
+    def test_get_fixtures_text_local_file_filepath_column_added(self):
+        """Test that filepath column is added to the result."""
+        html_content = self.create_mock_html_text()
+        
+        with patch("builtins.open", create=True) as mock_open:
+            mock_open.return_value.__enter__.return_value.read.return_value = html_content
+            
+            result = get_fixtures_text_local_file(["test_file.html"])
+            
+            assert "filepath" in result.columns
+            assert result.iloc[0]["filepath"] == "test_file.html"
+
+    def test_get_fixtures_text_local_file_no_valid_files(self):
+        """Test handling when no valid files can be processed."""
+        with patch("builtins.open", side_effect=FileNotFoundError("Not found")):
+            with pytest.raises(ValueError, match="No valid fixture files were processed"):
+                get_fixtures_text_local_file(["file1.html", "file2.html"])
+
+    def test_get_fixtures_text_local_file_general_exception(self):
+        """Test handling of general exceptions during file reading."""
+        with patch("builtins.open", side_effect=Exception("Unexpected error")):
+            with patch("builtins.print") as mock_print:
+                with pytest.raises(ValueError, match="No valid fixture files were processed"):
+                    get_fixtures_text_local_file(["test_file.html"])
             
             # Should print error message
             mock_print.assert_called()
+
+    def test_get_fixtures_text_local_file_no_game_data_in_file(self):
+        """Test handling when file has no game data."""
+        html_content = "<html><body><h2>MLB Regular Season</h2></body></html>"
+        
+        with patch("builtins.open", create=True) as mock_open:
+            mock_open.return_value.__enter__.return_value.read.return_value = html_content
+            
+            with pytest.raises(ValueError, match="No valid fixture files were processed"):
+                get_fixtures_text_local_file(["test_file.html"])
 
     
 class TestProcessFixtures:
