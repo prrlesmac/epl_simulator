@@ -298,8 +298,7 @@ def run_simulation_parallel(
     # Aggregate position frequencies
     standings_all = pd.concat(standings_list)
     if league_rules["has_knockout"]:
-        standings_all["league_pos"] = standings_all["playoff_pos"]
-
+        standings_all["league_pos"] = standings_all["playoff_pos"].fillna("Out")
     standings_all = (
         standings_all
         .groupby(["team", "league_pos"])

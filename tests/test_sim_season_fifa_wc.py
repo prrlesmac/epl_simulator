@@ -222,6 +222,51 @@ class TestSimulateLeagueFifaWc:
         )
         self.assert_fifa_wc_summary(result, mock_schedule)
 
+        # positions
+        qualified = [
+            "Mexico",
+            "Czechia",
+            "Switzerland",
+            "Qatar",
+            "Haiti",
+            "Scotland",
+            "Paraguay",
+            "Australia",
+            "Ecuador",
+            "Germany",
+            "Sweden",
+            "Japan",
+            "New Zealand",
+            "Egypt",
+            "Spain",
+            "Saudi Arabia",
+            "France",
+            "Norway",
+            "Algeria",
+            "Austria",
+            "Uzbekistan",
+            "Portugal",
+            "Panama",
+            "Ghana",
+            "Croatia",
+            "Senegal",
+            "Cape Verde",
+            "Belgium",
+            "Netherlands",
+            "Morocco",
+            "South Africa",
+            "Curaçao",
+            ]
+        print(result.loc[result["team"].isin(qualified)]["po_r32"])
+
+        assert np.isclose(
+            result.loc[result["team"].isin(qualified)]["po_r32"].all(), 1.0, atol=1e-3
+        )
+        # TODO tesrt eliminated
+        # TODO add third places to qualified
+        # TODO test third place ranks mapping
+        # TODO test bracket pos
+
     def test_simulate_league_fifa_wc_case_4(
         self,
         csv_schedule_data_fifa_wc_case_4,
