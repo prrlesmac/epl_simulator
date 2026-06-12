@@ -1,0 +1,104 @@
+home,away,home_goals,away_goals,played,neutral,round,date,season,notes,country,updated_at
+Mexico,South Africa,0.0,0.0,Y,N,League,2026-06-11,,,FIFA_WC,2026-04-11 15:09:27.845
+Canada,Bosnia & Herz'na,1.0,0.0,Y,N,League,2026-06-12,,,FIFA_WC,2026-04-11 15:09:27.845
+Korea Republic,Czechia,1.0,1.0,Y,N,League,2026-06-11,,,FIFA_WC,2026-04-11 15:09:27.845
+Qatar,Switzerland,0.0,1.0,Y,N,League,2026-06-13,,,FIFA_WC,2026-04-11 15:09:27.845
+Brazil,Morocco,3.0,2.0,Y,N,League,2026-06-13,,,FIFA_WC,2026-04-11 15:09:27.845
+United States,Paraguay,3.0,1.0,Y,N,League,2026-06-12,,,FIFA_WC,2026-04-11 15:09:27.845
+Germany,Curaçao,1.0,0.0,Y,N,League,2026-06-14,,,FIFA_WC,2026-04-11 15:09:27.845
+Netherlands,Japan,2.0,1.0,Y,N,League,2026-06-14,,,FIFA_WC,2026-04-11 15:09:27.845
+Côte d'Ivoire,Ecuador,1.0,1.0,Y,N,League,2026-06-14,,,FIFA_WC,2026-04-11 15:09:27.845
+Haiti,Scotland,3.0,1.0,Y,N,League,2026-06-13,,,FIFA_WC,2026-04-11 15:09:27.845
+Australia,Türkiye,2.0,0.0,Y,N,League,2026-06-13,,,FIFA_WC,2026-04-11 15:09:27.845
+Belgium,Egypt,0.0,1.0,Y,N,League,2026-06-15,,,FIFA_WC,2026-04-11 15:09:27.845
+Spain,Cape Verde,2.0,1.0,Y,N,League,2026-06-15,,,FIFA_WC,2026-04-11 15:09:27.845
+Saudi Arabia,Uruguay,1.0,1.0,Y,N,League,2026-06-15,,,FIFA_WC,2026-04-11 15:09:27.845
+Sweden,Tunisia,2.0,1.0,Y,N,League,2026-06-14,,,FIFA_WC,2026-04-11 15:09:27.845
+France,Senegal,1.0,0.0,Y,N,League,2026-06-16,,,FIFA_WC,2026-04-11 15:09:27.845
+IR Iran,New Zealand,0.0,3.0,Y,N,League,2026-06-15,,,FIFA_WC,2026-04-11 15:09:27.845
+Iraq,Norway,3.0,0.0,Y,N,League,2026-06-16,,,FIFA_WC,2026-04-11 15:09:27.845
+Portugal,Congo DR,3.0,0.0,Y,N,League,2026-06-17,,,FIFA_WC,2026-04-11 15:09:27.845
+England,Croatia,3.0,2.0,Y,N,League,2026-06-17,,,FIFA_WC,2026-04-11 15:09:27.845
+Ghana,Panama,2.0,0.0,Y,N,League,2026-06-17,,,FIFA_WC,2026-04-11 15:09:27.845
+Argentina,Algeria,1.0,3.0,Y,N,League,2026-06-16,,,FIFA_WC,2026-04-11 15:09:27.845
+Austria,Jordan,2.0,0.0,Y,N,League,2026-06-16,,,FIFA_WC,2026-04-11 15:09:27.845
+Switzerland,Bosnia & Herz'na,3.0,0.0,Y,N,League,2026-06-18,,,FIFA_WC,2026-04-11 15:09:27.845
+Czechia,South Africa,3.0,2.0,Y,N,League,2026-06-18,,,FIFA_WC,2026-04-11 15:09:27.845
+Canada,Qatar,0.0,1.0,Y,N,League,2026-06-18,,,FIFA_WC,2026-04-11 15:09:27.845
+Uzbekistan,Colombia,1.0,2.0,Y,N,League,2026-06-17,,,FIFA_WC,2026-04-11 15:09:27.845
+United States,Australia,0.0,0.0,Y,N,League,2026-06-19,,,FIFA_WC,2026-04-11 15:09:27.845
+Scotland,Morocco,2.0,1.0,Y,N,League,2026-06-19,,,FIFA_WC,2026-04-11 15:09:27.845
+Mexico,Korea Republic,3.0,0.0,Y,N,League,2026-06-18,,,FIFA_WC,2026-04-11 15:09:27.845
+Netherlands,Sweden,0.0,1.0,Y,N,League,2026-06-20,,,FIFA_WC,2026-04-11 15:09:27.845
+Germany,Côte d'Ivoire,2.0,0.0,Y,N,League,2026-06-20,,,FIFA_WC,2026-04-11 15:09:27.845
+Türkiye,Paraguay,0.0,2.0,Y,N,League,2026-06-19,,,FIFA_WC,2026-04-11 15:09:27.845
+Brazil,Haiti,0.0,2.0,Y,N,League,2026-06-19,,,FIFA_WC,2026-04-11 15:09:27.845
+Spain,Saudi Arabia,3.0,2.0,Y,N,League,2026-06-21,,,FIFA_WC,2026-04-11 15:09:27.845
+Belgium,IR Iran,3.0,0.0,Y,N,League,2026-06-21,,,FIFA_WC,2026-04-11 15:09:27.845
+Uruguay,Cape Verde,1.0,2.0,Y,N,League,2026-06-21,,,FIFA_WC,2026-04-11 15:09:27.845
+Ecuador,Curaçao,3.0,3.0,Y,N,League,2026-06-20,,,FIFA_WC,2026-04-11 15:09:27.845
+Tunisia,Japan,0.0,2.0,Y,N,League,2026-06-20,,,FIFA_WC,2026-04-11 15:09:27.845
+Argentina,Austria,3.0,3.0,Y,N,League,2026-06-22,,,FIFA_WC,2026-04-11 15:09:27.845
+France,Iraq,3.0,1.0,Y,N,League,2026-06-22,,,FIFA_WC,2026-04-11 15:09:27.845
+New Zealand,Egypt,1.0,1.0,Y,N,League,2026-06-21,,,FIFA_WC,2026-04-11 15:09:27.845
+Portugal,Uzbekistan,3.0,0.0,Y,N,League,2026-06-23,,,FIFA_WC,2026-04-11 15:09:27.845
+England,Ghana,0.0,2.0,Y,N,League,2026-06-23,,,FIFA_WC,2026-04-11 15:09:27.845
+Panama,Croatia,2.0,1.0,Y,N,League,2026-06-23,,,FIFA_WC,2026-04-11 15:09:27.845
+Norway,Senegal,1.0,0.0,Y,N,League,2026-06-22,,,FIFA_WC,2026-04-11 15:09:27.845
+Jordan,Algeria,1.0,1.0,Y,N,League,2026-06-22,,,FIFA_WC,2026-04-11 15:09:27.845
+Switzerland,Canada,0.0,0.0,Y,N,League,2026-06-24,,,FIFA_WC,2026-04-11 15:09:27.845
+Bosnia & Herz'na,Qatar,0.0,1.0,Y,N,League,2026-06-24,,,FIFA_WC,2026-04-11 15:09:27.845
+Scotland,Brazil,2.0,1.0,Y,N,League,2026-06-24,,,FIFA_WC,2026-04-11 15:09:27.845
+Morocco,Haiti,2.0,3.0,Y,N,League,2026-06-24,,,FIFA_WC,2026-04-11 15:09:27.845
+Colombia,Congo DR,3.0,3.0,Y,N,League,2026-06-23,,,FIFA_WC,2026-04-11 15:09:27.845
+Curaçao,Côte d'Ivoire,2.0,1.0,Y,N,League,2026-06-25,,,FIFA_WC,2026-04-11 15:09:27.845
+Ecuador,Germany,3.0,0.0,Y,N,League,2026-06-25,,,FIFA_WC,2026-04-11 15:09:27.845
+Japan,Sweden,3.0,3.0,Y,N,League,2026-06-25,,,FIFA_WC,2026-04-11 15:09:27.845
+Tunisia,Netherlands,0.0,3.0,Y,N,League,2026-06-25,,,FIFA_WC,2026-04-11 15:09:27.845
+South Africa,Korea Republic,3.0,0.0,Y,N,League,2026-06-24,,,FIFA_WC,2026-04-11 15:09:27.845
+Czechia,Mexico,1.0,2.0,Y,N,League,2026-06-24,,,FIFA_WC,2026-04-11 15:09:27.845
+Norway,France,2.0,2.0,Y,N,League,2026-06-26,,,FIFA_WC,2026-04-11 15:09:27.845
+Senegal,Iraq,3.0,2.0,Y,N,League,2026-06-26,,,FIFA_WC,2026-04-11 15:09:27.845
+Paraguay,Australia,3.0,1.0,Y,N,League,2026-06-25,,,FIFA_WC,2026-04-11 15:09:27.845
+Türkiye,United States,2.0,2.0,Y,N,League,2026-06-25,,,FIFA_WC,2026-04-11 15:09:27.845
+Panama,England,1.0,0.0,Y,N,League,2026-06-27,,,FIFA_WC,2026-04-11 15:09:27.845
+Croatia,Ghana,3.0,2.0,Y,N,League,2026-06-27,,,FIFA_WC,2026-04-11 15:09:27.845
+Uruguay,Spain,1.0,2.0,Y,N,League,2026-06-26,,,FIFA_WC,2026-04-11 15:09:27.845
+Cape Verde,Saudi Arabia,1.0,3.0,Y,N,League,2026-06-26,,,FIFA_WC,2026-04-11 15:09:27.845
+Colombia,Portugal,3.0,3.0,Y,N,League,2026-06-27,,,FIFA_WC,2026-04-11 15:09:27.845
+Congo DR,Uzbekistan,1.0,2.0,Y,N,League,2026-06-27,,,FIFA_WC,2026-04-11 15:09:27.845
+Egypt,IR Iran,1.0,0.0,Y,N,League,2026-06-26,,,FIFA_WC,2026-04-11 15:09:27.845
+New Zealand,Belgium,2.0,0.0,Y,N,League,2026-06-26,,,FIFA_WC,2026-04-11 15:09:27.845
+Jordan,Argentina,1.0,3.0,Y,N,League,2026-06-27,,,FIFA_WC,2026-04-11 15:09:27.845
+Algeria,Austria,2.0,0.0,Y,N,League,2026-06-27,,,FIFA_WC,2026-04-11 15:09:27.845
+Algeria,Canada,0.0,3.0,Y,Y,po_r32,,,,,
+Colombia,Ecuador,3.0,2.0,Y,Y,po_r32,,,,,
+France,Haiti,4.0,3.0,Y,Y,po_r32,,,,,
+Mexico,New Zealand,0.0,2.0,Y,Y,po_r32,,,,,
+Portugal,Scotland,3.0,2.0,Y,Y,po_r32,,,,,
+Spain,United States,0.0,2.0,Y,Y,po_r32,,,,,
+Argentina,Belgium,3.0,0.0,Y,Y,po_r32,,,,,
+Croatia,Curaçao,0.0,2.0,Y,Y,po_r32,,,,,
+Egypt,Ghana,1.0,0.0,Y,Y,po_r32,,,,,
+Japan,Netherlands,0.0,3.0,Y,Y,po_r32,,,,,
+Paraguay,South Africa,0.0,3.0,Y,Y,po_r32,,,,,
+Switzerland,Uzbekistan,2.0,0.0,Y,Y,po_r32,,,,,
+Sweden,Qatar,0.0,1.0,Y,Y,po_r32,,,,,
+Germany,Saudi Arabia,3.0,2.0,Y,Y,po_r32,,,,,
+Austria,Czechia,3.0,0.0,Y,Y,po_r32,,,,,
+Norway,Iraq,1.0,0.0,Y,Y,po_r32,,,,,
+Canada,Colombia,1.0,0.0,Y,Y,po_r16,,,,,
+France,New Zealand,1.0,0.0,Y,Y,po_r16,,,,,
+Portugal,United States,1.0,0.0,Y,Y,po_r16,,,,,
+Argentina,Curaçao,2.0,0.0,Y,Y,po_r16,,,,,
+Egypt,Netherlands,0.0,2.0,Y,Y,po_r16,,,,,
+South Africa,Switzerland,3.0,0.0,Y,Y,po_r16,,,,,
+Qatar,Germany,1.0,0.0,Y,Y,po_r16,,,,,
+Austria,Norway,2.0,1.0,Y,Y,po_r16,,,,,
+Canada,France,,,N,Y,po_r8,,,,,
+Portugal,Argentina,,,N,Y,po_r8,,,,,
+Egypt,South Africa,,,N,Y,po_r8,,,,,
+Qatar,Austria,,,N,Y,po_r8,,,,,
+Canada,Portugal,,,N,Y,po_r4,,,,,
+Egypt,Qatar,,,N,Y,po_r4,,,,,
+Canada,Egypt,,,N,Y,po_r2,,,,,

@@ -24,23 +24,33 @@ def load_matches_data(league, name_remap):
     cutoff_date = config.first_elo_calc_date
 
     # Conditional filter
-    date_filter = "AND date >= %(cutoff_date)s" if league.upper() == "UEFA" else ""
+    date_filter = "AND date >= %(cutoff_date)s" if league.upper() in ("UEFA", "FIFA_WC") else ""
 
-    query = f"""
-        SELECT *
-        FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix}_history
+    if league.upper() == "FIFA_WC":
+        query = f"""
+            SELECT *
+            FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix}
+            WHERE played = 'Y'
+            {date_filter}
 
-        UNION ALL
+            ORDER BY date
+        """
+    else:
+        query = f"""
+            SELECT *
+            FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix}_history
 
-        SELECT *
-        FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix}
-        WHERE played = 'Y'
-        {date_filter}
+            UNION ALL
 
-        ORDER BY date
-    """
+            SELECT *
+            FROM {config.db_table_definitions['fixtures_table']['name']}_{table_suffix}
+            WHERE played = 'Y'
+            {date_filter}
 
-    params = {"cutoff_date": cutoff_date} if league.upper() == "UEFA" else None
+            ORDER BY date
+        """
+
+    params = {"cutoff_date": cutoff_date} if league.upper() in ("UEFA", "FIFA_WC") else None
 
     matches = pd.read_sql(query, engine, params=params)
 
@@ -114,7 +124,7 @@ def run_elo_calc():
     elif league == "MLB":
         name_remap = config.mlb_name_remap
         starting_elos = config.mlb_starting_elos
-    elif league == "UEFA":
+    elif league in ("UEFA", "FIFA_WC"):
         name_remap = {}
         starting_elos = load_starting_elos_from_database(league)
     else:

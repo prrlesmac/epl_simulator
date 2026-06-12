@@ -2,6 +2,7 @@ from simulator.sim_utils import (
     simulate_matches_data_frame,
     simulate_play_in_tourney,
     get_standings,
+    get_fifa_wc_bracket,
     draw_from_pots,
     create_bracket_from_composition,
     extract_positions_from_bracket,
@@ -150,8 +151,8 @@ def single_simulation(
     # Handle knockout stage if applicable
     if league_rules["has_knockout"]:
         # Filter non-league matches
-        knockout_schedule_played = schedule_played.loc[~schedule_played["round"].isin(["League", "NBA Cup Final"])]
-        knockout_schedule_pending = schedule_pending.loc[~schedule_pending["round"].isin(["League", "NBA Cup Final"])]
+        knockout_schedule_played = schedule_played.loc[~schedule_played["round"].isin(["League", "NBA Cup Final", "Group stage"])]
+        knockout_schedule_pending = schedule_pending.loc[~schedule_pending["round"].isin(["League", "NBA Cup Final", "Group stage"])]
         
         # Only simulate if there are pending knockout matches
         if len(knockout_schedule_pending) > 0:
@@ -168,7 +169,9 @@ def single_simulation(
             playoff_schedule = knockout_schedule_played
 
         # TODO think of better ways to pull elos
-        elos_final = schedule_final[["home", "elo_home"]].drop_duplicates(subset=["home"])
+        elos_final_h = schedule_final[["home", "elo_home"]].drop_duplicates(subset=["home"]).rename(columns={"home": "team", "elo_home": "elo"})
+        elos_final_a = schedule_final[["away", "elo_away"]].drop_duplicates(subset=["away"]).rename(columns={"away": "team", "elo_away": "elo"})
+        elos_final = pd.concat([elos_final_h,elos_final_a]).drop_duplicates(subset=["team"])
         elos_final = elos_final.rename(columns={"home": "team", "elo_home": "elo"})
         elos_dict = dict(zip(elos_final["team"], elos_final["elo"]))
         
@@ -181,6 +184,13 @@ def single_simulation(
                 league_rules["home_advantage"]
             )
             playoff_schedule = playoff_schedule[playoff_schedule["round"] != "Play-in"].copy()
+
+        # Handle third place ranking
+        if ("knockout_third_place_mapping" in league_rules):
+            standings_df = get_fifa_wc_bracket(
+                standings_df, 
+                league_rules['knockout_third_place_mapping']
+            )
         
         # Determine knockout bracket
         if league_rules["knockout_draw_status"] == "pending_draw":
@@ -292,8 +302,7 @@ def run_simulation_parallel(
     # Aggregate position frequencies
     standings_all = pd.concat(standings_list)
     if league_rules["has_knockout"]:
-        standings_all["league_pos"] = standings_all["playoff_pos"]
-
+        standings_all["league_pos"] = standings_all["playoff_pos"].fillna("Out")
     standings_all = (
         standings_all
         .groupby(["team", "league_pos"])
@@ -360,8 +369,7 @@ def load_league_data(league):
         tuple: (schedule_df, elos_df, divisions) DataFrames containing schedule, Elo and divisional data
     """
     table_suffix = "uefa" if league in config.active_uefa_leagues else league
-    is_continental_league = league in ["UCL", "UEL", "UECL"]
-    is_us_league = league in ["NFL", "MLB", "NBA"]
+    has_divisions = league in ["NFL", "MLB", "NBA", "FIFA_WC"]
     engine = db_connect.get_postgres_engine()
 
     schedule = pd.read_sql(
@@ -377,7 +385,7 @@ def load_league_data(league):
     elos = pd.read_sql(elos_query, engine)
     elos = elos[elos['club'].isin(teams)]
 
-    if is_us_league:
+    if has_divisions:
         divisions = pd.read_sql(
             f"SELECT * FROM {config.db_table_definitions['divisions_table']['name']}_{table_suffix}",
             engine,
@@ -416,7 +424,7 @@ def validate_league_configuration(schedule, league_rules):
         ValueError: If the configuration is inconsistent.
     """
     knockout_draw = league_rules.get("knockout_draw")
-    has_knockout_matches = not schedule[~schedule["round"].isin(["League", "Play-in", "NBA Cup Final"])].empty
+    has_knockout_matches = not schedule[~schedule["round"].isin(["League", "Play-in", "NBA Cup Final", "Group stage"])].empty
     has_pending_league_matches = not schedule[
         (schedule["round"] == "League") & (schedule["played"] == "N")
     ].empty

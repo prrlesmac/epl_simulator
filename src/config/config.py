@@ -1,5 +1,6 @@
 import datetime
 from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, TIMESTAMP, DATE
+from config import bracket_configs
 
 # mapping from club elo to fb ref
 club_name_mapping = {
@@ -593,6 +594,7 @@ mlb_starting_elos = {}
 db_table_mapping = {
     "UEFA_LOCAL": "domestic_sim_output_table",
     "UEFA_CONTINENTAL": "continental_sim_output_table",
+    "FIFA_WC": "fifa_wc_sim_output_table",
     "NFL": "nfl_sim_output_table",
     "MLB": "mlb_sim_output_table",
     "NBA": "nba_sim_output_table",
@@ -735,6 +737,20 @@ db_table_definitions = {
             "36": FLOAT(),
             "playoff": FLOAT(),
             "direct_to_round_of_16": FLOAT(),
+            "po_r32": FLOAT(),
+            "po_r16": FLOAT(),
+            "po_r8": FLOAT(),
+            "po_r4": FLOAT(),
+            "po_r2": FLOAT(),
+            "po_champion": FLOAT(),
+            "league": VARCHAR(100),
+            "updated_at": TIMESTAMP(),
+        },
+    },
+    "fifa_wc_sim_output_table": {
+        "name": "sim_standings_fifa_wc",
+        "dtype": {
+            "team": VARCHAR(100),
             "po_r32": FLOAT(),
             "po_r16": FLOAT(),
             "po_r8": FLOAT(),
@@ -969,7 +985,12 @@ fixtures_config = {
         "fixtures_url": ["https://www.baseball-reference.com/leagues/majors/2026-schedule.shtml"],
         "local_file_path": ["data/mlb/2026 MLB Regular Season Schedule _ Baseball-Reference.com.html"],
         "table_id": ["games"],
-    }
+    },
+    "FIFA_WC": {
+        "fixtures_url": ["https://fbref.com/en/comps/1/schedule/World-Cup-Scores-and-Fixtures"],
+        "local_file_path": ["data/fifa_wc/World Cup Scores & Fixtures _ FBref.com.html"],
+        "table_id": ["sched_2026_1_1"], 
+    },
 }
 
 fixtures_history_config = {
@@ -1033,6 +1054,12 @@ elo_params = {
     "UEFA" : {
         "home_advantage": 80,
         "elo_kfactor": 15,
+        "season_start_adj": 0,
+        "in_between_seasons": False,
+    },
+    "FIFA_WC" : {
+        "home_advantage": 0,
+        "elo_kfactor": 40,
         "season_start_adj": 0,
         "in_between_seasons": False,
     },
@@ -1385,6 +1412,68 @@ league_rules = {
 
         ],
         "knockout_reseeding": False,
+    },
+    "FIFA_WC": {
+        "sim_type": "goals",
+        "home_advantage": 0,
+        "has_knockout": True,
+        "classification": {
+            "division": [
+                "points",
+                "h2h_points",
+                "h2h_goal_difference",
+                "h2h_goals_for",
+                "goal_difference",
+                "goals_for",
+            ],
+            "league": [
+                "points",
+                "goal_difference",
+                "goals_for",
+            ],
+        },
+        "qualification": {
+        },
+        "knockout_bracket": [
+
+            ("E1", "3rd vs E1"),
+            ("I1", "3rd vs I1"),
+
+            ("A2", "B2"),
+            ("F1", "C2"),
+
+            ("K2", "L2"),
+            ("H1", "J2"),
+
+            ("D1", "3rd vs D1"),
+            ("G1", "3rd vs G1"),
+
+            ("C1", "F2"),
+            ("E2", "I2"),
+
+            ("A1", "3rd vs A1"),
+            ("L1", "3rd vs L1"),
+
+            ("J1", "H2"),
+            ("D2", "G2"),
+
+            ("B1", "3rd vs B1"),
+            ("K1", "3rd vs K1"),
+        ],
+        "knockout_format": {
+            "po_r32": "single_game_neutral",
+            "po_r16": "single_game_neutral",
+            "po_r8": "single_game_neutral",
+            "po_r4": "single_game_neutral",
+            "po_r2": "single_game_neutral",
+        },
+        # pre season
+        # "knockout_draw_status": "pending_draw",
+        # "knockout_draw": None,
+        "knockout_draw_status": "no_draw",
+        "knockout_draw": None,
+        "knockout_reseeding": False,
+        "knockout_third_place_mapping": bracket_configs.fifa_wc_third_place_mapping
     },
     "NFL": {
         "sim_type": "winner",

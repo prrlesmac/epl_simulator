@@ -466,7 +466,7 @@ def process_footy_table(fixtures, country):
         "Y",
     )
     # remove country from team names if the league is european
-    if country in ["UCL", "UEL", "UECL"]:
+    if country in ["UCL", "UEL", "UECL", "FIFA_WC"]:
         fixtures["home"] = fixtures["home"].str[:-3]
         fixtures["away"] = fixtures["away"].str[3:]
     fixtures["home"] = fixtures["home"].str.strip()
@@ -475,6 +475,11 @@ def process_footy_table(fixtures, country):
     fixtures["neutral"] = "N"
     if "round" not in fixtures.columns:
         fixtures["round"] = "League"
+    fixtures["round"] = np.where(
+        fixtures["round"] == "Group stage",
+        "League",
+        fixtures["round"]
+    )
     fixtures["round"] = fixtures["round"].fillna("League")
 
     return fixtures
@@ -778,7 +783,7 @@ def process_fixtures(fixtures, country):
             - 'played': 'Y' if the match has been played, otherwise 'N'
             - 'neutral': 'Y' if the match is neutral venue, otherwise 'N'
     """
-    is_footy_league = country in ["ENG","ESP","GER","FRA","ITA","UCL","UEL","UECL"]
+    is_footy_league = country in ["ENG","ESP","GER","FRA","ITA","UCL","UEL","UECL","FIFA_WC"]
     fixtures.columns = fixtures.columns.str.lower()
     if is_footy_league:
         fixtures = process_footy_table(fixtures, country)

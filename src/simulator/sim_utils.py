@@ -1375,7 +1375,7 @@ def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
         for metrics in classif_rules.values()
         for metric in metrics
     ]
-    if league_type == "UEFA":
+    if league_type in ["UEFA", "FIFA_WC"]:
         standings = get_standings_metrics_footy(matches_df, metrics = all_metrics)
     elif league_type in ["NBA","MLB","NFL"]:
         standings = get_standings_metrics_us(matches_df, metrics = all_metrics)
@@ -1403,6 +1403,8 @@ def get_standings(matches_df, classif_rules, league_type=None, divisions=None):
 
     if league_type == "UEFA":
         standings["playoff_pos"] = standings["league_pos"]
+    elif league_type == "FIFA_WC":
+        standings["playoff_pos"] = standings["division"] + standings["division_pos"].astype(str)
     else:
         standings["playoff_pos"] = standings["conference"] + " " + standings["conference_pos"].astype(str)
 
@@ -2317,3 +2319,65 @@ def extract_positions_from_bracket(knockout_draw, knockout_bracket):
 
     return draw_pos
 
+
+def get_fifa_wc_bracket(standings: pd.DataFrame, knockout_third_place_mapping: dict) -> pd.DataFrame:
+    """
+    Determines the FIFA World Cup knockout bracket by identifying the best third-placed
+    teams and assigning their playoff positions based on a predefined mapping.
+
+    The FIFA World Cup group stage produces multiple third-placed teams, of which only
+    the best advance. This function identifies those teams, looks up which group winners
+    or runners-up they face, and updates the standings with the correct playoff matchups.
+
+    Args:
+        standings (pd.DataFrame): A DataFrame containing team standings with at least
+            the following columns:
+                - 'team'         : Team identifier/name.
+                - 'division'     : The group/division the team belongs to.
+                - 'division_pos' : The team's finishing position within their division (1, 2, 3, ...).
+                - 'league_pos'   : Overall league ranking used to rank third-placed teams.
+                - 'playoff_pos'  : The team's assigned knockout round position/slot.
+
+        knockout_third_place_mapping (dict): A mapping from a tuple of advancing third-placed
+            team divisions (sorted, e.g. ('A', 'B', 'C', 'D')) to a dict that maps a
+            playoff slot to its opponent's slot label.
+            Example:
+                {
+                    ('A', 'B', 'C', 'D'): {'1A': '3D', '1B': '3C', ...},
+                    ...
+                }
+
+    Returns:
+        pd.DataFrame: The input standings DataFrame with two columns updated in-place:
+            - 'top_third_placed' (bool) : True if the team is one of the best 8 third-placed teams.
+            - 'playoff_pos'             : Updated to reflect '3rd vs <slot>' for matched teams;
+                                          set to None for any slot not ending in '1' or '2'.
+    """
+
+    # --- Identify top 8 third-placed teams ---
+    third_placed_mask = standings["division_pos"] == 3
+    top_third_placed = (
+        standings.loc[third_placed_mask]
+        .nsmallest(8, "league_pos")          # nsmallest avoids a full sort + head()
+    )
+    top_third_teams = set(top_third_placed["team"])  # O(1) lookup vs isin() on a Series
+
+    standings["top_third_placed"] = standings["team"].isin(top_third_teams)
+
+    # --- Derive the division combo key for the mapping lookup ---
+    top_third_combo = tuple(
+        top_third_placed.sort_values("division")["division"]
+    )
+    third_place_rivals = knockout_third_place_mapping[top_third_combo]
+
+    # --- Assign playoff positions for third-placed team slots ---
+    mask = standings["playoff_pos"].isin(third_place_rivals)
+    standings.loc[mask, "playoff_pos"] = (
+        "3rd vs " + standings.loc[mask, "playoff_pos"].map(third_place_rivals)
+    )
+
+    # --- Nullify slots that don't belong to a 1st or 2nd placed team ---
+    valid_mask = standings["playoff_pos"].str[-1].isin(["1", "2"])
+    standings.loc[~valid_mask, "playoff_pos"] = None
+
+    return standings
