@@ -169,15 +169,11 @@ def single_simulation(
             playoff_schedule = knockout_schedule_played
 
         # TODO think of better ways to pull elos
-<<<<<<< HEAD
         elos_final_h = schedule_final[["home", "elo_home"]].drop_duplicates(subset=["home"]).rename(columns={"home": "team", "elo_home": "elo"})
         elos_final_a = schedule_final[["away", "elo_away"]].drop_duplicates(subset=["away"]).rename(columns={"away": "team", "elo_away": "elo"})
         elos_final = pd.concat([elos_final_h,elos_final_a]).drop_duplicates(subset=["team"])
-=======
-        elos_final = schedule_final[["home", "elo_home"]].drop_duplicates(subset=["home"])
         elos_final = elos_final.rename(columns={"home": "team", "elo_home": "elo"})
         elos_dict = dict(zip(elos_final["team"], elos_final["elo"]))
->>>>>>> main
         
         # Handle play-in tournament if configured
         if ("has_play_in" in league_rules) and (league_rules["has_play_in"]):
@@ -187,7 +183,6 @@ def single_simulation(
                 elos_dict, 
                 league_rules["home_advantage"]
             )
-<<<<<<< HEAD
 
         # Handle third place ranking
         if ("knockout_third_place_mapping" in league_rules):
@@ -195,10 +190,8 @@ def single_simulation(
                 standings_df, 
                 league_rules['knockout_third_place_mapping']
             )
-=======
             playoff_schedule = playoff_schedule[playoff_schedule["round"] != "Play-in"].copy()
         
->>>>>>> main
         # Determine knockout bracket
         if league_rules["knockout_draw_status"] == "pending_draw":
             draw = draw_from_pots(standings_df, pot_size=2)
