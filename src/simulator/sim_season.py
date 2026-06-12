@@ -151,8 +151,8 @@ def single_simulation(
     # Handle knockout stage if applicable
     if league_rules["has_knockout"]:
         # Filter non-league matches
-        knockout_schedule_played = schedule_played.loc[schedule_played["round"] != "League"]
-        knockout_schedule_pending = schedule_pending.loc[schedule_pending["round"] != "League"]
+        knockout_schedule_played = schedule_played.loc[~schedule_played["round"].isin(["League", "NBA Cup Final"])]
+        knockout_schedule_pending = schedule_pending.loc[~schedule_pending["round"].isin(["League", "NBA Cup Final"])]
         
         # Only simulate if there are pending knockout matches
         if len(knockout_schedule_pending) > 0:
@@ -169,18 +169,25 @@ def single_simulation(
             playoff_schedule = knockout_schedule_played
 
         # TODO think of better ways to pull elos
+<<<<<<< HEAD
         elos_final_h = schedule_final[["home", "elo_home"]].drop_duplicates(subset=["home"]).rename(columns={"home": "team", "elo_home": "elo"})
         elos_final_a = schedule_final[["away", "elo_away"]].drop_duplicates(subset=["away"]).rename(columns={"away": "team", "elo_away": "elo"})
         elos_final = pd.concat([elos_final_h,elos_final_a]).drop_duplicates(subset=["team"])
+=======
+        elos_final = schedule_final[["home", "elo_home"]].drop_duplicates(subset=["home"])
+        elos_final = elos_final.rename(columns={"home": "team", "elo_home": "elo"})
+        elos_dict = dict(zip(elos_final["team"], elos_final["elo"]))
+>>>>>>> main
         
         # Handle play-in tournament if configured
         if ("has_play_in" in league_rules) and (league_rules["has_play_in"]):
             standings_df = simulate_play_in_tourney(
                 standings_df, 
                 playoff_schedule, 
-                elos_final, 
+                elos_dict, 
                 league_rules["home_advantage"]
             )
+<<<<<<< HEAD
 
         # Handle third place ranking
         if ("knockout_third_place_mapping" in league_rules):
@@ -188,6 +195,10 @@ def single_simulation(
                 standings_df, 
                 league_rules['knockout_third_place_mapping']
             )
+=======
+            playoff_schedule = playoff_schedule[playoff_schedule["round"] != "Play-in"].copy()
+        
+>>>>>>> main
         # Determine knockout bracket
         if league_rules["knockout_draw_status"] == "pending_draw":
             draw = draw_from_pots(standings_df, pot_size=2)
@@ -216,7 +227,7 @@ def single_simulation(
         playoff_df = simulate_playoff_bracket(
             bracket, 
             league_rules["knockout_format"], 
-            elos_final, 
+            elos_dict, 
             playoff_schedule, 
             league_rules["knockout_reseeding"], 
             league_rules["home_advantage"]
@@ -542,6 +553,7 @@ def run_all_simulations():
     """
     Main function to run simulations for all configured leagues.
     """
+    print("Starting league simulator...")
     start_time = time.time()
     sim_standings_wo_ko = []
     sim_standings_w_ko = []
@@ -565,6 +577,7 @@ def run_all_simulations():
     end_time = time.time()
     print(f"Simulation took {end_time - start_time:.2f} seconds")
     # Save results to database
+    print("Saving simulations to db....")
     save_results_to_database(sim_standings_wo_ko, sim_standings_w_ko, league_type)
     print("Simulations saved to db")
 

@@ -1,4 +1,4 @@
-name: Deploy Docker App to AWS EC2
+name: Deploy Docker App to Cloud Run
 
 on:
   push:
@@ -44,7 +44,7 @@ jobs:
         docker build -t test-build .
         echo "Docker build successful"
 
-  # build-and-push:
+  # build-and-push-aws:
   #   runs-on: ubuntu-latest
   #   needs: test
 

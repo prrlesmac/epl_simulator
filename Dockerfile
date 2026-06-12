@@ -1,5 +1,7 @@
 FROM python:3.10.9
 
+ENV PYTHONUNBUFFERED=1
+
 # Set working directory
 WORKDIR /
 
