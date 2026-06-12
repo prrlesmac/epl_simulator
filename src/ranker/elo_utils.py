@@ -136,7 +136,7 @@ class EloCalculator:
             mov_multiplier = nba_mov_multiplier(winner_point_diff, winner_elo_diff)
         elif self.league == "MLB":
             mov_multiplier = mlb_mov_multiplier(winner_point_diff, winner_elo_diff)
-        elif self.league == "UEFA":
+        elif self.league in ("UEFA", "FIFA_WC"):
             mov_multiplier = uefa_mov_multiplier(winner_point_diff)
         else:
             raise(ValueError, "Invalid league for Elo calc")

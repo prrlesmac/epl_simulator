@@ -988,7 +988,7 @@ fixtures_config = {
     },
     "FIFA_WC": {
         "fixtures_url": ["https://fbref.com/en/comps/1/schedule/World-Cup-Scores-and-Fixtures"],
-        "local_file_path": "data/fifa_wc/World Cup Scores & Fixtures _ FBref.com.html",
+        "local_file_path": ["data/fifa_wc/World Cup Scores & Fixtures _ FBref.com.html"],
         "table_id": ["sched_2026_1_1"], 
     },
 }
@@ -1058,8 +1058,8 @@ elo_params = {
         "in_between_seasons": False,
     },
     "FIFA_WC" : {
-        "home_advantage": 40,
-        "elo_kfactor": 60,
+        "home_advantage": 0,
+        "elo_kfactor": 40,
         "season_start_adj": 0,
         "in_between_seasons": False,
     },
