@@ -989,7 +989,7 @@ fixtures_config = {
     "FIFA_WC": {
         "fixtures_url": ["https://fbref.com/en/comps/1/schedule/World-Cup-Scores-and-Fixtures"],
         "local_file_path": ["data/fifa_wc/World Cup Scores & Fixtures _ FBref.com.html"],
-        "table_id": ["sched_2026_1_1"], 
+        "table_id": ["sched_2026_1_1","sched_2026_1_2"], 
     },
 }
 
@@ -1467,11 +1467,29 @@ league_rules = {
             "po_r4": "single_game_neutral",
             "po_r2": "single_game_neutral",
         },
-        # pre season
-        # "knockout_draw_status": "pending_draw",
+        # pre ko
+        # "knockout_draw_status": "no_draw",
         # "knockout_draw": None,
-        "knockout_draw_status": "no_draw",
-        "knockout_draw": None,
+        "knockout_draw_status": "completed_draw",
+        "knockout_draw": [       
+           ("Germany", "Paraguay"),
+            ("France", "Sweden"),
+            ("South Africa", "Canada"),
+            ("Netherlands", "Morocco"),
+            ("Portugal", "Croatia"),
+            ("Spain", "Austria"),
+            ("United States", "Bosnia–Herz"),
+            ("Belgium", "Senegal"),
+            ("Brazil", "Japan"),
+            ("Côte d'Ivoire", "Norway"),
+            ("Mexico", "Ecuador"),
+            ("England", "Congo DR"),
+            ("Argentina", "Cabo Verde"),
+            ("Australia", "Egypt"),
+            ("Switzerland", "Algeria"),
+            ("Colombia", "Ghana"),
+
+        ],
         "knockout_reseeding": False,
         "knockout_third_place_mapping": bracket_configs.fifa_wc_third_place_mapping
     },

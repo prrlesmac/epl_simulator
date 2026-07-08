@@ -17,7 +17,7 @@ INSERT INTO teams_fifa_wc (team, division, confederation) VALUES
 ('Canada', 'B', 'CONCACAF'),
 ('Switzerland', 'B', 'UEFA'),
 ('Qatar', 'B', 'AFC'),
-('Bosnia & Herz''na', 'B', 'UEFA'),
+('Bosnia–Herz', 'B', 'UEFA'),
 
 -- C
 ('Brazil', 'C', 'CONMEBOL'),
@@ -53,7 +53,7 @@ INSERT INTO teams_fifa_wc (team, division, confederation) VALUES
 ('Spain', 'H', 'UEFA'),
 ('Uruguay', 'H', 'CONMEBOL'),
 ('Saudi Arabia', 'H', 'AFC'),
-('Cape Verde', 'H', 'CAF'),
+('Cabo Verde', 'H', 'CAF'),
 
 -- I
 ('France', 'I', 'UEFA'),

@@ -1990,7 +1990,7 @@ def _get_winner_from_completed_matches(team1, team2, tie_matches):
         Warning: If extracted winner is not one of the two teams.
     """
 
-    pattern = re.compile(r";\s*(.*?)\s+won")
+    pattern = re.compile(r"(?:.*?;\s*)?(.+?)\s+won")
 
     # Iterate through notes (skip NaNs)
     for note in tie_matches["notes"].dropna():
